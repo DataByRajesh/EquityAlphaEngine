@@ -137,7 +137,8 @@ class TestPipelineAdvanced(unittest.TestCase):
 class TestDBHelper(unittest.TestCase):
     def setUp(self):
         self.test_db = "test_stocks.db"
-        self.helper = DBHelper(self.test_db)
+        self.db_url = f"sqlite:///{self.test_db}"
+        self.helper = DBHelper(self.db_url)
         self.df = pd.DataFrame({
             "Ticker": ["A.L", "B.L"],
             "Close": [100, 200],
@@ -152,7 +153,7 @@ class TestDBHelper(unittest.TestCase):
         self.helper.create_table("test_tbl", self.df)
         self.helper.insert_dataframe("test_tbl", self.df)
         # Read back to check
-        result = pd.read_sql("SELECT * FROM test_tbl", self.helper.conn)
+        result = pd.read_sql("SELECT * FROM test_tbl", self.helper.engine)
         self.assertEqual(len(result), 2)
         self.assertIn("Close", result.columns)
         

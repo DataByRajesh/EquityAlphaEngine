@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
 import numpy as np
+from sqlalchemy import create_engine
+
+import config
 
 st.set_page_config(page_title="InvestWiseUK Multi-Factor Screener", layout="wide")
 
@@ -9,10 +11,9 @@ st.title("📊 InvestWiseUK Multi-Factor Stock Screener")
 
 @st.cache_data
 def load_data():
-    DB_PATH = "data_pipeline/data/stocks_data.db"
-    conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql("SELECT * FROM financial_tbl", conn)
-    conn.close()
+    engine = create_engine(config.DATABASE_URL)
+    df = pd.read_sql("SELECT * FROM financial_tbl", engine)
+    engine.dispose()
     # Clean NaNs/infs
     for col in ['factor_composite', 'return_12m', 'earnings_yield', 'norm_quality_score']:
         if col in df.columns:
