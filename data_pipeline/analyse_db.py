@@ -1,14 +1,15 @@
-import sqlite3
 import pandas as pd
+from sqlalchemy import create_engine
 
+import config
 import logging
-def analyze_db(path):
 
-DB_PATH = "data_pipeline/data/stocks_data.db"
-conn = sqlite3.connect(DB_PATH)
+
+DB_PATH = config.DATABASE_URL
+engine = create_engine(DB_PATH)
 
 # Load a sample of the data
-df = pd.read_sql("SELECT * FROM stock_data", conn)
+df = pd.read_sql("SELECT * FROM stock_data", engine)
 
 # General stats
 print(df.info())
@@ -18,12 +19,12 @@ print(f'describe {df.describe()}')
 print(f' Missing data count {df.isnull().sum()}')
 
 # Check for duplicates
-print(f'duplicates data count {df.duplicated(subset=['Date', 'Ticker']).sum()}')
+print(f"duplicates data count {df.duplicated(subset=['Date', 'Ticker']).sum()}")
 
 # Check data coverage per ticker
-print(f'data coverage per ticker {df['Ticker'].value_counts()}')
+print(f"data coverage per ticker {df['Ticker'].value_counts()}")
 
 # Spot-check for outliers
 print(df[['Close', 'Volume', 'marketCap']].describe(),end='\n\n')
 
-conn.close()
+engine.dispose()

@@ -38,10 +38,11 @@ class TestFullPipeline(unittest.TestCase):
         factors = compute_factors(rounded)
         # Save to temp DB
         dbfile = "test_pipeline.db"
-        helper = DBHelper(dbfile)
+        db_url = f"sqlite:///{dbfile}"
+        helper = DBHelper(db_url)
         helper.create_table("factors", factors)
         helper.insert_dataframe("factors", factors)
-        readback = pd.read_sql("SELECT * FROM factors", helper.conn)
+        readback = pd.read_sql("SELECT * FROM factors", helper.engine)
         self.assertEqual(len(readback), len(factors))
         helper.close()
         import os
