@@ -65,6 +65,19 @@ streamlit run streamlit_screener.py
 
 ---
 
+## ☁️ Persistent Storage Recommendations
+For deployments requiring durable storage of datasets or logs, point the
+`DATA_DIR`, `CACHE_DIR`, and `LOG_DIR` environment variables to cloud object
+storage such as:
+
+- **Amazon S3**
+- **Supabase Storage**
+
+These services keep pipeline outputs across restarts and can be mounted or
+accessed via SDKs, allowing the application to treat them like local folders.
+
+---
+
 ## ✅ When Ready for Cloud Deployment
 - Switch to a hosted DB like Supabase/PostgreSQL
 - Consider using an online cache or removing file-based cache

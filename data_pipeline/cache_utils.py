@@ -3,7 +3,10 @@ import json
 import os
 from datetime import datetime, timedelta
 
-CACHE_FILE = "data_pipeline/cache/fundamentals_cache.json"
+import config
+
+
+CACHE_FILE = os.path.join(config.CACHE_DIR, "fundamentals_cache.json")
 
 def load_cache_file():
     if os.path.exists(CACHE_FILE):
