@@ -18,7 +18,7 @@ import sys # For system operations
 import sqlite3 # For SQLite database operations
 import time # For time-related functions
 from concurrent.futures import ThreadPoolExecutor, as_completed # For multithreading
-from datetime import datetime # For date handling
+from datetime import datetime, timedelta # For date handling
 from typing import Optional # For type hinting
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation # For precise decimal rounding
 
@@ -132,7 +132,7 @@ def fetch_fundamental_data(
             info = ticker.info
             key_ratios = {
                 'Ticker': ticker_symbol,
-                'CompanyName': info['longName'],
+                'CompanyName': info.get('longName'),
                 'returnOnEquity': info.get('returnOnEquity'),
                 'grossMargins': info.get('grossMargins'),
                 'operatingMargins': info.get('operatingMargins'),
@@ -149,7 +149,7 @@ def fetch_fundamental_data(
                 'beta': info.get('beta'),
                 'averageVolume': info.get('averageVolume')
             }
-            print("Company Name:", info['longName'])
+            print("Company Name:", info.get('longName'))
             if use_cache:
                 save_fundamentals_cache(ticker_symbol, key_ratios)
             logging.info(f"Fetched fundamentals for {ticker_symbol}")
