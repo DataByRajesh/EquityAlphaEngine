@@ -14,7 +14,7 @@ class TestErrorHandling(unittest.TestCase):
         fundamentals = [{'Ticker': 'ERR.L'}]  # minimal
         combined = market_data.combine_price_and_fundamentals(price_df, fundamentals)
         rounded = market_data.round_financial_columns(combined)
-        self.assertTrue('returnOnEquity' in rounded.columns or True)
+        self.assertIn('returnOnEquity', rounded.columns)
         # Should not crash even with missing fields
 
     def test_bad_data(self):
