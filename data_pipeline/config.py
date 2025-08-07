@@ -35,6 +35,7 @@ def _ensure_dir(env_var: str, default: str) -> str:
 DATA_DIR = _ensure_dir("DATA_DIR", os.path.join("data_pipeline", "data"))
 CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join("data_pipeline", "cache"))
 LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
+CACHE_BUCKET = os.environ.get("CACHE_BUCKET")
 DB_PATH = os.path.join(DATA_DIR, "stocks_data.db")  # Path to the SQLite database
 
 # Configuration settings

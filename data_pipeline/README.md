@@ -6,7 +6,7 @@
 **EquityAlphaEngine** is a UK Equity Analytics Platform that:
 - Fetches financial fundamentals and historical data
 - Computes multi-factor scoring models
-- Caches data locally with expiry control
+- Caches data in an S3 bucket with expiry control
 - Provides an interactive stock screener via Streamlit
 - Sends Gmail alerts on data pipeline events
 
@@ -33,7 +33,7 @@ pip install -r requirements.txt
 - ✅ Ensure your Gmail credentials are correct (optional for alerts)
 
 ### 4️⃣ Initialize Cache & Database (Optional)
-- Cache will create itself on first run
+- Ensure the `CACHE_BUCKET` environment variable points to your S3 bucket
 - SQLite database should exist or be created by `UK_data.py`
 
 ---
@@ -59,7 +59,8 @@ streamlit run streamlit_screener.py
 ---
 
 ## ✅ Notes on Cache & Data Persistence
-- Local JSON cache used for fundamentals (`cache_utils.py`)
+- Fundamental data is cached in the S3 bucket specified by the `CACHE_BUCKET`
+  environment variable (`cache_utils.py`)
 - SQLite database stores computed financials (`data/stocks_data.db`)
 - Gmail alerts use credentials from `credentials.json` (optional)
 

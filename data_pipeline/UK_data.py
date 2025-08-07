@@ -27,6 +27,14 @@ import numpy as np # For numerical operations
 import pandas as pd # For data manipulation
 from tqdm import tqdm # For progress bar
 import yfinance as yf # For fetching financial data
+try:
+    import boto3
+    from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
+    from botocore.config import Config as BotoConfig
+except ImportError:  # pragma: no cover - boto3 may not be installed in all environments
+    boto3 = None
+    BotoCoreError = ClientError = EndpointConnectionError = Exception
+    BotoConfig = None
 
 
 # Local imports
@@ -37,51 +45,71 @@ import config # Importing configuration file
 from financial_utils import round_financial_columns # For financial rounding utilities
 
 
-# Ensure cache directory exists or create it
-os.makedirs(config.CACHE_DIR, exist_ok=True)
 # Ensure data directory exists or create it
 os.makedirs(config.DATA_DIR, exist_ok=True)
 
+# Initialize S3 client if bucket is configured
+s3_client = None
+if config.CACHE_BUCKET and boto3:
+    boto_cfg = BotoConfig(retries={"max_attempts": 3}, connect_timeout=5, read_timeout=5) if BotoConfig else None
+    s3_client = boto3.client("s3", config=boto_cfg) if boto_cfg else boto3.client("s3")
+
+# In-memory fallback cache
+_LOCAL_CACHE: dict[str, dict] = {}
 
 # --- Caching functions ---
 
-def cache_fundamental_path(ticker: str, cache_dir: str = config.CACHE_DIR) -> str:
+def cache_fundamental_key(ticker: str) -> str:
     """
-    Returns the path to the cached fundamental data file for the given ticker.
+    Returns the S3 key for the cached fundamental data file for the given ticker.
     """
-    return os.path.join(cache_dir, f"{ticker}_fundamentals.json")
+    return f"{ticker}_fundamentals.json"
 
-def load_cached_fundamentals(ticker: str, cache_dir: str = config.CACHE_DIR, expiry_minutes: int = config.CACHE_EXPIRY_MINUTES) -> Optional[dict]:
+def load_cached_fundamentals(ticker: str, expiry_minutes: int = config.CACHE_EXPIRY_MINUTES) -> Optional[dict]:
     """
-    Loads cached fundamental data for the ticker if available, else returns None.
+    Loads cached fundamental data for the ticker from S3 if available.
     """
-    path = cache_fundamental_path(ticker, cache_dir)
-    if os.path.exists(path):
-        try:
-            with open(path, "r") as f:
-                cached = json.load(f)
+    if not s3_client or not config.CACHE_BUCKET:
+        cached = _LOCAL_CACHE.get(ticker)
+        if cached:
             timestamp = datetime.fromisoformat(cached.get("timestamp"))
             if datetime.utcnow() - timestamp < timedelta(minutes=expiry_minutes):
                 return cached.get("data")
-            else:
-                return None  # Cache expired
-        except Exception as e:
+        return None
+    key = cache_fundamental_key(ticker)
+    try:
+        obj = s3_client.get_object(Bucket=config.CACHE_BUCKET, Key=key)
+        cached = json.loads(obj["Body"].read())
+        timestamp = datetime.fromisoformat(cached.get("timestamp"))
+        if datetime.utcnow() - timestamp < timedelta(minutes=expiry_minutes):
+            return cached.get("data")
+        else:
+            return None  # Cache expired
+    except ClientError as e:
+        if e.response.get("Error", {}).get("Code") != "NoSuchKey":
             logging.warning(f"Failed to load cache for {ticker}: {e}")
+    except (BotoCoreError, EndpointConnectionError, Exception) as e:
+        logging.warning(f"Failed to load cache for {ticker}: {e}")
     return None
 
-def save_fundamentals_cache(ticker: str, data: dict, cache_dir: str = config.CACHE_DIR) -> None:
+def save_fundamentals_cache(ticker: str, data: dict) -> None:
     """
-    Saves fundamental data to the cache for the ticker.
+    Saves fundamental data to S3 cache for the ticker.
     """
-    path = cache_fundamental_path(ticker, cache_dir)
+    if not s3_client or not config.CACHE_BUCKET:
+        _LOCAL_CACHE[ticker] = {
+            "data": data,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        return
+    key = cache_fundamental_key(ticker)
     data_with_timestamp = {
         "data": data,
         "timestamp": datetime.utcnow().isoformat()
     }
     try:
-        with open(path, "w") as f:
-            json.dump(data_with_timestamp, f)
-    except Exception as e:
+        s3_client.put_object(Bucket=config.CACHE_BUCKET, Key=key, Body=json.dumps(data_with_timestamp))
+    except (BotoCoreError, ClientError, EndpointConnectionError, Exception) as e:
         logging.warning(f"Failed to save cache for {ticker}: {e}")
 
 def fetch_historical_data(
