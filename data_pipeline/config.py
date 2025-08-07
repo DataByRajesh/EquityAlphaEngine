@@ -3,12 +3,39 @@
 
 # Importing necessary libraries
 import os
+import tempfile
 
+# ---------------------------------------------------------------------------
 # Directory structure
-DATA_DIR = os.path.join("data_pipeline", "data") # Directory for storing data files
-DB_PATH = os.path.join(DATA_DIR, "stocks_data.db") # Path to the SQLite database
-CACHE_DIR = os.path.join("data_pipeline", "cache") # Directory for caching data
-LOG_DIR = os.path.join("data_pipeline", "logs") # Directory for log files
+#
+# Directories can be overridden via the environment variables `DATA_DIR`,
+# `CACHE_DIR` and `LOG_DIR`.  On import we attempt to create each directory. If
+# creation fails (e.g. running in a read-only environment), a temporary
+# directory is used instead so the pipeline can still operate entirely in
+# memory.
+# ---------------------------------------------------------------------------
+
+
+def _ensure_dir(env_var: str, default: str) -> str:
+    """Return a directory path ensuring it exists.
+
+    The directory is taken from the environment variable ``env_var`` when
+    available. The path is created if missing.  If the directory cannot be
+    created, a temporary directory is returned instead.
+    """
+
+    path = os.environ.get(env_var, default)
+    try:
+        os.makedirs(path, exist_ok=True)
+    except OSError:
+        path = tempfile.mkdtemp()
+    return path
+
+
+DATA_DIR = _ensure_dir("DATA_DIR", os.path.join("data_pipeline", "data"))
+CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join("data_pipeline", "cache"))
+LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
+DB_PATH = os.path.join(DATA_DIR, "stocks_data.db")  # Path to the SQLite database
 
 # Configuration settings
 MAX_RETRIES = 5 # Maximum number of retry attempts for fetching data in case of failure
