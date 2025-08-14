@@ -28,7 +28,7 @@ paste the contents of your local `secrets.toml`.
 
 The data pipeline reads the connection string using
 `st.secrets["DATABASE_URL"]`. If it is not provided a SQLite database named
-`stocks_data.db` will be created inside the pipeline's data directory.
+`app.db` will be created inside the pipeline's data directory.
 
 ### Running the Streamlit Screener
 
