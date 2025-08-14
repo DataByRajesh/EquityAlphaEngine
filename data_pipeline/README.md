@@ -12,6 +12,28 @@
 
 ---
 
+## Required Environment Variables
+
+Create a `.env` file with entries such as:
+
+```env
+QUANDL_API_KEY=your_quandl_api_key
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_TOKEN_FILE=token.json
+DATABASE_URL=postgresql://user:password@host:5432/database
+```
+
+- `QUANDL_API_KEY` – required for macro indicators and UK market data; missing
+  it blocks macro/UK data retrieval.
+- `GMAIL_CREDENTIALS_FILE` – path to Gmail OAuth credentials.
+- `GMAIL_TOKEN_FILE` – location to store the Gmail OAuth token.
+- `DATABASE_URL` – connection string to the database.
+
+Additional optional variables include `CACHE_BACKEND`, `CACHE_REDIS_URL`,
+`CACHE_S3_BUCKET`, `CACHE_S3_PREFIX`, and `MAX_THREADS`.
+
+---
+
 ## ✅ Local Deployment Checklist
 
 ### 1️⃣ Clone the Project Locally
