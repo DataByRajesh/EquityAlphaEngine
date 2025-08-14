@@ -77,7 +77,9 @@ def get_gmail_service(
     service = build('gmail', 'v1', credentials=creds)
     return service
 
+
 def create_message(sender, to, subject, message_text):
+    """Create a base64-encoded email ready for the Gmail API."""
     message = MIMEText(message_text)
     message['to'] = to
     message['from'] = sender
@@ -85,21 +87,28 @@ def create_message(sender, to, subject, message_text):
     raw = base64.urlsafe_b64encode(message.as_bytes())
     return {'raw': raw.decode()}
 
+
 def send_message(service, user_id, message):
+    """Send ``message`` using the Gmail API service."""
     try:
-        message = service.users().messages().send(userId=user_id, body=message).execute()
+        message = (
+            service.users().messages().send(userId=user_id, body=message).execute()
+        )
         logger.info(f"Message Id: {message['id']}")
         return message
-    except Exception as e:
+    except Exception as e:  # pragma: no cover - network errors
         logger.error(f"An error occurred: {e}")
         return None
 
-'''if __name__ == '__main__':
+
+if __name__ == "__main__":
     service = get_gmail_service()
     sender = "raj.analystdata@gmail.com"
     to = "raj.analystdata@gmail.com"
     subject = "Test email from Gmail API"
     message_text = "Hello! This is a test email sent via Gmail API with OAuth2."
-    
+
     msg = create_message(sender, to, subject, message_text)
-    send_message(service, "me", msg)''' 
+    send_message(service, "me", msg)
+
+
