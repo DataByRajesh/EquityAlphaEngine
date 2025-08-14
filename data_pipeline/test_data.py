@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import asyncio
 import numpy as np
 import pandas as pd
 
@@ -52,6 +53,46 @@ class TestMarketData(unittest.TestCase):
         self.assertEqual(result_list[0]['Ticker'], ticker_name)
         self.assertAlmostEqual(result_list[0]['returnOnEquity'], 0.12)
         self.assertIn('marketCap', result_list[0])
+
+    @patch('yfinance.Tickers')
+    def test_fetch_fundamental_data_no_loop_uses_asyncio_run(self, mock_tickers):
+        ticker_name = "MOCK.L"
+        mock_info = {
+            'returnOnEquity': 0.1,
+        }
+        mock_ticker_obj = unittest.mock.Mock()
+        mock_ticker_obj.info = mock_info
+        mock_tickers.return_value.tickers = {ticker_name: mock_ticker_obj}
+
+        original_run = asyncio.run
+        with patch('data_pipeline.UK_data.asyncio.run', side_effect=original_run) as mock_run, \
+             patch('data_pipeline.UK_data.asyncio.create_task') as mock_ct:
+            result_list = market_data.fetch_fundamental_data([ticker_name], use_cache=False)
+            self.assertTrue(mock_run.called)
+            mock_ct.assert_not_called()
+        self.assertEqual(result_list[0]['Ticker'], ticker_name)
+
+    @patch('yfinance.Tickers')
+    def test_fetch_fundamental_data_running_loop_uses_create_task(self, mock_tickers):
+        ticker_name = "MOCK.L"
+        mock_info = {
+            'returnOnEquity': 0.2,
+        }
+        mock_ticker_obj = unittest.mock.Mock()
+        mock_ticker_obj.info = mock_info
+        mock_tickers.return_value.tickers = {ticker_name: mock_ticker_obj}
+
+        async def runner():
+            original_create = asyncio.create_task
+            with patch('data_pipeline.UK_data.asyncio.run', wraps=asyncio.run) as mock_run, \
+                 patch('data_pipeline.UK_data.asyncio.create_task', side_effect=original_create) as mock_ct:
+                result = await market_data.fetch_fundamental_data([ticker_name], use_cache=False)
+                self.assertFalse(mock_run.called)
+                self.assertTrue(mock_ct.called)
+                return result
+
+        result_list = asyncio.run(runner())
+        self.assertEqual(result_list[0]['Ticker'], ticker_name)
 
     @patch('yfinance.download')
     def test_fetch_historical_data(self, mock_download):
