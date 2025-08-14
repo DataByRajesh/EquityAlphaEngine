@@ -107,6 +107,35 @@ point to `streamlit_app.py` when deploying there.
 - Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
   `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
 
+### AWS Configuration
+
+To use Amazon S3 for caching, set these environment variables:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION`
+- `CACHE_S3_BUCKET`
+- `CACHE_S3_PREFIX`
+
+#### GitHub Secrets
+
+1. Go to **Settings → Secrets and variables → Actions** in your GitHub repository.
+2. Add each of the variables above as new repository secrets using the same names.
+
+#### Local development
+
+Create a `.env` file alongside this README and include:
+
+```bash
+AWS_ACCESS_KEY_ID=YOUR_KEY
+AWS_SECRET_ACCESS_KEY=YOUR_SECRET
+AWS_DEFAULT_REGION=us-east-1
+CACHE_S3_BUCKET=your-bucket
+CACHE_S3_PREFIX=your/prefix
+```
+
+Load these values into your shell with `export $(grep -v '^#' .env | xargs)` or use a helper such as `python-dotenv`.
+
 ---
 
 ## ☁️ Streamlit Cloud Deployment
