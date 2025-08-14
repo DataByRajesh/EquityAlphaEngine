@@ -158,7 +158,7 @@ else:
     # 4. Ensure CompanyName exists — if not, fetch it separately or add placeholder
     if "CompanyName" not in filtered.columns:
         filtered["CompanyName"] = "Unknown Company"
-
+        
     # 5. Add proper rank
     filtered["rank"] = filtered.index + 1
 
@@ -189,4 +189,5 @@ else:
     st.info(
         "Uses InvestWiseUK analytics engine pipeline. Replace with your real factor output for production if demoing."
     )
+
 
