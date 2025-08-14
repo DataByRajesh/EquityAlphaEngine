@@ -114,11 +114,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # Optionally: drop the intermediate column
     df.drop(columns=['amihud_raw'], inplace=True)
 
-    '''df['amihud_illiquidity'] = (
-        df.groupby('Ticker').apply(
-            lambda g: (g['Close'].pct_change().abs() / (g['Volume'] * g['Close'])).rolling(21).mean()
-        ).reset_index(level=0, drop=True)
-    )'''
+    # Alternative groupby.apply implementation for Amihud illiquidity removed
 
 
     # --- Composite factor ---
