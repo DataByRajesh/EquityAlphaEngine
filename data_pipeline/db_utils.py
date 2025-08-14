@@ -12,6 +12,8 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 
 from . import config
 
@@ -81,15 +83,41 @@ class DBHelper:
         if unique_cols:
             metadata = MetaData()
             table = Table(table_name, metadata, autoload_with=self.engine)
-            insert_stmt = sqlite_insert(table)
-            update_cols = {
-                c.name: insert_stmt.excluded[c.name]
-                for c in table.columns
-                if c.name not in unique_cols
-            }
-            upsert_stmt = insert_stmt.on_conflict_do_update(
-                index_elements=list(unique_cols), set_=update_cols
-            )
+            dialect_name = self.engine.dialect.name
+
+            if dialect_name == "sqlite":
+                insert_stmt = sqlite_insert(table)
+                update_cols = {
+                    c.name: insert_stmt.excluded[c.name]
+                    for c in table.columns
+                    if c.name not in unique_cols
+                }
+                upsert_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=list(unique_cols), set_=update_cols
+                )
+            elif dialect_name == "postgresql":
+                insert_stmt = pg_insert(table)
+                update_cols = {
+                    c.name: insert_stmt.excluded[c.name]
+                    for c in table.columns
+                    if c.name not in unique_cols
+                }
+                upsert_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=list(unique_cols), set_=update_cols
+                )
+            elif dialect_name in {"mysql", "mariadb"}:
+                insert_stmt = mysql_insert(table)
+                update_cols = {
+                    c.name: getattr(insert_stmt.inserted, c.name)
+                    for c in table.columns
+                    if c.name not in unique_cols
+                }
+                upsert_stmt = insert_stmt.on_duplicate_key_update(**update_cols)
+            else:
+                with self.engine.begin() as conn:
+                    conn.execute(table.insert(), df.to_dict(orient="records"))
+                return
+
             with self.engine.begin() as conn:
                 conn.execute(upsert_stmt, df.to_dict(orient="records"))
         else:
