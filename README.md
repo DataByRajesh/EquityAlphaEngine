@@ -64,3 +64,16 @@ MAX_THREADS=20 python data_pipeline/UK_data.py --years 10
 ```
 
 
+### Optional cache backends
+
+The pipeline defaults to a local filesystem cache. To use Redis or Amazon S3
+as the cache backend, install the corresponding optional packages:
+
+```bash
+pip install redis   # required for CACHE_BACKEND=redis
+pip install boto3   # required for CACHE_BACKEND=s3
+```
+
+These dependencies are not installed by default, so ensure they are available
+before selecting the related backend.
+
