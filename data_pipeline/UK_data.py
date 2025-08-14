@@ -7,6 +7,7 @@ import logging
 import os  # For file and directory operations
 from typing import Optional  # For type hinting
 
+
 # Third-party imports
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
@@ -86,8 +87,21 @@ def fetch_historical_data(
         return pd.DataFrame()
     try:
         data = yf.download(tickers, start=start_date, end=end_date, progress=False)
-        data = data.stack(level=1).reset_index()
-        data.rename(columns={'level_1': 'Ticker'}, inplace=True)
+
+        # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
+        # If only a single ticker is returned, the columns are a simple
+        # ``Index`` which cannot be stacked. Detect this scenario and insert the
+        # ticker symbol manually without calling ``stack``.
+        if isinstance(data.columns, pd.MultiIndex):
+            data = data.stack(level=1).reset_index()
+            data.rename(columns={'level_1': 'Ticker'}, inplace=True)
+        else:
+            data = data.reset_index()
+            # In single-ticker responses the symbol isn't part of the columns,
+            # so assume the first requested ticker corresponds to the data
+            # returned.
+            data['Ticker'] = tickers[0]
+
         if 'Volume' in data.columns:
             data['Volume'] = data['Volume'].fillna(0).astype(int)
         logger.info("Historical data fetched successfully.")
@@ -124,17 +138,19 @@ def fetch_fundamental_data(
     use_cache: bool = True,
     cache_expiry_minutes: int = config.CACHE_EXPIRY_MINUTES,
     request_timeout: int = 10,
-) -> list[dict]:
+) -> Union[list[dict], "asyncio.Task[list[dict]]"]:
     """Fetch fundamental data for multiple tickers concurrently.
 
     The function first serves data from the cache when available. Remaining
     tickers are fetched concurrently using ``yf.Tickers`` and non-blocking
-    retry logic.  If an event loop is already running (e.g. inside a notebook
-    or other async-aware environment) the existing loop is reused via
-    :func:`asyncio.get_event_loop` and ``run_until_complete``.  Should the async
-    execution fail for any reason, the function falls back to sequential
-    fetching to ensure callers receive best-effort data.  Returns a list of
-    dictionaries with key ratios.
+    retry logic.  If called without a running event loop, ``asyncio.run`` is
+    used to drive the asynchronous execution.  When a loop is already running
+    (e.g. inside a notebook) the coroutine is scheduled on that loop via
+    :func:`asyncio.create_task` and the caller must ``await`` the returned task.
+    Should the async execution fail for any reason, the function falls back to
+    sequential fetching to ensure callers receive best-effort data.  Returns a
+    list of dictionaries with key ratios or an awaitable resolving to such a
+    list when a loop is running.
     """
 
     results: list[dict] = []
@@ -150,26 +166,21 @@ def fetch_fundamental_data(
     else:
         remaining = list(ticker_symbols)
 
-    if remaining:
-        tickers_obj = yf.Tickers(" ".join(remaining))
+    if not remaining:
+        return results
 
-        async def _fetch_all() -> list[tuple[str, dict]]:
-            tasks = [
-                _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout)
-                for t in remaining
-            ]
-            return await asyncio.gather(*tasks)
+    async def _fetch_all() -> list[dict]:
+        """Fetch fundamentals for the remaining tickers asynchronously."""
+        tickers_obj = yf.Tickers(" ".join(remaining))
+        tasks = [
+            _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout)
+            for t in remaining
+        ]
 
         fetched: list[tuple[str, dict]] = []
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                fetched = loop.run_until_complete(_fetch_all())
-            else:
-                fetched = loop.run_until_complete(_fetch_all())
-        except RuntimeError:
-            fetched = asyncio.run(_fetch_all())
-        except Exception as e:
+            fetched = await asyncio.gather(*tasks)
+        except Exception as e:  # pragma: no cover - best effort logging
             logger.error(
                 f"Asynchronous fetch failed, falling back to sequential execution: {e}",
                 exc_info=True,
@@ -209,7 +220,14 @@ def fetch_fundamental_data(
             if use_cache:
                 save_fundamentals_cache(symbol, key_ratios)
 
-    return results
+        return results
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(_fetch_all())
+    else:
+        return asyncio.create_task(_fetch_all())
 
 def fetch_fundamentals_threaded(
     tickers: list[str], use_cache: bool = True

@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import asyncio
 import numpy as np
 import pandas as pd
 
@@ -53,6 +54,46 @@ class TestMarketData(unittest.TestCase):
         self.assertAlmostEqual(result_list[0]['returnOnEquity'], 0.12)
         self.assertIn('marketCap', result_list[0])
 
+    @patch('yfinance.Tickers')
+    def test_fetch_fundamental_data_no_loop_uses_asyncio_run(self, mock_tickers):
+        ticker_name = "MOCK.L"
+        mock_info = {
+            'returnOnEquity': 0.1,
+        }
+        mock_ticker_obj = unittest.mock.Mock()
+        mock_ticker_obj.info = mock_info
+        mock_tickers.return_value.tickers = {ticker_name: mock_ticker_obj}
+
+        original_run = asyncio.run
+        with patch('data_pipeline.UK_data.asyncio.run', side_effect=original_run) as mock_run, \
+             patch('data_pipeline.UK_data.asyncio.create_task') as mock_ct:
+            result_list = market_data.fetch_fundamental_data([ticker_name], use_cache=False)
+            self.assertTrue(mock_run.called)
+            mock_ct.assert_not_called()
+        self.assertEqual(result_list[0]['Ticker'], ticker_name)
+
+    @patch('yfinance.Tickers')
+    def test_fetch_fundamental_data_running_loop_uses_create_task(self, mock_tickers):
+        ticker_name = "MOCK.L"
+        mock_info = {
+            'returnOnEquity': 0.2,
+        }
+        mock_ticker_obj = unittest.mock.Mock()
+        mock_ticker_obj.info = mock_info
+        mock_tickers.return_value.tickers = {ticker_name: mock_ticker_obj}
+
+        async def runner():
+            original_create = asyncio.create_task
+            with patch('data_pipeline.UK_data.asyncio.run', wraps=asyncio.run) as mock_run, \
+                 patch('data_pipeline.UK_data.asyncio.create_task', side_effect=original_create) as mock_ct:
+                result = await market_data.fetch_fundamental_data([ticker_name], use_cache=False)
+                self.assertFalse(mock_run.called)
+                self.assertTrue(mock_ct.called)
+                return result
+
+        result_list = asyncio.run(runner())
+        self.assertEqual(result_list[0]['Ticker'], ticker_name)
+
     @patch('yfinance.download')
     def test_fetch_historical_data(self, mock_download):
         # Return fake price data
@@ -69,6 +110,22 @@ class TestMarketData(unittest.TestCase):
         self.assertIn('Ticker', df.columns)
         self.assertIn('Close', df.columns)
         self.assertEqual(df['Ticker'].iloc[0], 'MOCK.L')
+
+    @patch('yfinance.download')
+    def test_fetch_historical_data_single_ticker(self, mock_download):
+        """Ensure single-ticker responses without a MultiIndex are handled."""
+        mock_df = pd.DataFrame({
+            'Open': [100, 102],
+            'High': [110, 112],
+            'Low': [99, 101],
+            'Close': [109, 111],
+            'Volume': [1000, 1200],
+        }, index=pd.to_datetime(['2022-01-01', '2022-01-02']))
+        mock_download.return_value = mock_df
+
+        df = market_data.fetch_historical_data(['MOCK.L'], '2022-01-01', '2022-01-02')
+        self.assertEqual(df['Ticker'].unique().tolist(), ['MOCK.L'])
+        self.assertIn('Close', df.columns)
 
     def test_combine_price_and_fundamentals(self):
         # Fake price and fundamentals
