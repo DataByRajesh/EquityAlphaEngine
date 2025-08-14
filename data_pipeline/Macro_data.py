@@ -1,3 +1,4 @@
+import logging
 import os
 import logging
 
@@ -27,6 +28,7 @@ class FiveYearMacroDataLoader:
         if self.api_key is None:
             raise ValueError(
                 "QUANDL_API_KEY is not configured. Set the env var or pass api_key."
+
             )
         quandl.ApiConfig.api_key = self.api_key
         self.start_date = start_date
