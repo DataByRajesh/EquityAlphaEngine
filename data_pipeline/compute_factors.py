@@ -46,13 +46,16 @@ def compute_factors(df):
 
     # --- Value factors ---
     if 'trailingPE' in df.columns:
-        df['earnings_yield'] = 1 / df['trailingPE']
+        df['earnings_yield'] = 1 / df['trailingPE'].replace(0, np.nan)
     else:
         df['earnings_yield'] = np.nan
 
-    df['book_to_price'] = 1 / df['priceToBook']
+    df['book_to_price'] = 1 / df['priceToBook'].replace(0, np.nan)
     df['dividendYield'] = df.get('dividendYield', np.nan)
     df['price_to_sales'] = df.get('priceToSalesTrailing12Months', np.nan)
+
+    # Ensure finite values for subsequent calculations
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
     # --- Quality factors ---
     df['quality_score'] = df[['returnOnEquity', 'profitMargins']].mean(axis=1)
