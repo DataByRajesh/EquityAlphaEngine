@@ -3,7 +3,10 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 
-import config
+try:
+    from . import config
+except ImportError:  # fallback when run as a script
+    import config
 
 # The screener expects `DATABASE_URL` to point to a hosted PostgreSQL database
 # such as Supabase.  Streamlit Cloud users should set this in `.streamlit/secrets.toml`.

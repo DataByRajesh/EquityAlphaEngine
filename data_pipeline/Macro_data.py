@@ -1,9 +1,17 @@
 import quandl
 import pandas as pd
+import streamlit as st
+
+try:
+    DEFAULT_API_KEY = st.secrets["QUANDL_API_KEY"]
+except Exception:
+    DEFAULT_API_KEY = None
 
 class FiveYearMacroDataLoader:
-    def __init__(self, api_key, start_date="2020-01-01", end_date="2025-01-01"):
-        self.api_key = api_key
+    def __init__(self, api_key: str | None = None,
+                 start_date: str = "2020-01-01",
+                 end_date: str = "2025-01-01"):
+        self.api_key = api_key or DEFAULT_API_KEY
         quandl.ApiConfig.api_key = self.api_key
         self.start_date = start_date
         self.end_date = end_date
@@ -43,8 +51,7 @@ class FiveYearMacroDataLoader:
             return None
 
 if __name__ == "__main__":
-    API_KEY = "pXBknNEt9LEV6DRBnfhs"  # Replace with your valid Quandl API key
-    loader = FiveYearMacroDataLoader(API_KEY)
+    loader = FiveYearMacroDataLoader()
 
     macro_data = loader.get_combined_macro_data()
     if macro_data is not None:

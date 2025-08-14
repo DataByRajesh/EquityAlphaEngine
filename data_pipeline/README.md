@@ -47,10 +47,14 @@ python UK_data.py --start_date 2020-01-01 --end_date 2025-07-17
 ---
 
 ## ✅ Running the Streamlit Screener Locally
-From inside `data_pipeline/` folder:
+From the project root:
 ```
-streamlit run streamlit_screener.py
+streamlit run streamlit_app.py
 ```
+
+This wrapper imports `data_pipeline.streamlit_screener` so the app can be
+deployed easily on services like Streamlit Community Cloud. Set the app's entry
+point to `streamlit_app.py` when deploying there.
 
 - 🎛️ Use sidebar filters to refine your stock list
 - 📈 View multi-factor rankings and charts
@@ -72,6 +76,31 @@ When deploying on Streamlit Cloud:
 - Consider using an online cache or removing file-based cache for fully stateless deployments.
 
 For persistent storage of other outputs or logs, point `DATA_DIR`, `CACHE_DIR`, and `LOG_DIR` to cloud object storage such as Amazon S3 or Supabase Storage.
+
+---
+
+## ☁️ Deploy to Streamlit Cloud
+1. **Push the repo**
+   - Commit and push your project to GitHub; Streamlit Cloud builds directly from your repository.
+2. **Create a new app**
+   - Go to [streamlit.io/cloud](https://streamlit.io/cloud) and connect your GitHub account.
+   - Choose your repository and branch, then set the **App file** to `data_pipeline/streamlit_screener.py`.
+3. **Configure secrets and environment variables**
+   - In the app dashboard, open **Settings → Secrets** and add values such as:
+     ```toml
+     DATABASE_URL = "postgresql://user:pass@host/db"
+     GMAIL_USER = "your_email"
+     GMAIL_PASS = "your_password"
+     ```
+   - Any environment variable (e.g., `DATA_DIR`, `CACHE_DIR`, `LOG_DIR`) can be defined here.
+4. **Persist your data**
+   - Streamlit Cloud containers are ephemeral—use a hosted database like Supabase/PostgreSQL for persistence.
+   - Point `DATABASE_URL` to the hosted DB and avoid relying on local JSON caches.
+5. **Manage cache**
+   - Remove file-based cache folders before deploying or clear them via **⚙️ Settings → Clear cache**.
+   - From code you can call `st.cache_data.clear()` to reset cached data when needed.
+
+Once configured, click **Deploy** and Streamlit Cloud will build and run the screener automatically.
 
 ---
 
