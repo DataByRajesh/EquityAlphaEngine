@@ -1,6 +1,9 @@
 import unittest
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-from sqlalchemy import inspect, text
+from sqlalchemy import Column, Float, MetaData, Table, Text as SAText, inspect, text
+from sqlalchemy.dialects import mysql, postgresql
 
 from data_pipeline.db_utils import DBHelper
 
@@ -31,3 +34,53 @@ class TestDBHelperSQLInjection(unittest.TestCase):
             self.assertEqual(count, 1)
             value = conn.execute(text(f'SELECT col1 FROM {quoted}')).scalar()
             self.assertEqual(value, 1)
+
+
+class TestInsertDialect(unittest.TestCase):
+    def setUp(self):
+        self.df = pd.DataFrame(
+            {
+                "Ticker": ["A.L", "B.L"],
+                "Close": [100, 200],
+                "Volume": [1000, 1500],
+            }
+        )
+
+    def _prepare_helper(self, dialect):
+        helper = DBHelper("sqlite://")
+        helper.engine.dialect = dialect
+
+        conn = MagicMock()
+        ctx = MagicMock()
+        ctx.__enter__.return_value = conn
+        ctx.__exit__.return_value = False
+        helper.engine.begin = MagicMock(return_value=ctx)
+
+        table = Table(
+            "test_tbl",
+            MetaData(),
+            Column("Ticker", SAText, primary_key=True),
+            Column("Close", Float),
+            Column("Volume", Float),
+        )
+        patcher = patch("data_pipeline.db_utils.Table", return_value=table)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        return helper, conn
+
+    def test_postgresql_insert_clause(self):
+        helper, conn = self._prepare_helper(postgresql.dialect())
+        helper.insert_dataframe("test_tbl", self.df, unique_cols=["Ticker"])
+        stmt = conn.execute.call_args[0][0]
+        compiled = str(stmt.compile(dialect=postgresql.dialect()))
+        self.assertIn("ON CONFLICT", compiled)
+        helper.close()
+
+    def test_mysql_insert_clause(self):
+        helper, conn = self._prepare_helper(mysql.dialect())
+        helper.insert_dataframe("test_tbl", self.df, unique_cols=["Ticker"])
+        stmt = conn.execute.call_args[0][0]
+        compiled = str(stmt.compile(dialect=mysql.dialect()))
+        self.assertIn("ON DUPLICATE KEY UPDATE", compiled)
+        helper.close()
