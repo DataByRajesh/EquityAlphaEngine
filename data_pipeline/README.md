@@ -120,7 +120,8 @@ point to `streamlit_app.py` when deploying there.
 - **Cache backend** configurable via environment variables:
   - `CACHE_BACKEND` – `local` (default), `redis`, or `s3`
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
-  - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix)
+  - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix).
+    Requires the AWS credentials detailed in [AWS Configuration](#aws-configuration)
   - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
 - Optional packages for remote backends:
 
@@ -132,9 +133,27 @@ point to `streamlit_app.py` when deploying there.
   1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
   2. If not set, it tries `st.secrets["DATABASE_URL"]` (common on Streamlit Cloud).
   3. If still missing, it falls back to a **local SQLite database** (`data/app.db`) for development/testing.
-- **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
-- Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
-  `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
+  - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
+  - Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
+    `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
+
+## AWS Configuration
+
+Set these variables when connecting to AWS services such as RDS or the S3 cache backend:
+
+- `AWS_ACCESS_KEY_ID` – access key for an IAM user with S3 permissions.
+- `AWS_SECRET_ACCESS_KEY` – secret key associated with the IAM user.
+- `AWS_DEFAULT_REGION` – AWS region where your resources reside.
+- `CACHE_S3_BUCKET` – bucket name used when `CACHE_BACKEND=s3`.
+- `CACHE_S3_PREFIX` – optional key prefix within the bucket.
+
+To connect to a PostgreSQL database on AWS RDS, export `DATABASE_URL` as follows:
+
+```bash
+DATABASE_URL=postgresql://user:pass@mydb.xxxxx.eu-west-1.rds.amazonaws.com:5432/dbname
+```
+
+These variables are only necessary when using AWS resources, particularly the S3 cache backend discussed in [Notes on Cache & Data Persistence](#-notes-on-cache--data-persistence).
 
 ### AWS Configuration
 
