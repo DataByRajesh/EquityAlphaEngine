@@ -33,6 +33,31 @@ end_date = today.strftime("%Y-%m-%d")
 start_date = (today - timedelta(days=years * 365)).strftime("%Y-%m-%d")
 
 
+@st.cache_resource(show_spinner=False)
+def ensure_indexes() -> None:
+    """Ensure database indexes exist for faster queries.
+
+    This runs only once per app startup thanks to Streamlit's resource caching.
+    """
+    engine = create_engine(config.DATABASE_URL)
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text('CREATE INDEX IF NOT EXISTS idx_financial_tbl_date ON financial_tbl("Date")')
+            )
+            conn.execute(
+                text('CREATE INDEX IF NOT EXISTS idx_financial_tbl_ticker ON financial_tbl("Ticker")')
+            )
+    except SQLAlchemyError as exc:
+        logging.error("Error creating indexes: %s", exc)
+    finally:
+        engine.dispose()
+
+
+# Execute index creation once at startup
+ensure_indexes()
+
+
 @st.cache_data(show_spinner=False)
 def load_data(start_date: str, end_date: str) -> pd.DataFrame:
     """Load data from database, caching the result."""
@@ -62,19 +87,6 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
         if pd.isna(min_date) or pd.isna(max_date) or min_date > pd.to_datetime(start_date) or max_date < pd.to_datetime(end_date):
             st.warning(
                 "`financial_tbl` may not contain the requested date range. Run `python data_pipeline/update_financial_data.py` to refresh the database if needed.",
-            )
-
-        # Ensure helpful indexes exist for faster queries
-        with engine.begin() as conn:
-            conn.execute(
-                text(
-                    'CREATE INDEX IF NOT EXISTS idx_financial_tbl_date ON financial_tbl("Date")'
-                )
-            )
-            conn.execute(
-                text(
-                    'CREATE INDEX IF NOT EXISTS idx_financial_tbl_ticker ON financial_tbl("Ticker")'
-                )
             )
 
         query = text(
