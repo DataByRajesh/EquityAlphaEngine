@@ -30,7 +30,8 @@ pip install -r requirements.txt
 ### 3️⃣ Configure Your Environment
 - ✅ Set the `DATABASE_URL` for a hosted database (e.g., Supabase/PostgreSQL)
 - ✅ Set your cache expiry settings
-- ✅ Ensure your Gmail credentials are correct (optional for alerts)
+- ✅ Ensure your Gmail credentials are available (optional for alerts). Use
+  `GMAIL_CREDENTIALS_FILE` and `GMAIL_TOKEN_FILE` to override default paths.
 
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
@@ -75,7 +76,8 @@ point to `streamlit_app.py` when deploying there.
   2. If not set, it tries `st.secrets["DATABASE_URL"]` (common on Streamlit Cloud).
   3. If still missing, it falls back to a **local SQLite database** (`data/stocks_data.db`) for development/testing.
 - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
-- Gmail alerts use credentials from `credentials.json` (optional).
+- Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
+  `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
 
 ---
 

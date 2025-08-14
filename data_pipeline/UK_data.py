@@ -245,7 +245,11 @@ def main(tickers, start_date, end_date, use_cache=True):
         Dbhelper.close()
 
         # Prepare and send email notification
-        gmail_service = get_gmail_service()  # Initialize Gmail API service once
+        try:
+            gmail_service = get_gmail_service()  # Initialize Gmail API service once
+        except FileNotFoundError as e:
+            logger.error(e)
+            gmail_service = None
 
         if gmail_service is None:
             logger.error("Failed to initialize Gmail service. Email notification will not be sent.")

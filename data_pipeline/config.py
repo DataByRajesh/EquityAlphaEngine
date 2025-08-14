@@ -67,6 +67,15 @@ if not DATABASE_URL:
 ENGINE = create_engine(DATABASE_URL)
 
 # ---------------------------------------------------------------------------
+# Gmail API configuration
+#
+# Paths to the OAuth client secrets and token files can be overridden via the
+# ``GMAIL_CREDENTIALS_FILE`` and ``GMAIL_TOKEN_FILE`` environment variables.
+# ---------------------------------------------------------------------------
+GMAIL_CREDENTIALS_FILE = os.environ.get("GMAIL_CREDENTIALS_FILE", "credentials.json")
+GMAIL_TOKEN_FILE = os.environ.get("GMAIL_TOKEN_FILE", "token.json")
+
+# ---------------------------------------------------------------------------
 # Cache backend configuration
 #
 # The cache system can be backed by different stores. Set
