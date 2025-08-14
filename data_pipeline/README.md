@@ -30,7 +30,8 @@ pip install -r requirements.txt
 ### 3️⃣ Configure Your Environment
 - ✅ Set the `DATABASE_URL` for a hosted database (e.g., Supabase/PostgreSQL)
 - ✅ Set your cache expiry settings
-- ✅ Ensure your Gmail credentials are correct (optional for alerts)
+- ✅ Ensure your Gmail credentials are available (optional for alerts). Use
+  `GMAIL_CREDENTIALS_FILE` and `GMAIL_TOKEN_FILE` to override default paths.
 
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
@@ -69,13 +70,14 @@ point to `streamlit_app.py` when deploying there.
   - `CACHE_BACKEND` – `local` (default), `redis`, or `s3`
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
   - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix)
-- **Local JSON cache** used for fundamentals when `CACHE_BACKEND` is `local` (`cache_utils.py`)
+  - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
 - **Database configuration**:
   1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
   2. If not set, it tries `st.secrets["DATABASE_URL"]` (common on Streamlit Cloud).
-  3. If still missing, it falls back to a **local SQLite database** (`data/stocks_data.db`) for development/testing.
+  3. If still missing, it falls back to a **local SQLite database** (`data/app.db`) for development/testing.
 - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
-- Gmail alerts use credentials from `credentials.json` (optional).
+- Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
+  `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
 
 ---
 

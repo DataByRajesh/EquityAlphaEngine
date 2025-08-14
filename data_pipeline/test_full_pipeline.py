@@ -1,9 +1,9 @@
 import unittest
 import pandas as pd
 import numpy as np
-from compute_factors import compute_factors
-import market_data
-from db_utils import DBHelper
+from data_pipeline.compute_factors import compute_factors
+from data_pipeline import market_data
+from data_pipeline.db_utils import DBHelper
 
 
 def test_compute_factors_docstring():

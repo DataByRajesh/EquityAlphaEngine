@@ -1,25 +1,29 @@
-"""Utilities for caching fundamental data.
+"""Utilities for caching fundamental data with an in-memory layer.
 
 The caching layer supports multiple backends controlled by
 ``config.CACHE_BACKEND``:
 
-* ``local`` – JSON file stored under ``CACHE_DIR``.
-* ``redis`` – Redis instance referenced by ``CACHE_REDIS_URL``.
+* ``local`` – each ticker stored as a JSON file under ``CACHE_DIR``.
+* ``redis`` – Redis hash referenced by ``CACHE_REDIS_URL``.
 * ``s3`` – Amazon S3 bucket defined by ``CACHE_S3_BUCKET``.
 
-Remote backends may raise exceptions (e.g. connection errors).  Callers are
-expected to handle such failures gracefully.
+Entries are kept in an in-memory dictionary for the duration of the session
+and only modified tickers are persisted back to the backing store. Remote
+backends may raise exceptions (e.g. connection errors). Callers are expected
+to handle such failures gracefully.
 """
+
+from __future__ import annotations
 
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Dict
+from typing import Dict, Optional
 
-import config
+from . import config
 
-
-CACHE_FILE = os.path.join(config.CACHE_DIR, "fundamentals_cache.json")
+# In-memory cache for this process
+_CACHE: Dict[str, Dict] = {}
 
 # ---------------------------------------------------------------------------
 # Backend clients
@@ -28,60 +32,89 @@ if config.CACHE_BACKEND == "redis":
     import redis  # type: ignore
 
     _client = redis.Redis.from_url(config.CACHE_REDIS_URL)
-    _key = "fundamentals_cache"
+    _key = "fundamentals_cache"  # Redis hash name
 elif config.CACHE_BACKEND == "s3":
     import boto3  # type: ignore
 
     _client = boto3.client("s3")
-    _key = (
-        os.path.join(config.CACHE_S3_PREFIX, "fundamentals_cache.json")
+    _prefix = (
+        os.path.join(config.CACHE_S3_PREFIX, "fundamentals_cache")
         if config.CACHE_S3_PREFIX
-        else "fundamentals_cache.json"
+        else "fundamentals_cache"
     )
 else:  # local file backend
     _client = None
-    _key = CACHE_FILE
+    _prefix = config.CACHE_DIR
 
 
-def _load_cache() -> Dict:
-    """Load the full cache from the configured backend."""
+def _redis_key(ticker: str) -> str:
+    return ticker
+
+
+def _s3_key(ticker: str) -> str:
+    return f"{_prefix}/{ticker}.json" if _prefix else f"{ticker}.json"
+
+
+def _local_path(ticker: str) -> str:
+    return os.path.join(_prefix, f"{ticker}.json")
+
+
+def _load_entry(ticker: str) -> Optional[Dict]:
+    """Load ``ticker`` from the backing store into memory."""
+
+    if ticker in _CACHE:
+        return _CACHE[ticker]
 
     if config.CACHE_BACKEND == "redis":
-        data = _client.get(_key)
-        return json.loads(data) if data else {}
-    if config.CACHE_BACKEND == "s3":
+        data = _client.hget(_key, _redis_key(ticker))
+        if data:
+            _CACHE[ticker] = json.loads(data)
+            return _CACHE[ticker]
+    elif config.CACHE_BACKEND == "s3":
         try:
-            obj = _client.get_object(Bucket=config.CACHE_S3_BUCKET, Key=_key)
-            return json.loads(obj["Body"].read().decode("utf-8"))
+            obj = _client.get_object(
+                Bucket=config.CACHE_S3_BUCKET, Key=_s3_key(ticker)
+            )
+            _CACHE[ticker] = json.loads(obj["Body"].read().decode("utf-8"))
+            return _CACHE[ticker]
         except _client.exceptions.NoSuchKey:
-            return {}
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
-            return json.load(f)
-    return {}
+            return None
+    else:  # local
+        path = _local_path(ticker)
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                _CACHE[ticker] = json.load(f)
+                return _CACHE[ticker]
+    return None
 
 
-def _save_cache(cache: Dict) -> None:
-    """Persist the full cache to the configured backend."""
+def _persist_entry(ticker: str) -> None:
+    """Persist a single ``ticker`` entry from memory to the backing store."""
+
+    entry = _CACHE.get(ticker)
+    if entry is None:
+        return
 
     if config.CACHE_BACKEND == "redis":
-        _client.set(_key, json.dumps(cache))
+        _client.hset(_key, _redis_key(ticker), json.dumps(entry))
     elif config.CACHE_BACKEND == "s3":
         _client.put_object(
             Bucket=config.CACHE_S3_BUCKET,
-            Key=_key,
-            Body=json.dumps(cache).encode("utf-8"),
+            Key=_s3_key(ticker),
+            Body=json.dumps(entry).encode("utf-8"),
         )
-    else:
-        with open(CACHE_FILE, "w") as f:
-            json.dump(cache, f, indent=4)
+    else:  # local
+        path = _local_path(ticker)
+        with open(path, "w") as f:
+            json.dump(entry, f, indent=4)
 
 
-def load_cached_fundamentals(ticker: str, expiry_minutes: int = config.CACHE_EXPIRY_MINUTES):
+def load_cached_fundamentals(
+    ticker: str, expiry_minutes: int = config.CACHE_EXPIRY_MINUTES
+):
     """Return cached fundamentals for ``ticker`` if present and fresh."""
 
-    cache = _load_cache()
-    cached_entry = cache.get(ticker)
+    cached_entry = _load_entry(ticker)
     if cached_entry:
         timestamp = datetime.fromisoformat(cached_entry["timestamp"])
         if datetime.utcnow() - timestamp < timedelta(minutes=expiry_minutes):
@@ -90,30 +123,54 @@ def load_cached_fundamentals(ticker: str, expiry_minutes: int = config.CACHE_EXP
 
 
 def save_fundamentals_cache(ticker: str, data) -> None:
-    """Store ``data`` for ``ticker`` in the cache."""
+    """Store ``data`` for ``ticker`` in the cache and persist it."""
 
-    cache = _load_cache()
-    cache[ticker] = {"data": data, "timestamp": datetime.utcnow().isoformat()}
-    _save_cache(cache)
+    _CACHE[ticker] = {"data": data, "timestamp": datetime.utcnow().isoformat()}
+    _persist_entry(ticker)
 
 
 def clear_cached_fundamentals(ticker: str) -> None:
-    """Remove ``ticker`` from the cache if present."""
+    """Remove ``ticker`` from the cache and backing store if present."""
 
-    cache = _load_cache()
-    if ticker in cache:
-        del cache[ticker]
-        _save_cache(cache)
+    _CACHE.pop(ticker, None)
+    if config.CACHE_BACKEND == "redis":
+        _client.hdel(_key, _redis_key(ticker))
+    elif config.CACHE_BACKEND == "s3":
+        try:
+            _client.delete_object(Bucket=config.CACHE_S3_BUCKET, Key=_s3_key(ticker))
+        except _client.exceptions.NoSuchKey:
+            pass
+    else:  # local
+        path = _local_path(ticker)
+        if os.path.exists(path):
+            os.remove(path)
 
 
 def clear_all_cache() -> None:
     """Clear the entire fundamentals cache."""
 
+    _CACHE.clear()
     if config.CACHE_BACKEND == "redis":
         _client.delete(_key)
     elif config.CACHE_BACKEND == "s3":
-        _client.delete_object(Bucket=config.CACHE_S3_BUCKET, Key=_key)
-    else:
-        if os.path.exists(CACHE_FILE):
-            os.remove(CACHE_FILE)
-
+        continuation_token = None
+        kwargs = {
+            "Bucket": config.CACHE_S3_BUCKET,
+            "Prefix": _prefix,
+        }
+        while True:
+            if continuation_token:
+                kwargs["ContinuationToken"] = continuation_token
+            resp = _client.list_objects_v2(**kwargs)
+            for obj in resp.get("Contents", []):
+                _client.delete_object(Bucket=config.CACHE_S3_BUCKET, Key=obj["Key"])
+            if not resp.get("IsTruncated"):
+                break
+            continuation_token = resp.get("NextContinuationToken")
+    else:  # local
+        for filename in os.listdir(_prefix):
+            if filename.endswith(".json"):
+                try:
+                    os.remove(os.path.join(_prefix, filename))
+                except FileNotFoundError:
+                    pass

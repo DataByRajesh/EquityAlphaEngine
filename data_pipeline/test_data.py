@@ -7,9 +7,9 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 
-import market_data
-from db_utils import DBHelper
-from compute_factors import compute_factors
+from data_pipeline import market_data
+from data_pipeline.db_utils import DBHelper
+from data_pipeline.compute_factors import compute_factors
 
 class TestMarketData(unittest.TestCase):
     @classmethod
@@ -33,9 +33,9 @@ class TestMarketData(unittest.TestCase):
         loaded = market_data.load_cached_fundamentals(ticker)
         self.assertEqual(loaded, test_data)
 
-    @patch('yfinance.Ticker')
-    def test_fetch_fundamental_data(self, mock_ticker):
-        # Setup mock object to simulate yfinance.Ticker().info
+    @patch('yfinance.Tickers')
+    def test_fetch_fundamental_data(self, mock_tickers):
+        # Setup mock object to simulate yfinance.Tickers().tickers[ticker].info
         ticker_name = "MOCK.L"
         mock_info = {
             'returnOnEquity': 0.12, 'grossMargins': 0.3, 'operatingMargins': 0.25,
@@ -44,12 +44,14 @@ class TestMarketData(unittest.TestCase):
             'currentRatio': 1.2, 'quickRatio': 1.0, 'dividendYield': 0.04,
             'marketCap': 1e9, 'beta': 1.1, 'averageVolume': 1000000
         }
-        mock_ticker.return_value.info = mock_info
+        mock_ticker_obj = unittest.mock.Mock()
+        mock_ticker_obj.info = mock_info
+        mock_tickers.return_value.tickers = {ticker_name: mock_ticker_obj}
 
-        result = market_data.fetch_fundamental_data(ticker_name, use_cache=False)
-        self.assertEqual(result['Ticker'], ticker_name)
-        self.assertAlmostEqual(result['returnOnEquity'], 0.12)
-        self.assertIn('marketCap', result)
+        result_list = market_data.fetch_fundamental_data([ticker_name], use_cache=False)
+        self.assertEqual(result_list[0]['Ticker'], ticker_name)
+        self.assertAlmostEqual(result_list[0]['returnOnEquity'], 0.12)
+        self.assertIn('marketCap', result_list[0])
 
     @patch('yfinance.download')
     def test_fetch_historical_data(self, mock_download):
