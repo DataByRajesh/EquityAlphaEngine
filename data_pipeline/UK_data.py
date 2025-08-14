@@ -97,8 +97,21 @@ def fetch_historical_data(
         return pd.DataFrame()
     try:
         data = yf.download(tickers, start=start_date, end=end_date, progress=False)
-        data = data.stack(level=1).reset_index()
-        data.rename(columns={'level_1': 'Ticker'}, inplace=True)
+
+        # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
+        # If only a single ticker is returned, the columns are a simple
+        # ``Index`` which cannot be stacked. Detect this scenario and insert the
+        # ticker symbol manually without calling ``stack``.
+        if isinstance(data.columns, pd.MultiIndex):
+            data = data.stack(level=1).reset_index()
+            data.rename(columns={'level_1': 'Ticker'}, inplace=True)
+        else:
+            data = data.reset_index()
+            # In single-ticker responses the symbol isn't part of the columns,
+            # so assume the first requested ticker corresponds to the data
+            # returned.
+            data['Ticker'] = tickers[0]
+
         if 'Volume' in data.columns:
             data['Volume'] = data['Volume'].fillna(0).astype(int)
         logger.info("Historical data fetched successfully.")
