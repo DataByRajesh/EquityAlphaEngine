@@ -88,12 +88,11 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
                 )
             )
 
-        query = (
+        query = text(
             "SELECT Date, Ticker, CompanyName, factor_composite, "
             "return_12m, earnings_yield, norm_quality_score, marketCap "
             "FROM financial_tbl "
-            "WHERE Date BETWEEN %(start)s AND %(end)s"
-
+            "WHERE Date BETWEEN :start AND :end"
         )
         df = pd.read_sql(query, engine, params={"start": start_date, "end": end_date})
     except SQLAlchemyError as exc:
