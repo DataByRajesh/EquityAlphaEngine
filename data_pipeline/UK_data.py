@@ -99,8 +99,12 @@ def fetch_historical_data(
         data = yf.download(tickers, start=start_date, end=end_date, progress=False)
         data = data.stack(level=1).reset_index()
         data.rename(columns={'level_1': 'Ticker'}, inplace=True)
-        if 'Volume' in data.columns:
-            data['Volume'] = data['Volume'].fillna(0).astype(int)
+        required_cols = {"Close", "Volume", "Ticker", "Date"}
+        if not required_cols.issubset(data.columns):
+            missing = required_cols - set(data.columns)
+            logger.error(f"Missing columns in price data: {missing}")
+            return pd.DataFrame()
+        data['Volume'] = data['Volume'].fillna(0).astype(int)
         logger.info("Historical data fetched successfully.")
         return data
     except Exception as e:

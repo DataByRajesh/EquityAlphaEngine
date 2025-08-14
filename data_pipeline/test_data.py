@@ -56,19 +56,37 @@ class TestMarketData(unittest.TestCase):
     @patch('yfinance.download')
     def test_fetch_historical_data(self, mock_download):
         # Return fake price data
+        idx = pd.to_datetime(['2022-01-01', '2022-01-02'])
+        idx.name = 'Date'
         mock_df = pd.DataFrame({
             ('Open', 'MOCK.L'): [100, 102],
             ('High', 'MOCK.L'): [110, 112],
             ('Low', 'MOCK.L'): [99, 101],
             ('Close', 'MOCK.L'): [109, 111],
             ('Volume', 'MOCK.L'): [1000, 1200],
-        }, index=pd.to_datetime(['2022-01-01', '2022-01-02']))
+        }, index=idx)
         mock_download.return_value = mock_df
 
         df = market_data.fetch_historical_data(['MOCK.L'], '2022-01-01', '2022-01-02')
         self.assertIn('Ticker', df.columns)
         self.assertIn('Close', df.columns)
         self.assertEqual(df['Ticker'].iloc[0], 'MOCK.L')
+
+    @patch('yfinance.download')
+    def test_fetch_historical_data_missing_columns(self, mock_download):
+        idx = pd.to_datetime(['2022-01-01'])
+        idx.name = 'Date'
+        mock_df = pd.DataFrame({
+            ('Open', 'MOCK.L'): [100],
+            ('High', 'MOCK.L'): [110],
+            ('Low', 'MOCK.L'): [99],
+            ('Volume', 'MOCK.L'): [1000],
+        }, index=idx)
+        mock_download.return_value = mock_df
+
+        with self.assertLogs(level='ERROR'):
+            df = market_data.fetch_historical_data(['MOCK.L'], '2022-01-01', '2022-01-02')
+            self.assertTrue(df.empty)
 
     def test_combine_price_and_fundamentals(self):
         # Fake price and fundamentals
