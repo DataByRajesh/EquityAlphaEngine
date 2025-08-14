@@ -10,19 +10,25 @@
 > This is a **pre-release** version. The project is under active development.
 > Phase 2 (Macro Data Integration) is planned in upcoming releases.
 
-### Database configuration
+### Secrets configuration
 
-The data pipeline now relies on SQLAlchemy for database access.  Set the
-`DATABASE_URL` environment variable to point to your database before running the
-pipeline.  Any SQLAlchemy-compatible connection string is supported, for
-example:
+Streamlit's secrets mechanism is used for values such as database connection
+strings and API keys. Start by copying the example secrets file:
 
 ```bash
-export DATABASE_URL="sqlite:///path/to/stocks_data.db"
+cp .streamlit/secrets.example.toml .streamlit/secrets.toml
 ```
 
-If `DATABASE_URL` is not provided a SQLite database named `stocks_data.db` will
-be created inside the pipeline's data directory.
+Edit `.streamlit/secrets.toml` and fill in your own values. At a minimum set
+`DATABASE_URL` (e.g. `postgresql://user:password@host:5432/database`) and any
+required API keys like `QUANDL_API_KEY`.
+
+When deploying to Streamlit Cloud, open the app's **⚙️ Settings → Secrets** and
+paste the contents of your local `secrets.toml`.
+
+The data pipeline reads the connection string using
+`st.secrets["DATABASE_URL"]`. If it is not provided a SQLite database named
+`stocks_data.db` will be created inside the pipeline's data directory.
 
 ### Running the Streamlit Screener
 

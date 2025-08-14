@@ -4,6 +4,7 @@
 # Importing necessary libraries
 import os
 import tempfile
+import streamlit as st
 from sqlalchemy import create_engine
 
 # ---------------------------------------------------------------------------
@@ -41,7 +42,10 @@ DB_PATH = os.path.join(DATA_DIR, "stocks_data.db")  # Default SQLite database lo
 # Database configuration
 # ``DATABASE_URL`` can point to any database supported by SQLAlchemy.  When not
 # provided we fall back to a local SQLite file inside ``DATA_DIR``.
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_PATH}")
+try:
+    DATABASE_URL = st.secrets["DATABASE_URL"]
+except Exception:
+    DATABASE_URL = f"sqlite:///{DB_PATH}"
 ENGINE = create_engine(DATABASE_URL)
 
 # Configuration settings
