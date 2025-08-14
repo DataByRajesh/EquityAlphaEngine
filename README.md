@@ -78,3 +78,32 @@ pip install boto3   # required for CACHE_BACKEND=s3
 These dependencies are not installed by default, so ensure they are available
 before selecting the related backend.
 
+### AWS Configuration
+
+To enable Amazon S3 as a cache backend, define the following environment variables:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION`
+- `CACHE_S3_BUCKET`
+- `CACHE_S3_PREFIX`
+
+#### GitHub Secrets
+
+1. In GitHub, open **Settings → Secrets and variables → Actions**.
+2. Add each variable above as a new repository secret using the same name.
+
+#### Local development
+
+Create a `.env` file in the project root (already ignored by Git) and populate it:
+
+```bash
+AWS_ACCESS_KEY_ID=YOUR_KEY
+AWS_SECRET_ACCESS_KEY=YOUR_SECRET
+AWS_DEFAULT_REGION=us-east-1
+CACHE_S3_BUCKET=your-bucket
+CACHE_S3_PREFIX=your/prefix
+```
+
+Load the variables with a tool like [`python-dotenv`](https://github.com/theskumar/python-dotenv) or by running `export $(grep -v '^#' .env | xargs)`.
+
