@@ -12,6 +12,28 @@
 
 ---
 
+## Required Environment Variables
+
+Create a `.env` file with entries such as:
+
+```env
+QUANDL_API_KEY=your_quandl_api_key
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_TOKEN_FILE=token.json
+DATABASE_URL=postgresql://user:password@host:5432/database
+```
+
+- `QUANDL_API_KEY` – required for macro indicators and UK market data; missing
+  it blocks macro/UK data retrieval.
+- `GMAIL_CREDENTIALS_FILE` – path to Gmail OAuth credentials.
+- `GMAIL_TOKEN_FILE` – location to store the Gmail OAuth token.
+- `DATABASE_URL` – connection string to the database.
+
+Additional optional variables include `CACHE_BACKEND`, `CACHE_REDIS_URL`,
+`CACHE_S3_BUCKET`, `CACHE_S3_PREFIX`, and `MAX_THREADS`.
+
+---
+
 ## ✅ Local Deployment Checklist
 
 ### 1️⃣ Clone the Project Locally
@@ -36,6 +58,35 @@ pip install -r requirements.txt
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
 - Ensure your hosted database is reachable by the `DATABASE_URL`
+
+---
+
+## 🔑 Required API Credentials
+
+Set these environment variables or Streamlit secrets so the pipeline can
+access external services:
+
+- `QUANDL_API_KEY` – used to download macroeconomic data. **If this key is
+  missing, macro data cannot be fetched.**
+- `GMAIL_CREDENTIALS_FILE` – path to the Gmail API OAuth credentials JSON.
+- `GMAIL_TOKEN_FILE` – path to the Gmail OAuth token file generated after
+  authorization.
+
+Example `.env` file:
+
+```bash
+QUANDL_API_KEY=your_quandl_key
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_TOKEN_FILE=token.json
+```
+
+Example `.streamlit/secrets.toml`:
+
+```toml
+QUANDL_API_KEY = "your_quandl_key"
+GMAIL_CREDENTIALS_FILE = "credentials.json"
+GMAIL_TOKEN_FILE = "token.json"
+```
 
 ---
 
@@ -69,7 +120,8 @@ point to `streamlit_app.py` when deploying there.
 - **Cache backend** configurable via environment variables:
   - `CACHE_BACKEND` – `local` (default), `redis`, or `s3`
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
-  - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix)
+  - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix).
+    Requires the AWS credentials detailed in [AWS Configuration](#aws-configuration)
   - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
 - Optional packages for remote backends:
 
@@ -81,9 +133,56 @@ point to `streamlit_app.py` when deploying there.
   1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
   2. If not set, it tries `st.secrets["DATABASE_URL"]` (common on Streamlit Cloud).
   3. If still missing, it falls back to a **local SQLite database** (`data/app.db`) for development/testing.
-- **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
-- Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
-  `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
+  - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
+  - Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
+    `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
+
+## AWS Configuration
+
+Set these variables when connecting to AWS services such as RDS or the S3 cache backend:
+
+- `AWS_ACCESS_KEY_ID` – access key for an IAM user with S3 permissions.
+- `AWS_SECRET_ACCESS_KEY` – secret key associated with the IAM user.
+- `AWS_DEFAULT_REGION` – AWS region where your resources reside.
+- `CACHE_S3_BUCKET` – bucket name used when `CACHE_BACKEND=s3`.
+- `CACHE_S3_PREFIX` – optional key prefix within the bucket.
+
+To connect to a PostgreSQL database on AWS RDS, export `DATABASE_URL` as follows:
+
+```bash
+DATABASE_URL=postgresql://user:pass@mydb.xxxxx.eu-west-1.rds.amazonaws.com:5432/dbname
+```
+
+These variables are only necessary when using AWS resources, particularly the S3 cache backend discussed in [Notes on Cache & Data Persistence](#-notes-on-cache--data-persistence).
+
+### AWS Configuration
+
+To use Amazon S3 for caching, set these environment variables:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION`
+- `CACHE_S3_BUCKET`
+- `CACHE_S3_PREFIX`
+
+#### GitHub Secrets
+
+1. Go to **Settings → Secrets and variables → Actions** in your GitHub repository.
+2. Add each of the variables above as new repository secrets using the same names.
+
+#### Local development
+
+Create a `.env` file alongside this README and include:
+
+```bash
+AWS_ACCESS_KEY_ID=YOUR_KEY
+AWS_SECRET_ACCESS_KEY=YOUR_SECRET
+AWS_DEFAULT_REGION=us-east-1
+CACHE_S3_BUCKET=your-bucket
+CACHE_S3_PREFIX=your/prefix
+```
+
+Load these values into your shell with `export $(grep -v '^#' .env | xargs)` or use a helper such as `python-dotenv`.
 
 ---
 
