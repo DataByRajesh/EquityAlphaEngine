@@ -1,5 +1,5 @@
 import unittest
-import market_data
+from data_pipeline import market_data
 import numpy as np
 import pandas as pd
 
