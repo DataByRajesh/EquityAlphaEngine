@@ -5,7 +5,7 @@
 import asyncio  # For asynchronous operations
 import logging
 import os  # For file and directory operations
-from typing import Optional  # For type hinting
+from typing import Optional, Union  # For type hinting
 
 
 # Third-party imports
@@ -94,9 +94,9 @@ def fetch_historical_data(
         # ticker symbol manually without calling ``stack``.
         if isinstance(data.columns, pd.MultiIndex):
             data = data.stack(level=1).reset_index()
-            data.rename(columns={'level_1': 'Ticker'}, inplace=True)
+            data.rename(columns={'level_0': 'Date', 'level_1': 'Ticker'}, inplace=True)
         else:
-            data = data.reset_index()
+            data = data.reset_index().rename(columns={'index': 'Date'})
             # In single-ticker responses the symbol isn't part of the columns,
             # so assume the first requested ticker corresponds to the data
             # returned.
@@ -104,6 +104,15 @@ def fetch_historical_data(
 
         if 'Volume' in data.columns:
             data['Volume'] = data['Volume'].fillna(0).astype(int)
+        required_cols = {
+            'Date', 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Ticker'
+        }
+        missing_cols = required_cols - set(data.columns)
+        if missing_cols:
+            logger.error(
+                f"Historical data missing required columns: {missing_cols}"
+            )
+            return pd.DataFrame()
         logger.info("Historical data fetched successfully.")
         return data
     except Exception as e:
