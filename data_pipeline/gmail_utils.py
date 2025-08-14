@@ -7,7 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # If modifying these SCOPES, delete token.json.
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
@@ -43,10 +43,10 @@ def create_message(sender, to, subject, message_text):
 def send_message(service, user_id, message):
     try:
         message = service.users().messages().send(userId=user_id, body=message).execute()
-        logging.info(f"Message Id: {message['id']}")
+        logger.info(f"Message Id: {message['id']}")
         return message
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
         return None
 
 '''if __name__ == '__main__':
