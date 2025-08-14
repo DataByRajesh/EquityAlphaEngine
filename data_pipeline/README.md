@@ -47,10 +47,14 @@ python UK_data.py --start_date 2020-01-01 --end_date 2025-07-17
 ---
 
 ## ✅ Running the Streamlit Screener Locally
-From inside `data_pipeline/` folder:
+From the project root:
 ```
-streamlit run streamlit_screener.py
+streamlit run streamlit_app.py
 ```
+
+This wrapper imports `data_pipeline.streamlit_screener` so the app can be
+deployed easily on services like Streamlit Community Cloud. Set the app's entry
+point to `streamlit_app.py` when deploying there.
 
 - 🎛️ Use sidebar filters to refine your stock list
 - 📈 View multi-factor rankings and charts

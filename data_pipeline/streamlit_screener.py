@@ -3,7 +3,10 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 
-import config
+try:
+    from . import config
+except ImportError:  # fallback when run as a script
+    import config
 
 st.set_page_config(page_title="InvestWiseUK Multi-Factor Screener", layout="wide")
 
