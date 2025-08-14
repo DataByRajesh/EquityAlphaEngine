@@ -26,9 +26,9 @@ def load_data():
             df[col] = df[col].replace([np.inf, -np.inf], np.nan).fillna(0)
     return df
 
-print("Loading data...")
-# Load the data
-df = load_data()
+# Load the data with a spinner for user feedback
+with st.spinner("Loading data..."):
+    df = load_data()
 
 
 # --- Sidebar filters ---

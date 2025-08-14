@@ -141,7 +141,7 @@ def fetch_fundamental_data(
                 'beta': info.get('beta'),
                 'averageVolume': info.get('averageVolume')
             }
-            print("Company Name:", info.get('longName'))
+            logging.info(f"Company Name: {info.get('longName')}")
             if use_cache:
                 save_fundamentals_cache(ticker_symbol, key_ratios)
             logging.info(f"Fetched fundamentals for {ticker_symbol}")
