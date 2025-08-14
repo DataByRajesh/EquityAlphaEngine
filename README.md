@@ -31,33 +31,26 @@ The data pipeline first checks the `DATABASE_URL` environment variable and then
 `st.secrets["DATABASE_URL"]`. If neither is provided a SQLite database named
 `app.db` will be created inside the pipeline's data directory.
 
-### Required API Credentials
+### Required Environment Variables
 
-Set the following environment variables or Streamlit secrets to enable
-external data and email services:
+Create a `.env` file or export the following variables before running the
+pipeline:
 
-- `QUANDL_API_KEY` – used to download macroeconomic data. **Without this key,
-  macro data retrieval is skipped.**
-- `GMAIL_CREDENTIALS_FILE` – path to the Gmail API OAuth credentials JSON
-  file.
-- `GMAIL_TOKEN_FILE` – path to the Gmail OAuth token file generated after
-  authorization.
-
-Example `.env` file:
-
-```bash
-QUANDL_API_KEY=your_quandl_key
+```env
+QUANDL_API_KEY=your_quandl_api_key
 GMAIL_CREDENTIALS_FILE=credentials.json
 GMAIL_TOKEN_FILE=token.json
+DATABASE_URL=postgresql://user:password@host:5432/database
 ```
 
-Example `.streamlit/secrets.toml`:
+- `QUANDL_API_KEY` – required for retrieving macro indicators and UK market
+  data. If this variable is missing, macro and UK data retrieval will fail.
+- `GMAIL_CREDENTIALS_FILE` – path to your Gmail OAuth credentials file.
+- `GMAIL_TOKEN_FILE` – location to store the Gmail OAuth token.
+- `DATABASE_URL` – connection string for the database.
 
-```toml
-QUANDL_API_KEY = "your_quandl_key"
-GMAIL_CREDENTIALS_FILE = "credentials.json"
-GMAIL_TOKEN_FILE = "token.json"
-```
+Additional optional variables include `MAX_THREADS`, `CACHE_BACKEND`,
+`CACHE_REDIS_URL`, `CACHE_S3_BUCKET`, and `CACHE_S3_PREFIX`.
 
 ### Running the Streamlit Screener
 
@@ -105,4 +98,33 @@ pip install boto3   # required for CACHE_BACKEND=s3
 
 These dependencies are not installed by default, so ensure they are available
 before selecting the related backend.
+
+### AWS Configuration
+
+To enable Amazon S3 as a cache backend, define the following environment variables:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION`
+- `CACHE_S3_BUCKET`
+- `CACHE_S3_PREFIX`
+
+#### GitHub Secrets
+
+1. In GitHub, open **Settings → Secrets and variables → Actions**.
+2. Add each variable above as a new repository secret using the same name.
+
+#### Local development
+
+Create a `.env` file in the project root (already ignored by Git) and populate it:
+
+```bash
+AWS_ACCESS_KEY_ID=YOUR_KEY
+AWS_SECRET_ACCESS_KEY=YOUR_SECRET
+AWS_DEFAULT_REGION=us-east-1
+CACHE_S3_BUCKET=your-bucket
+CACHE_S3_PREFIX=your/prefix
+```
+
+Load the variables with a tool like [`python-dotenv`](https://github.com/theskumar/python-dotenv) or by running `export $(grep -v '^#' .env | xargs)`.
 
