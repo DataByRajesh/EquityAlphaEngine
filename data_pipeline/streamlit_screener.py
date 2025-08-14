@@ -32,8 +32,8 @@ today = datetime.today()
 end_date = today.strftime("%Y-%m-%d")
 start_date = (today - timedelta(days=years * 365)).strftime("%Y-%m-%d")
 
-
-@st.cache_data(show_spinner=False)
+# Cache data for one hour (TTL 3600s) to balance database load with freshness
+@st.cache_data(show_spinner=False, ttl=3600)
 def load_data(start_date: str, end_date: str) -> pd.DataFrame:
     """Load data from database, caching the result."""
 
