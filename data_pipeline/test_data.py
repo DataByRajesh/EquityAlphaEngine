@@ -102,6 +102,7 @@ class TestMarketData(unittest.TestCase):
             ('High', 'MOCK.L'): [110, 112],
             ('Low', 'MOCK.L'): [99, 101],
             ('Close', 'MOCK.L'): [109, 111],
+            ('Adj Close', 'MOCK.L'): [108, 110],
             ('Volume', 'MOCK.L'): [1000, 1200],
         }, index=pd.to_datetime(['2022-01-01', '2022-01-02']))
         mock_download.return_value = mock_df
@@ -119,6 +120,7 @@ class TestMarketData(unittest.TestCase):
             'High': [110, 112],
             'Low': [99, 101],
             'Close': [109, 111],
+            'Adj Close': [108, 110],
             'Volume': [1000, 1200],
         }, index=pd.to_datetime(['2022-01-01', '2022-01-02']))
         mock_download.return_value = mock_df
@@ -126,6 +128,22 @@ class TestMarketData(unittest.TestCase):
         df = market_data.fetch_historical_data(['MOCK.L'], '2022-01-01', '2022-01-02')
         self.assertEqual(df['Ticker'].unique().tolist(), ['MOCK.L'])
         self.assertIn('Close', df.columns)
+
+    @patch('yfinance.download')
+    def test_fetch_historical_data_missing_required_columns(self, mock_download):
+        """Return empty DataFrame when required columns are missing."""
+        mock_df = pd.DataFrame({
+            ('Open', 'MOCK.L'): [100],
+            ('High', 'MOCK.L'): [110],
+            ('Low', 'MOCK.L'): [99],
+            ('Adj Close', 'MOCK.L'): [108],
+            # 'Close' column omitted intentionally
+            ('Volume', 'MOCK.L'): [1000],
+        }, index=pd.to_datetime(['2022-01-01']))
+        mock_download.return_value = mock_df
+
+        df = market_data.fetch_historical_data(['MOCK.L'], '2022-01-01', '2022-01-02')
+        self.assertTrue(df.empty)
 
     def test_combine_price_and_fundamentals(self):
         # Fake price and fundamentals
