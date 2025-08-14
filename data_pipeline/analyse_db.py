@@ -6,40 +6,38 @@ from sqlalchemy import create_engine
 import config
 
 
+logger = logging.getLogger(__name__)
+
 DB_PATH = config.DATABASE_URL
 
 logger = logging.getLogger(__name__)
 
 def main() -> None:
-    """Analyse the stock database and print basic statistics."""
+    """Load stock data from the DB and log summary information."""
     engine = create_engine(DB_PATH)
     try:
-        # Load a sample of the data
         df = pd.read_sql("SELECT * FROM stock_data", engine)
 
-        # General stats
-        buf = io.StringIO()
-        df.info(buf=buf)
-        logger.info(buf.getvalue())
-        logger.info("describe %s", df.describe())
+        buffer = StringIO()
+        df.info(buf=buffer)
+        logger.info(buffer.getvalue())
 
-        # Check for missing data
-        logger.info(" Missing data count %s", df.isnull().sum())
-
-        # Check for duplicates
+        logger.info("describe\n%s", df.describe())
+        logger.info("Missing data count\n%s", df.isnull().sum())
         logger.info(
-            "duplicates data count %s",
+            "duplicates data count %d",
             df.duplicated(subset=["Date", "Ticker"]).sum(),
         )
+        logger.info("data coverage per ticker\n%s", df["Ticker"].value_counts())
+        logger.info(
+            "Selected columns description\n%s",
+            df[["Close", "Volume", "marketCap"]].describe(),
+        )
 
-        # Check data coverage per ticker
-        logger.info("data coverage per ticker %s", df["Ticker"].value_counts())
-
-        # Spot-check for outliers
-        logger.info("\n%s\n", df[["Close", "Volume", "marketCap"]].describe())
     finally:
         engine.dispose()
 
 
 if __name__ == "__main__":
     main()
+
