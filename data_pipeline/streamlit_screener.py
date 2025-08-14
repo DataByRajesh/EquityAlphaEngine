@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import streamlit as st
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
 try:
@@ -67,7 +67,26 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
             )
             return pd.DataFrame()
 
-        df = pd.read_sql("SELECT * FROM financial_tbl", engine)
+        # Ensure helpful indexes exist for faster queries
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    'CREATE INDEX IF NOT EXISTS idx_financial_tbl_date ON financial_tbl("Date")'
+                )
+            )
+            conn.execute(
+                text(
+                    'CREATE INDEX IF NOT EXISTS idx_financial_tbl_ticker ON financial_tbl("Ticker")'
+                )
+            )
+
+        query = (
+            "SELECT Date, Ticker, CompanyName, factor_composite, "
+            "return_12m, earnings_yield, norm_quality_score, marketCap "
+            "FROM financial_tbl "
+            "WHERE Date BETWEEN %(start)s AND %(end)s"
+        )
+        df = pd.read_sql(query, engine, params={"start": start_date, "end": end_date})
     except SQLAlchemyError as exc:
         logging.error("Error loading financial data: %s", exc)
         st.error(
