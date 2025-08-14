@@ -4,14 +4,14 @@ import pandas as pd
 def financial_round(value, places):
     """
     Rounds a value to the specified number of decimal places using decimal.Decimal for accuracy.
-    If value cannot be converted, returns pd.NA.
+    If value cannot be converted, returns NaN.
     """
     try:
         if pd.isna(value):
-            return pd.NA
+            return float('nan')
         return float(Decimal(str(value)).quantize(Decimal(f'1.{"0"*places}'), rounding=ROUND_HALF_UP))
     except (InvalidOperation, TypeError, ValueError):
-        return pd.NA
+        return float('nan')
 
 def round_financial_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
