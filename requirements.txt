@@ -88,3 +88,7 @@ websockets==15.0.1
 wsproto==1.2.0
 yfinance==0.2.63
 zope.interface==7.2
+
+# Optional extras for cache backends
+# redis  # for CACHE_BACKEND=redis
+# boto3  # for CACHE_BACKEND=s3
