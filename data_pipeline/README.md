@@ -27,14 +27,14 @@ source env/bin/activate  # or env\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
-### 3️⃣ Configure Your `config.py`
-- ✅ Check your database path (`DB_PATH`)
+### 3️⃣ Configure Your Environment
+- ✅ Set the `DATABASE_URL` for a hosted database (e.g., Supabase/PostgreSQL)
 - ✅ Set your cache expiry settings
 - ✅ Ensure your Gmail credentials are correct (optional for alerts)
 
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
-- SQLite database should exist or be created by `UK_data.py`
+- Ensure your hosted database is reachable by the `DATABASE_URL`
 
 ---
 
@@ -60,28 +60,18 @@ streamlit run streamlit_screener.py
 
 ## ✅ Notes on Cache & Data Persistence
 - Local JSON cache used for fundamentals (`cache_utils.py`)
-- SQLite database stores computed financials (`data/stocks_data.db`)
+- Hosted database stores computed financials (configured via `DATABASE_URL`)
 - Gmail alerts use credentials from `credentials.json` (optional)
 
 ---
 
-## ☁️ Persistent Storage Recommendations
-For deployments requiring durable storage of datasets or logs, point the
-`DATA_DIR`, `CACHE_DIR`, and `LOG_DIR` environment variables to cloud object
-storage such as:
+## ☁️ Streamlit Cloud Deployment
+When deploying on Streamlit Cloud:
+- Add a `DATABASE_URL` entry to `.streamlit/secrets.toml`.
+- In the Streamlit Cloud dashboard, open **App settings → Secrets** and paste the contents of your `secrets.toml` so the app can access the hosted database.
+- Consider using an online cache or removing file-based cache for fully stateless deployments.
 
-- **Amazon S3**
-- **Supabase Storage**
-
-These services keep pipeline outputs across restarts and can be mounted or
-accessed via SDKs, allowing the application to treat them like local folders.
-
----
-
-## ✅ When Ready for Cloud Deployment
-- Switch to a hosted DB like Supabase/PostgreSQL
-- Consider using an online cache or removing file-based cache
-- Set up environment variables for sensitive credentials
+For persistent storage of other outputs or logs, point `DATA_DIR`, `CACHE_DIR`, and `LOG_DIR` to cloud object storage such as Amazon S3 or Supabase Storage.
 
 ---
 

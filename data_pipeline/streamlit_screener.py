@@ -5,6 +5,9 @@ from sqlalchemy import create_engine
 
 import config
 
+# The screener expects `DATABASE_URL` to point to a hosted PostgreSQL database
+# such as Supabase.  Streamlit Cloud users should set this in `.streamlit/secrets.toml`.
+
 st.set_page_config(page_title="InvestWiseUK Multi-Factor Screener", layout="wide")
 
 st.title("📊 InvestWiseUK Multi-Factor Stock Screener")
@@ -27,6 +30,7 @@ df = load_data()
 
 # --- Sidebar filters ---
 st.sidebar.header("Filter Options")
+st.sidebar.info("Requires `DATABASE_URL` to connect to a hosted database such as Supabase/PostgreSQL")
 min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
 top_n = st.sidebar.slider("Number of Top Stocks", min_value=5, max_value=50, value=10)
 

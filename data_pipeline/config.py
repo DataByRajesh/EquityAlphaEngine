@@ -36,12 +36,13 @@ def _ensure_dir(env_var: str, default: str) -> str:
 DATA_DIR = _ensure_dir("DATA_DIR", os.path.join("data_pipeline", "data"))
 CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join("data_pipeline", "cache"))
 LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
-DB_PATH = os.path.join(DATA_DIR, "stocks_data.db")  # Default SQLite database location
-
 # Database configuration
-# ``DATABASE_URL`` can point to any database supported by SQLAlchemy.  When not
-# provided we fall back to a local SQLite file inside ``DATA_DIR``.
-DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_PATH}")
+# ``DATABASE_URL`` must point to a database supported by SQLAlchemy.
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL environment variable must be set to a valid database connection string"
+    )
 ENGINE = create_engine(DATABASE_URL)
 
 # Configuration settings
