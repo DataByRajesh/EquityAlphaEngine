@@ -158,6 +158,16 @@ class TestDBHelper(unittest.TestCase):
         result = pd.read_sql("SELECT * FROM test_tbl", self.helper.engine)
         self.assertEqual(len(result), 2)
         self.assertIn("Close", result.columns)
+
+    def test_upsert_dataframe(self):
+        self.helper.create_table("test_tbl", self.df, primary_keys=["Ticker"])
+        self.helper.insert_dataframe("test_tbl", self.df, unique_cols=["Ticker"])
+        updated = self.df.copy()
+        updated.loc[0, "Close"] = 150
+        self.helper.insert_dataframe("test_tbl", updated, unique_cols=["Ticker"])
+        result = pd.read_sql("SELECT * FROM test_tbl", self.helper.engine)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[result["Ticker"] == "A.L"]["Close"].iloc[0], 150)
         
 if __name__ == "__main__":
     unittest.main()
