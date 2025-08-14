@@ -71,6 +71,12 @@ point to `streamlit_app.py` when deploying there.
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
   - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix)
   - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
+- Optional packages for remote backends:
+
+  ```bash
+  pip install redis   # required for CACHE_BACKEND=redis
+  pip install boto3   # required for CACHE_BACKEND=s3
+  ```
 - **Database configuration**:
   1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
   2. If not set, it tries `st.secrets["DATABASE_URL"]` (common on Streamlit Cloud).

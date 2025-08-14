@@ -29,12 +29,24 @@ _CACHE: Dict[str, Dict] = {}
 # Backend clients
 # ---------------------------------------------------------------------------
 if config.CACHE_BACKEND == "redis":
-    import redis  # type: ignore
+    try:
+        import redis  # type: ignore
+    except ImportError as exc:
+        raise ImportError(
+            "Redis backend selected but the 'redis' package is not installed. "
+            "Install it with 'pip install redis'."
+        ) from exc
 
     _client = redis.Redis.from_url(config.CACHE_REDIS_URL)
     _key = "fundamentals_cache"  # Redis hash name
 elif config.CACHE_BACKEND == "s3":
-    import boto3  # type: ignore
+    try:
+        import boto3  # type: ignore
+    except ImportError as exc:
+        raise ImportError(
+            "S3 backend selected but the 'boto3' package is not installed. "
+            "Install it with 'pip install boto3'."
+        ) from exc
 
     _client = boto3.client("s3")
     _prefix = (
