@@ -59,7 +59,11 @@ streamlit run streamlit_screener.py
 ---
 
 ## ✅ Notes on Cache & Data Persistence
-- Local JSON cache used for fundamentals (`cache_utils.py`)
+- Cache backend configurable via environment variables:
+  - `CACHE_BACKEND` – `local` (default), `redis` or `s3`
+  - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
+  - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix)
+- Local JSON cache is used when `CACHE_BACKEND` is `local` (`cache_utils.py`)
 - SQLite database stores computed financials (`data/stocks_data.db`)
 - Gmail alerts use credentials from `credentials.json` (optional)
 
