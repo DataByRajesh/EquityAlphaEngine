@@ -12,6 +12,28 @@
 
 ---
 
+## Required Environment Variables
+
+Create a `.env` file with entries such as:
+
+```env
+QUANDL_API_KEY=your_quandl_api_key
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_TOKEN_FILE=token.json
+DATABASE_URL=postgresql://user:password@host:5432/database
+```
+
+- `QUANDL_API_KEY` – required for macro indicators and UK market data; missing
+  it blocks macro/UK data retrieval.
+- `GMAIL_CREDENTIALS_FILE` – path to Gmail OAuth credentials.
+- `GMAIL_TOKEN_FILE` – location to store the Gmail OAuth token.
+- `DATABASE_URL` – connection string to the database.
+
+Additional optional variables include `CACHE_BACKEND`, `CACHE_REDIS_URL`,
+`CACHE_S3_BUCKET`, `CACHE_S3_PREFIX`, and `MAX_THREADS`.
+
+---
+
 ## ✅ Local Deployment Checklist
 
 ### 1️⃣ Clone the Project Locally
@@ -113,6 +135,35 @@ point to `streamlit_app.py` when deploying there.
 - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
 - Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
   `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
+
+### AWS Configuration
+
+To use Amazon S3 for caching, set these environment variables:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION`
+- `CACHE_S3_BUCKET`
+- `CACHE_S3_PREFIX`
+
+#### GitHub Secrets
+
+1. Go to **Settings → Secrets and variables → Actions** in your GitHub repository.
+2. Add each of the variables above as new repository secrets using the same names.
+
+#### Local development
+
+Create a `.env` file alongside this README and include:
+
+```bash
+AWS_ACCESS_KEY_ID=YOUR_KEY
+AWS_SECRET_ACCESS_KEY=YOUR_SECRET
+AWS_DEFAULT_REGION=us-east-1
+CACHE_S3_BUCKET=your-bucket
+CACHE_S3_PREFIX=your/prefix
+```
+
+Load these values into your shell with `export $(grep -v '^#' .env | xargs)` or use a helper such as `python-dotenv`.
 
 ---
 
