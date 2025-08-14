@@ -22,8 +22,14 @@ st.title("📊 InvestWiseUK Multi-Factor Stock Screener")
 
 st.sidebar.header("Filter Options")
 st.sidebar.info(
-    "Requires `DATABASE_URL` to connect to a hosted database such as Supabase/PostgreSQL"
+    "Requires `DATABASE_URL` to connect to a hosted database such as "
+    "Supabase/PostgreSQL. If omitted, falls back to a local SQLite database."
 )
+
+db_type = (
+    "local SQLite" if config.DATABASE_URL.startswith("sqlite://") else "hosted"
+)
+st.sidebar.caption(f"Using {db_type} database")
 years = st.sidebar.number_input("Years of history", min_value=1, value=10)
 min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
 top_n = st.sidebar.slider("Number of Top Stocks", min_value=5, max_value=50, value=10)
