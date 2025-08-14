@@ -21,13 +21,14 @@ cp .streamlit/secrets.example.toml .streamlit/secrets.toml
 
 Edit `.streamlit/secrets.toml` and fill in your own values. At a minimum set
 `DATABASE_URL` (e.g. `postgresql://user:password@host:5432/database`) and any
-required API keys like `QUANDL_API_KEY`.
+required API keys like `QUANDL_API_KEY`. These values can also be supplied via
+environment variables when Streamlit's secrets are not available.
 
 When deploying to Streamlit Cloud, open the app's **⚙️ Settings → Secrets** and
 paste the contents of your local `secrets.toml`.
 
-The data pipeline reads the connection string using
-`st.secrets["DATABASE_URL"]`. If it is not provided a SQLite database named
+The data pipeline first checks the `DATABASE_URL` environment variable and then
+`st.secrets["DATABASE_URL"]`. If neither is provided a SQLite database named
 `app.db` will be created inside the pipeline's data directory.
 
 ### Running the Streamlit Screener
@@ -63,4 +64,17 @@ setting the `MAX_THREADS` environment variable:
 MAX_THREADS=20 python data_pipeline/UK_data.py --years 10
 ```
 
+
+### Optional cache backends
+
+The pipeline defaults to a local filesystem cache. To use Redis or Amazon S3
+as the cache backend, install the corresponding optional packages:
+
+```bash
+pip install redis   # required for CACHE_BACKEND=redis
+pip install boto3   # required for CACHE_BACKEND=s3
+```
+
+These dependencies are not installed by default, so ensure they are available
+before selecting the related backend.
 
