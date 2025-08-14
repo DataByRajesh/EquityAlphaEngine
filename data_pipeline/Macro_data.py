@@ -1,11 +1,22 @@
+import os
+
 import quandl
 import pandas as pd
-import streamlit as st
 
 try:
-    DEFAULT_API_KEY = st.secrets["QUANDL_API_KEY"]
-except Exception:
-    DEFAULT_API_KEY = None
+    import streamlit as st
+except ImportError:  # pragma: no cover - optional dependency
+    st = None  # type: ignore
+
+DEFAULT_API_KEY = os.environ.get("QUANDL_API_KEY")
+if DEFAULT_API_KEY is None and st is not None:
+    try:
+        DEFAULT_API_KEY = st.secrets["QUANDL_API_KEY"]  # type: ignore[index]
+    except Exception:
+        pass
+
+
+logger = logging.getLogger(__name__)
 
 class FiveYearMacroDataLoader:
     def __init__(self, api_key: str | None = None,
@@ -26,7 +37,7 @@ class FiveYearMacroDataLoader:
             data.rename(columns={"Value": "GDP_Growth_YoY"}, inplace=True)
             return data
         except Exception as e:
-            print(f"Error fetching GDP Growth Data: {str(e)}")
+            logger.error("Error fetching GDP Growth Data: %s", e)
             return None
 
     def fetch_inflation_rate(self):
@@ -55,9 +66,9 @@ if __name__ == "__main__":
 
     macro_data = loader.get_combined_macro_data()
     if macro_data is not None:
-        print("✅ Combined 5-Year UK Macro Data:")
-        print(macro_data)
+        logger.info("✅ Combined 5-Year UK Macro Data:")
+        logger.info("\n%s", macro_data)
         # Optionally save to CSV
         macro_data.to_csv("UK_5Year_Macro_Data.csv", index=False)
     else:
-        print("❌ Failed to fetch macro data.")
+        logger.error("❌ Failed to fetch macro data.")

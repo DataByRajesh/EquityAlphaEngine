@@ -1,6 +1,6 @@
 import base64  # Gmail API requires base64 encoding for messages
 from email.mime.text import MIMEText
-import os.path
+import os
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -24,6 +24,10 @@ def get_gmail_service(
     token_path: Optional[str] = None,
 ):
     """Return an authenticated Gmail API service instance.
+
+    In headless environments set the ``HEADLESS`` environment variable (or
+    leave ``DISPLAY`` unset) to authenticate via the console instead of
+    opening a browser.
 
     Parameters
     ----------
@@ -61,7 +65,11 @@ def get_gmail_service(
             flow = InstalledAppFlow.from_client_secrets_file(
                 credentials_path, SCOPES
             )
-            creds = flow.run_local_server(port=0)
+            headless = os.environ.get("HEADLESS", "").lower() in {"1", "true", "yes"}
+            if headless or not os.environ.get("DISPLAY"):
+                creds = flow.run_console()
+            else:
+                creds = flow.run_local_server(port=0)
         # Save credentials for next run
         with open(token_path, 'w') as token:
             token.write(creds.to_json())

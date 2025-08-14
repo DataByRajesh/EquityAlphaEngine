@@ -7,10 +7,8 @@ import tempfile
 # Make Streamlit optional so the module works outside Streamlit
 try:
     import streamlit as st  # type: ignore
-    _HAS_STREAMLIT = True
-except Exception:
+except ImportError:  # pragma: no cover - optional dependency
     st = None  # type: ignore
-    _HAS_STREAMLIT = False
 
 from sqlalchemy import create_engine
 
@@ -55,14 +53,13 @@ LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
 DB_PATH = os.path.join(DATA_DIR, "app.db")
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL and st is not None:
+    try:
+        DATABASE_URL = st.secrets["DATABASE_URL"]  # type: ignore[index]
+    except Exception:
+        pass
 if not DATABASE_URL:
-    if _HAS_STREAMLIT:
-        try:
-            DATABASE_URL = st.secrets["DATABASE_URL"]  # type: ignore[index]
-        except Exception:
-            DATABASE_URL = f"sqlite:///{DB_PATH}"
-    else:
-        DATABASE_URL = f"sqlite:///{DB_PATH}"
+    DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 ENGINE = create_engine(DATABASE_URL)
 

@@ -1,6 +1,18 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import ta
+
+
+def _safe_zscore(x: pd.Series, fill_value: float = 0) -> pd.Series:
+    """Return z-score while safely handling zero standard deviation.
+
+    If the standard deviation of ``x`` is zero, a Series filled with
+    ``fill_value`` is returned instead to avoid division-by-zero issues.
+    """
+    std = x.std()
+    if std == 0:
+        return pd.Series(fill_value, index=x.index)
+    return (x - x.mean()) / std
 
 
 def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
@@ -25,6 +37,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         Bollinger Bands), value ratios, quality metrics, size/liquidity
         measures and a composite factor.
     """
+    # Ensure chronological order for time-series calculations
+    df = df.sort_values(["Ticker", "Date"]).copy()
+
     # --- Momentum ---
     for period, label in zip([21, 63, 126, 252], ['1m', '3m', '6m', '12m']):
         df[f'return_{label}'] = (
@@ -81,29 +96,31 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
 
     # --- Quality factors ---
     df['quality_score'] = df[['returnOnEquity', 'profitMargins']].mean(axis=1)
-    df['norm_quality_score'] = df.groupby('Date')['quality_score'].transform(lambda x: (x - x.mean()) / x.std())
+    df['norm_quality_score'] = df.groupby('Date')['quality_score'].transform(_safe_zscore)
 
     # --- Size / Liquidity ---
     df['log_marketCap'] = np.log(df['marketCap'])
-    df['avg_volume_21d'] = df.groupby('Ticker')['Volume'].transform(lambda x: x.rolling(21).mean())    
+    df['avg_volume_21d'] = df.groupby('Ticker')['Volume'].transform(lambda x: x.rolling(21).mean())
+
+    # Replace zero volumes with NaN prior to Amihud calculation
+    adj_volume = df['Volume'].replace(0, np.nan)
     # Calculate raw Amihud
-    df['amihud_raw'] = (df['Close'].pct_change().abs() / (df['Volume'] * df['Close']))
+    df['amihud_raw'] = df['Close'].pct_change().abs() / (adj_volume * df['Close'])
+    # Replace infinite values with NaN
+    df['amihud_raw'] = df['amihud_raw'].replace([np.inf, -np.inf], np.nan)
+
     # 21-day rolling mean by ticker (final Amihud)
     df['amihud_illiquidity'] = df.groupby('Ticker')['amihud_raw'].transform(lambda x: x.rolling(21).mean())
     # Optionally: drop the intermediate column
     df.drop(columns=['amihud_raw'], inplace=True)
 
-    '''df['amihud_illiquidity'] = (
-        df.groupby('Ticker').apply(
-            lambda g: (g['Close'].pct_change().abs() / (g['Volume'] * g['Close'])).rolling(21).mean()
-        ).reset_index(level=0, drop=True)
-    )'''
+    # Alternative groupby.apply implementation for Amihud illiquidity removed
 
 
     # --- Composite factor ---
     factor_cols = ['return_12m', 'earnings_yield', 'norm_quality_score']
     for col in factor_cols:
-        df[f'z_{col}'] = df.groupby('Date')[col].transform(lambda x: (x - x.mean()) / x.std())
+        df[f'z_{col}'] = df.groupby('Date')[col].transform(_safe_zscore)
 
     df['factor_composite'] = df[[f'z_{col}' for col in factor_cols if f'z_{col}' in df.columns]].mean(axis=1)
 

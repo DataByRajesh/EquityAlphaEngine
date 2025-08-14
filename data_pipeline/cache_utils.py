@@ -17,24 +17,41 @@ from __future__ import annotations
 
 import json
 import os
+import logging
 from datetime import datetime, timedelta
+from threading import Lock
 from typing import Dict, Optional
 
 from . import config
 
 # In-memory cache for this process
 _CACHE: Dict[str, Dict] = {}
+_CACHE_LOCK = Lock()
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Backend clients
 # ---------------------------------------------------------------------------
 if config.CACHE_BACKEND == "redis":
-    import redis  # type: ignore
+    try:
+        import redis  # type: ignore
+    except ImportError as exc:
+        raise ImportError(
+            "Redis backend selected but the 'redis' package is not installed. "
+            "Install it with 'pip install redis'."
+        ) from exc
 
     _client = redis.Redis.from_url(config.CACHE_REDIS_URL)
     _key = "fundamentals_cache"  # Redis hash name
 elif config.CACHE_BACKEND == "s3":
-    import boto3  # type: ignore
+    try:
+        import boto3  # type: ignore
+    except ImportError as exc:
+        raise ImportError(
+            "S3 backend selected but the 'boto3' package is not installed. "
+            "Install it with 'pip install boto3'."
+        ) from exc
 
     _client = boto3.client("s3")
     _prefix = (
@@ -62,28 +79,42 @@ def _local_path(ticker: str) -> str:
 def _load_entry(ticker: str) -> Optional[Dict]:
     """Load ``ticker`` from the backing store into memory."""
 
-    if ticker in _CACHE:
-        return _CACHE[ticker]
+    with _CACHE_LOCK:
+        if ticker in _CACHE:
+            return _CACHE[ticker]
 
     if config.CACHE_BACKEND == "redis":
-        data = _client.hget(_key, _redis_key(ticker))
+        try:
+            data = _client.hget(_key, _redis_key(ticker))
+        except Exception as e:  # pragma: no cover - network failure
+            logger.warning("Failed to load %s from Redis: %s", ticker, e)
+            return None
         if data:
-            _CACHE[ticker] = json.loads(data)
-            return _CACHE[ticker]
+            value = json.loads(data)
+            with _CACHE_LOCK:
+                _CACHE[ticker] = value
+                return _CACHE[ticker]
     elif config.CACHE_BACKEND == "s3":
         try:
             obj = _client.get_object(
                 Bucket=config.CACHE_S3_BUCKET, Key=_s3_key(ticker)
             )
-            _CACHE[ticker] = json.loads(obj["Body"].read().decode("utf-8"))
-            return _CACHE[ticker]
         except _client.exceptions.NoSuchKey:
             return None
+        except Exception as e:  # pragma: no cover - network failure
+            logger.warning("Failed to load %s from S3: %s", ticker, e)
+            return None
+        value = json.loads(obj["Body"].read().decode("utf-8"))
+        with _CACHE_LOCK:
+            _CACHE[ticker] = value
+            return _CACHE[ticker]
     else:  # local
         path = _local_path(ticker)
         if os.path.exists(path):
             with open(path, "r") as f:
-                _CACHE[ticker] = json.load(f)
+                value = json.load(f)
+            with _CACHE_LOCK:
+                _CACHE[ticker] = value
                 return _CACHE[ticker]
     return None
 
@@ -91,18 +122,25 @@ def _load_entry(ticker: str) -> Optional[Dict]:
 def _persist_entry(ticker: str) -> None:
     """Persist a single ``ticker`` entry from memory to the backing store."""
 
-    entry = _CACHE.get(ticker)
+    with _CACHE_LOCK:
+        entry = _CACHE.get(ticker)
     if entry is None:
         return
 
     if config.CACHE_BACKEND == "redis":
-        _client.hset(_key, _redis_key(ticker), json.dumps(entry))
+        try:
+            _client.hset(_key, _redis_key(ticker), json.dumps(entry))
+        except Exception as e:  # pragma: no cover - network failure
+            logger.warning("Failed to persist %s to Redis: %s", ticker, e)
     elif config.CACHE_BACKEND == "s3":
-        _client.put_object(
-            Bucket=config.CACHE_S3_BUCKET,
-            Key=_s3_key(ticker),
-            Body=json.dumps(entry).encode("utf-8"),
-        )
+        try:
+            _client.put_object(
+                Bucket=config.CACHE_S3_BUCKET,
+                Key=_s3_key(ticker),
+                Body=json.dumps(entry).encode("utf-8"),
+            )
+        except Exception as e:  # pragma: no cover - network failure
+            logger.warning("Failed to persist %s to S3: %s", ticker, e)
     else:  # local
         path = _local_path(ticker)
         with open(path, "w") as f:
@@ -125,14 +163,16 @@ def load_cached_fundamentals(
 def save_fundamentals_cache(ticker: str, data) -> None:
     """Store ``data`` for ``ticker`` in the cache and persist it."""
 
-    _CACHE[ticker] = {"data": data, "timestamp": datetime.utcnow().isoformat()}
+    with _CACHE_LOCK:
+        _CACHE[ticker] = {"data": data, "timestamp": datetime.utcnow().isoformat()}
     _persist_entry(ticker)
 
 
 def clear_cached_fundamentals(ticker: str) -> None:
     """Remove ``ticker`` from the cache and backing store if present."""
 
-    _CACHE.pop(ticker, None)
+    with _CACHE_LOCK:
+        _CACHE.pop(ticker, None)
     if config.CACHE_BACKEND == "redis":
         _client.hdel(_key, _redis_key(ticker))
     elif config.CACHE_BACKEND == "s3":
@@ -149,7 +189,8 @@ def clear_cached_fundamentals(ticker: str) -> None:
 def clear_all_cache() -> None:
     """Clear the entire fundamentals cache."""
 
-    _CACHE.clear()
+    with _CACHE_LOCK:
+        _CACHE.clear()
     if config.CACHE_BACKEND == "redis":
         _client.delete(_key)
     elif config.CACHE_BACKEND == "s3":

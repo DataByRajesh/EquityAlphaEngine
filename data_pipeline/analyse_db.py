@@ -1,8 +1,5 @@
-"""Analyse the stock database and log basic statistics."""
-
+import io
 import logging
-from io import StringIO
-
 import pandas as pd
 from sqlalchemy import create_engine
 
@@ -13,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 DB_PATH = config.DATABASE_URL
 
+logger = logging.getLogger(__name__)
 
 def main() -> None:
     """Load stock data from the DB and log summary information."""
@@ -35,6 +33,7 @@ def main() -> None:
             "Selected columns description\n%s",
             df[["Close", "Volume", "marketCap"]].describe(),
         )
+
     finally:
         engine.dispose()
 
