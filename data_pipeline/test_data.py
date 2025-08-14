@@ -70,6 +70,22 @@ class TestMarketData(unittest.TestCase):
         self.assertIn('Close', df.columns)
         self.assertEqual(df['Ticker'].iloc[0], 'MOCK.L')
 
+    @patch('yfinance.download')
+    def test_fetch_historical_data_single_ticker(self, mock_download):
+        """Ensure single-ticker responses without a MultiIndex are handled."""
+        mock_df = pd.DataFrame({
+            'Open': [100, 102],
+            'High': [110, 112],
+            'Low': [99, 101],
+            'Close': [109, 111],
+            'Volume': [1000, 1200],
+        }, index=pd.to_datetime(['2022-01-01', '2022-01-02']))
+        mock_download.return_value = mock_df
+
+        df = market_data.fetch_historical_data(['MOCK.L'], '2022-01-01', '2022-01-02')
+        self.assertEqual(df['Ticker'].unique().tolist(), ['MOCK.L'])
+        self.assertIn('Close', df.columns)
+
     def test_combine_price_and_fundamentals(self):
         # Fake price and fundamentals
         price_df = pd.DataFrame({'Date': ['2022-01-01'], 'Ticker': ['ABC.L'], 'Close': [100]})
