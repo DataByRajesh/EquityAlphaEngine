@@ -76,5 +76,27 @@ pip install boto3   # required for CACHE_BACKEND=s3
 ```
 
 These dependencies are not installed by default, so ensure they are available
-before selecting the related backend.
+before selecting the related backend. When using `CACHE_BACKEND=s3`, set the
+AWS credentials described in [AWS Configuration](#aws-configuration).
+
+### AWS Configuration
+
+Configure the following variables when connecting to AWS services such as RDS
+or the S3 cache backend:
+
+- `AWS_ACCESS_KEY_ID` – access key for an IAM user with S3 permissions.
+- `AWS_SECRET_ACCESS_KEY` – secret key associated with the IAM user.
+- `AWS_DEFAULT_REGION` – AWS region for your resources.
+- `CACHE_S3_BUCKET` – bucket name used when `CACHE_BACKEND=s3`.
+- `CACHE_S3_PREFIX` – optional key prefix within the bucket.
+
+If your database runs on AWS RDS, set `DATABASE_URL` accordingly. Example:
+
+```bash
+DATABASE_URL=postgresql://user:pass@mydb.xxxxx.us-east-1.rds.amazonaws.com:5432/dbname
+```
+
+These variables are only needed when using AWS resources—particularly the S3
+cache backend described in [Optional cache backends](#optional-cache-backends).
+For local caching and databases, they can be omitted.
 
