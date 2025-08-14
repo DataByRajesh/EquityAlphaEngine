@@ -2,7 +2,29 @@ import pandas as pd
 import numpy as np
 import ta
 
-def compute_factors(df):
+
+def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute technical, value, quality and liquidity factors for a price
+    and fundamentals :class:`~pandas.DataFrame`.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input data containing at least ``Date``, ``Ticker``, ``Close`` and
+        ``Volume`` columns, plus fundamental fields such as ``trailingPE``,
+        ``priceToBook``, ``returnOnEquity``, ``profitMargins`` and
+        ``marketCap``. Optional columns like ``dividendYield`` and
+        ``priceToSalesTrailing12Months`` are used when available.
+
+    Returns
+    -------
+    pd.DataFrame
+        The original DataFrame with additional columns for momentum,
+        volatility, moving averages, technical indicators (RSI, MACD,
+        Bollinger Bands), value ratios, quality metrics, size/liquidity
+        measures and a composite factor.
+    """
     # --- Momentum ---
     for period, label in zip([21, 63, 126, 252], ['1m', '3m', '6m', '12m']):
         df[f'return_{label}'] = (

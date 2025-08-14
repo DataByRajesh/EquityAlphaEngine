@@ -5,6 +5,13 @@ from compute_factors import compute_factors
 import market_data
 from db_utils import DBHelper
 
+
+def test_compute_factors_docstring():
+    """Ensure ``compute_factors`` exposes helpful documentation."""
+    doc = compute_factors.__doc__
+    assert doc is not None
+    assert 'Ticker' in doc and 'momentum' in doc
+
 class TestFullPipeline(unittest.TestCase):
     def setUp(self):
         # Prepare synthetic dataset
