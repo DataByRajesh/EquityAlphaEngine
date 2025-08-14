@@ -114,6 +114,7 @@ else:
     required_columns = [
         "Ticker",
         "CompanyName",
+        "Date",
         "factor_composite",
         "return_12m",
         "earnings_yield",
@@ -121,28 +122,49 @@ else:
         "marketCap",
     ]
     if not all(col in df.columns for col in required_columns):
-        st.error("Data is missing required columns. Please check your database.")
+        missing_cols = [col for col in required_columns if col not in df.columns]
+        st.warning(
+            "Data is missing required columns: "
+            + ", ".join(missing_cols)
+            + ". Please check your database."
+        )
+        st.stop()
 
     # --- Filter and process data ---
     # 1. Filter by market cap
-    filtered = df[df["marketCap"] >= min_mktcap]
+    filtered = df.copy()
+    if "marketCap" in filtered.columns:
+        filtered = filtered[filtered["marketCap"] >= min_mktcap]
+    else:
+        st.warning("Column 'marketCap' not found. Skipping market cap filter.")
 
     # 2. For each ticker, select the row with the latest date (or highest factor_composite)
     if "Date" in filtered.columns:
         # Use latest date per ticker
         filtered = filtered.sort_values("Date").groupby("Ticker", as_index=False).last()
-    else:
+    elif "factor_composite" in filtered.columns:
         # Use highest factor_composite per ticker
         filtered = (
             filtered.sort_values("factor_composite", ascending=False)
             .groupby("Ticker", as_index=False)
             .first()
         )
+    else:
+        st.warning(
+            "Neither 'Date' nor 'factor_composite' columns found. Unable to select latest records."
+        )
+        st.stop()
 
     # 3. Sort by factor_composite
-    filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(
-        drop=True
-    )
+    if "factor_composite" in filtered.columns:
+        filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(
+            drop=True
+        )
+    else:
+        st.warning(
+            "Column 'factor_composite' not found. Unable to sort by composite score."
+        )
+        st.stop()
 
     # 4. Ensure CompanyName exists — if not, fetch it separately or add placeholder
     if "CompanyName" not in filtered.columns:
