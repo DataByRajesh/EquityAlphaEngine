@@ -259,8 +259,16 @@ def main(tickers, start_date, end_date, use_cache=True):
     if financial_df is not None:
         financial_tbl = "financial_tbl"
         Dbhelper = DBHelper(config.DATABASE_URL)  # Create a new DBHelper instance
-        Dbhelper.create_table(financial_tbl, financial_df) # Create table if not exists
-        Dbhelper.insert_dataframe(financial_tbl, financial_df) # Insert computed factors into the table
+        Dbhelper.create_table(
+            financial_tbl,
+            financial_df,
+            primary_keys=["Date", "Ticker"],
+        )  # Create table if not exists
+        Dbhelper.insert_dataframe(
+            financial_tbl,
+            financial_df,
+            unique_cols=["Date", "Ticker"],
+        )  # Upsert computed factors
         Dbhelper.close()
 
         # Prepare and send email notification
