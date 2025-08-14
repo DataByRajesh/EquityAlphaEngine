@@ -24,4 +24,16 @@ export DATABASE_URL="sqlite:///path/to/stocks_data.db"
 If `DATABASE_URL` is not provided a SQLite database named `stocks_data.db` will
 be created inside the pipeline's data directory.
 
+### Running the Streamlit Screener
+
+An interactive stock screener is available via Streamlit. Run it from the
+project root with:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+On Streamlit Community Cloud, set the app's entry point to `streamlit_app.py`
+to launch the screener without extra path configuration.
+
 
