@@ -14,9 +14,14 @@ def financial_round(value, places):
         return float('nan')
 
 def round_financial_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Round financial and factor columns to fixed decimal places.
+
+    Built-in :meth:`pandas.DataFrame.round` is used wherever possible for
+    performance and simplicity. ``financial_round`` is reserved only for
+    columns that contain non-numeric data and therefore require the more
+    robust decimal based rounding.
     """
-    Applies domain-specific rounding to all important financial and factor columns.
-    """
+
     column_decimals = {
         # Raw financials
         'Open': 2, 'High': 2, 'Low': 2, 'Close': 2,
@@ -46,7 +51,22 @@ def round_financial_columns(df: pd.DataFrame) -> pd.DataFrame:
         # Add any other computed columns here
     }
     df_copy = df.copy()
+
+    numeric_cols: dict[str, int] = {}
+    object_cols: list[tuple[str, int]] = []
+
     for col, dec in column_decimals.items():
-        if col in df_copy.columns:
-            df_copy[col] = df_copy[col].apply(lambda x: financial_round(x, dec))
+        if col not in df_copy.columns:
+            continue
+        if pd.api.types.is_numeric_dtype(df_copy[col]):
+            numeric_cols[col] = dec
+        else:
+            object_cols.append((col, dec))
+
+    if numeric_cols:
+        df_copy = df_copy.round(numeric_cols)
+
+    for col, dec in object_cols:
+        df_copy[col] = df_copy[col].apply(lambda x: financial_round(x, dec))
+
     return df_copy
