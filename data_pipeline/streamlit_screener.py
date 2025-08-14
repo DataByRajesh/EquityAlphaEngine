@@ -22,14 +22,9 @@ st.title("📊 InvestWiseUK Multi-Factor Stock Screener")
 
 st.sidebar.header("Filter Options")
 st.sidebar.info(
-    "Requires `DATABASE_URL` to connect to a hosted database such as "
-    "Supabase/PostgreSQL. If omitted, falls back to a local SQLite database."
+    "Requires `DATABASE_URL` to connect to a hosted database such as Supabase/PostgreSQL"
 )
 
-db_type = (
-    "local SQLite" if config.DATABASE_URL.startswith("sqlite://") else "hosted"
-)
-st.sidebar.caption(f"Using {db_type} database")
 years = st.sidebar.number_input("Years of history", min_value=1, value=10)
 min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
 top_n = st.sidebar.slider("Number of Top Stocks", min_value=5, max_value=50, value=10)
@@ -42,6 +37,11 @@ start_date = (today - timedelta(days=years * 365)).strftime("%Y-%m-%d")
 @st.cache_data(show_spinner=False)
 def load_data(start_date: str, end_date: str) -> pd.DataFrame:
     """Fetch data and load from database, caching the result."""
+
+    try:
+        UK_data.main(config.FTSE_100_TICKERS, start_date, end_date)
+    except Exception as exc:  # pragma: no cover - best effort logging
+        logging.error("Error fetching data: %s", exc)
 
     engine = create_engine(config.DATABASE_URL)
     try:
@@ -152,9 +152,9 @@ else:
     )
 
 # 3. Sort by factor_composite
-filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(
-    drop=True
-)
+
+filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(drop=True)
+
 
 # 4. Ensure CompanyName exists — if not, fetch it separately or add placeholder
 if "CompanyName" not in filtered.columns:
@@ -185,8 +185,12 @@ st.download_button(
     data=filtered.head(top_n).to_csv(index=False),
     file_name="screener_output.csv",
     mime="text/csv",
+
 )
 
 st.info(
     "Uses InvestWiseUK analytics engine pipeline. Replace with your real factor output for production if demoing."
 )
+
+=======
+
