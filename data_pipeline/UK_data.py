@@ -2,29 +2,15 @@
 # This module is responsible for fetching and processing market data for the data pipeline.
 
 # import necessary libraries
-import logging
-
-# Module-level logger
-logger = logging.getLogger(__name__)
-
-# Importing required libraries
-
-# Standard library imports
-import argparse # For command line argument parsing
-import json # For JSON handling
-import math # For mathematical operations
-import os # For file and directory operations
-import sys # For system operations
-import sqlite3 # For SQLite database operations
 import asyncio  # For asynchronous operations
-from datetime import datetime, timedelta # For date handling
-from typing import Optional # For type hinting
-from decimal import Decimal, ROUND_HALF_UP, InvalidOperation # For precise decimal rounding
+import logging
+import os  # For file and directory operations
+from typing import Optional  # For type hinting
 
 # Third-party imports
-import numpy as np # For numerical operations
-import pandas as pd # For data manipulation
-import yfinance as yf # For fetching financial data
+import numpy as np  # For numerical operations
+import pandas as pd  # For data manipulation
+import yfinance as yf  # For fetching financial data
 
 
 # Local imports
@@ -41,6 +27,9 @@ except ImportError:  # Fallback for running as a script without package context
     from gmail_utils import get_gmail_service, create_message, send_message  # type: ignore  # pragma: no cover
     import config  # type: ignore  # pragma: no cover
     from financial_utils import round_financial_columns  # type: ignore  # pragma: no cover
+
+# Module-level logger
+logger = logging.getLogger(__name__)
 
 # Ensure cache directory exists or create it
 os.makedirs(config.CACHE_DIR, exist_ok=True)
