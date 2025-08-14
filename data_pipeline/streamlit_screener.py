@@ -51,7 +51,9 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
                 min_date = pd.to_datetime(date_range["min_date"].iloc[0])
                 max_date = pd.to_datetime(date_range["max_date"].iloc[0])
                 if pd.notna(min_date) and pd.notna(max_date):
-                    if min_date <= pd.to_datetime(start_date) and max_date >= pd.to_datetime(end_date):
+                    if min_date <= pd.to_datetime(
+                        start_date
+                    ) and max_date >= pd.to_datetime(end_date):
                         needs_fetch = False
 
         if needs_fetch:
@@ -67,7 +69,21 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
             )
             return pd.DataFrame()
 
-        df = pd.read_sql("SELECT * FROM financial_tbl", engine)
+        columns = [
+            "Date",
+            "Ticker",
+            "CompanyName",
+            "factor_composite",
+            "return_12m",
+            "earnings_yield",
+            "norm_quality_score",
+            "marketCap",
+        ]
+        query = (
+            f"SELECT {', '.join(columns)} FROM financial_tbl "
+            "WHERE Date BETWEEN :start AND :end"
+        )
+        df = pd.read_sql(query, engine, params={"start": start_date, "end": end_date})
     except SQLAlchemyError as exc:
         logging.error("Error loading financial data: %s", exc)
         st.error(
@@ -125,7 +141,9 @@ else:
     )
 
 # 3. Sort by factor_composite
-filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(drop=True)
+filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(
+    drop=True
+)
 
 # 4. Ensure CompanyName exists — if not, fetch it separately or add placeholder
 if "CompanyName" not in filtered.columns:
@@ -161,4 +179,3 @@ st.download_button(
 st.info(
     "Uses InvestWiseUK analytics engine pipeline. Replace with your real factor output for production if demoing."
 )
-
