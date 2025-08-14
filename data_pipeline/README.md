@@ -85,6 +85,31 @@ accessed via SDKs, allowing the application to treat them like local folders.
 
 ---
 
+## ☁️ Deploy to Streamlit Cloud
+1. **Push the repo**
+   - Commit and push your project to GitHub; Streamlit Cloud builds directly from your repository.
+2. **Create a new app**
+   - Go to [streamlit.io/cloud](https://streamlit.io/cloud) and connect your GitHub account.
+   - Choose your repository and branch, then set the **App file** to `data_pipeline/streamlit_screener.py`.
+3. **Configure secrets and environment variables**
+   - In the app dashboard, open **Settings → Secrets** and add values such as:
+     ```toml
+     DATABASE_URL = "postgresql://user:pass@host/db"
+     GMAIL_USER = "your_email"
+     GMAIL_PASS = "your_password"
+     ```
+   - Any environment variable (e.g., `DATA_DIR`, `CACHE_DIR`, `LOG_DIR`) can be defined here.
+4. **Persist your data**
+   - Streamlit Cloud containers are ephemeral—use a hosted database like Supabase/PostgreSQL for persistence.
+   - Point `DATABASE_URL` to the hosted DB and avoid relying on local JSON caches.
+5. **Manage cache**
+   - Remove file-based cache folders before deploying or clear them via **⚙️ Settings → Clear cache**.
+   - From code you can call `st.cache_data.clear()` to reset cached data when needed.
+
+Once configured, click **Deploy** and Streamlit Cloud will build and run the screener automatically.
+
+---
+
 ## 📝 Author's Note
 This guide assumes a local dev environment.
 Use this setup for testing, development, and proof of concept.
