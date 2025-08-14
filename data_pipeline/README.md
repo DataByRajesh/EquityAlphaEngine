@@ -39,6 +39,35 @@ pip install -r requirements.txt
 
 ---
 
+## 🔑 Required API Credentials
+
+Set these environment variables or Streamlit secrets so the pipeline can
+access external services:
+
+- `QUANDL_API_KEY` – used to download macroeconomic data. **If this key is
+  missing, macro data cannot be fetched.**
+- `GMAIL_CREDENTIALS_FILE` – path to the Gmail API OAuth credentials JSON.
+- `GMAIL_TOKEN_FILE` – path to the Gmail OAuth token file generated after
+  authorization.
+
+Example `.env` file:
+
+```bash
+QUANDL_API_KEY=your_quandl_key
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_TOKEN_FILE=token.json
+```
+
+Example `.streamlit/secrets.toml`:
+
+```toml
+QUANDL_API_KEY = "your_quandl_key"
+GMAIL_CREDENTIALS_FILE = "credentials.json"
+GMAIL_TOKEN_FILE = "token.json"
+```
+
+---
+
 ## ✅ Running the Data Pipeline Locally
 This will fetch data, compute factors, and update the database.
 ```

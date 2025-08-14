@@ -31,6 +31,34 @@ The data pipeline first checks the `DATABASE_URL` environment variable and then
 `st.secrets["DATABASE_URL"]`. If neither is provided a SQLite database named
 `app.db` will be created inside the pipeline's data directory.
 
+### Required API Credentials
+
+Set the following environment variables or Streamlit secrets to enable
+external data and email services:
+
+- `QUANDL_API_KEY` – used to download macroeconomic data. **Without this key,
+  macro data retrieval is skipped.**
+- `GMAIL_CREDENTIALS_FILE` – path to the Gmail API OAuth credentials JSON
+  file.
+- `GMAIL_TOKEN_FILE` – path to the Gmail OAuth token file generated after
+  authorization.
+
+Example `.env` file:
+
+```bash
+QUANDL_API_KEY=your_quandl_key
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_TOKEN_FILE=token.json
+```
+
+Example `.streamlit/secrets.toml`:
+
+```toml
+QUANDL_API_KEY = "your_quandl_key"
+GMAIL_CREDENTIALS_FILE = "credentials.json"
+GMAIL_TOKEN_FILE = "token.json"
+```
+
 ### Running the Streamlit Screener
 
 An interactive stock screener is available via Streamlit. Run it from the
