@@ -21,7 +21,8 @@ cp .streamlit/secrets.example.toml .streamlit/secrets.toml
 
 Edit `.streamlit/secrets.toml` and fill in your own values. At a minimum set
 `DATABASE_URL` (e.g. `postgresql://user:password@host:5432/database`) and any
-required API keys like `QUANDL_API_KEY`.
+required API keys like `QUANDL_API_KEY`. The `QUANDL_API_KEY` can also be
+provided via the environment if you prefer not to use Streamlit secrets.
 
 When deploying to Streamlit Cloud, open the app's **⚙️ Settings → Secrets** and
 paste the contents of your local `secrets.toml`.
@@ -61,6 +62,16 @@ setting the `MAX_THREADS` environment variable:
 
 ```bash
 MAX_THREADS=20 python data_pipeline/UK_data.py --years 10
+```
+
+
+### Examples
+
+Sample scripts demonstrating API usage live in the `examples/` directory. For
+instance, after setting the `QUANDL_API_KEY` environment variable you can run:
+
+```bash
+python examples/quandl_example.py
 ```
 
 
