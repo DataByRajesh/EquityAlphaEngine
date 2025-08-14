@@ -8,10 +8,9 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
 try:
-    from . import config, UK_data
+    from . import config
 except ImportError:  # fallback when run as a script
     import config
-    import UK_data
 
 # The screener expects `DATABASE_URL` to point to a hosted PostgreSQL database
 # such as Supabase.  Streamlit Cloud users should set this in `.streamlit/secrets.toml`.
@@ -36,44 +35,34 @@ start_date = (today - timedelta(days=years * 365)).strftime("%Y-%m-%d")
 
 @st.cache_data(show_spinner=False)
 def load_data(start_date: str, end_date: str) -> pd.DataFrame:
-    """Fetch data and load from database, caching the result."""
-
-    try:
-        UK_data.main(config.FTSE_100_TICKERS, start_date, end_date)
-    except Exception as exc:  # pragma: no cover - best effort logging
-        logging.error("Error fetching data: %s", exc)
+    """Load data from database, caching the result."""
 
     engine = create_engine(config.DATABASE_URL)
     try:
         inspector = inspect(engine)
-        needs_fetch = True
-        if inspector.has_table("financial_tbl"):
-            # Check existing data range
-            date_range = pd.read_sql(
-                "SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM financial_tbl",
-                engine,
-            )
-            if not date_range.empty:
-                min_date = pd.to_datetime(date_range["min_date"].iloc[0])
-                max_date = pd.to_datetime(date_range["max_date"].iloc[0])
-                if pd.notna(min_date) and pd.notna(max_date):
-                    if min_date <= pd.to_datetime(
-                        start_date
-                    ) and max_date >= pd.to_datetime(end_date):
-                        needs_fetch = False
-
-        if needs_fetch:
-            try:
-                UK_data.main(config.FTSE_100_TICKERS, start_date, end_date)
-            except Exception as exc:  # pragma: no cover - best effort logging
-                logging.error("Error fetching data: %s", exc)
-            inspector = inspect(engine)
-
         if not inspector.has_table("financial_tbl"):
             st.error(
-                "Table `financial_tbl` not found. Please run `python data_pipeline/UK_data.py` to populate the database.",
+                "Table `financial_tbl` not found. Please run `python data_pipeline/update_financial_data.py` to populate the database.",
             )
             return pd.DataFrame()
+
+        # Check existing data range so we can warn when data is missing
+        date_range = pd.read_sql(
+            "SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM financial_tbl",
+            engine,
+        )
+        if date_range.empty:
+            st.error(
+                "Table `financial_tbl` is empty. Please run `python data_pipeline/update_financial_data.py` to populate the database.",
+            )
+            return pd.DataFrame()
+
+        min_date = pd.to_datetime(date_range["min_date"].iloc[0])
+        max_date = pd.to_datetime(date_range["max_date"].iloc[0])
+        if pd.isna(min_date) or pd.isna(max_date) or min_date > pd.to_datetime(start_date) or max_date < pd.to_datetime(end_date):
+            st.warning(
+                "`financial_tbl` may not contain the requested date range. Run `python data_pipeline/update_financial_data.py` to refresh the database if needed.",
+            )
 
         # Ensure helpful indexes exist for faster queries
         with engine.begin() as conn:
