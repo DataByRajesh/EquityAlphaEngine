@@ -1,12 +1,14 @@
+import io
+import logging
 import pandas as pd
 from sqlalchemy import create_engine
 
 import config
-import logging
 
 
 DB_PATH = config.DATABASE_URL
 
+logger = logging.getLogger(__name__)
 
 def main() -> None:
     """Analyse the stock database and print basic statistics."""
@@ -16,22 +18,25 @@ def main() -> None:
         df = pd.read_sql("SELECT * FROM stock_data", engine)
 
         # General stats
-        print(df.info())
-        print(f"describe {df.describe()}")
+        buf = io.StringIO()
+        df.info(buf=buf)
+        logger.info(buf.getvalue())
+        logger.info("describe %s", df.describe())
 
         # Check for missing data
-        print(f" Missing data count {df.isnull().sum()}")
+        logger.info(" Missing data count %s", df.isnull().sum())
 
         # Check for duplicates
-        print(
-            f"duplicates data count {df.duplicated(subset=['Date', 'Ticker']).sum()}"
+        logger.info(
+            "duplicates data count %s",
+            df.duplicated(subset=["Date", "Ticker"]).sum(),
         )
 
         # Check data coverage per ticker
-        print(f"data coverage per ticker {df['Ticker'].value_counts()}")
+        logger.info("data coverage per ticker %s", df["Ticker"].value_counts())
 
         # Spot-check for outliers
-        print(df[["Close", "Volume", "marketCap"]].describe(), end="\n\n")
+        logger.info("\n%s\n", df[["Close", "Volume", "marketCap"]].describe())
     finally:
         engine.dispose()
 
