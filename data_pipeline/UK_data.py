@@ -45,43 +45,35 @@ os.makedirs(config.DATA_DIR, exist_ok=True)
 
 # --- Caching functions ---
 
-def cache_fundamental_path(ticker: str, cache_dir: str = config.CACHE_DIR) -> str:
-    """
-    Returns the path to the cached fundamental data file for the given ticker.
-    """
-    return os.path.join(cache_dir, f"{ticker}_fundamentals.json")
+# The public functions ``load_cached_fundamentals`` and
+# ``save_fundamentals_cache`` proxy to ``cache_utils`` so that the rest of this
+# module does not need to know which backend is in use.  Any failures from the
+# remote cache are logged and ignored so pipeline execution can continue.
 
-def load_cached_fundamentals(ticker: str, cache_dir: str = config.CACHE_DIR, expiry_minutes: int = config.CACHE_EXPIRY_MINUTES) -> Optional[dict]:
-    """
-    Loads cached fundamental data for the ticker if available, else returns None.
-    """
-    path = cache_fundamental_path(ticker, cache_dir)
-    if os.path.exists(path):
-        try:
-            with open(path, "r") as f:
-                cached = json.load(f)
-            timestamp = datetime.fromisoformat(cached.get("timestamp"))
-            if datetime.utcnow() - timestamp < timedelta(minutes=expiry_minutes):
-                return cached.get("data")
-            else:
-                return None  # Cache expired
-        except Exception as e:
-            logging.warning(f"Failed to load cache for {ticker}: {e}")
-    return None
+from cache_utils import (
+    load_cached_fundamentals as _load_cached_fundamentals,
+    save_fundamentals_cache as _save_fundamentals_cache,
+)
 
-def save_fundamentals_cache(ticker: str, data: dict, cache_dir: str = config.CACHE_DIR) -> None:
-    """
-    Saves fundamental data to the cache for the ticker.
-    """
-    path = cache_fundamental_path(ticker, cache_dir)
-    data_with_timestamp = {
-        "data": data,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+
+def load_cached_fundamentals(
+    ticker: str,
+    cache_dir: str = config.CACHE_DIR,
+    expiry_minutes: int = config.CACHE_EXPIRY_MINUTES,
+) -> Optional[dict]:
     try:
-        with open(path, "w") as f:
-            json.dump(data_with_timestamp, f)
-    except Exception as e:
+        return _load_cached_fundamentals(ticker, expiry_minutes=expiry_minutes)
+    except Exception as e:  # pragma: no cover - best effort logging
+        logging.warning(f"Failed to load cache for {ticker}: {e}")
+        return None
+
+
+def save_fundamentals_cache(
+    ticker: str, data: dict, cache_dir: str = config.CACHE_DIR
+) -> None:
+    try:
+        _save_fundamentals_cache(ticker, data)
+    except Exception as e:  # pragma: no cover - best effort logging
         logging.warning(f"Failed to save cache for {ticker}: {e}")
 
 def fetch_historical_data(
@@ -190,6 +182,20 @@ def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: li
     Returns a combined DataFrame.
     """
     fundamentals_df = pd.DataFrame(fundamentals_list)
+
+    # Ensure expected fundamental columns exist even if missing from the raw
+    # data.  This prevents downstream operations from failing when a field is
+    # absent in the source response.
+    required_cols = [
+        'returnOnEquity', 'grossMargins', 'operatingMargins', 'profitMargins',
+        'priceToBook', 'trailingPE', 'forwardPE',
+        'priceToSalesTrailing12Months', 'debtToEquity', 'currentRatio',
+        'quickRatio', 'dividendYield', 'marketCap', 'beta', 'averageVolume',
+    ]
+    for col in required_cols:
+        if col not in fundamentals_df.columns:
+            fundamentals_df[col] = np.nan
+
     combined_df = pd.merge(price_df, fundamentals_df, on='Ticker', how='left')
     return combined_df
 

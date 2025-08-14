@@ -62,10 +62,20 @@ point to `streamlit_app.py` when deploying there.
 
 ---
 
+
 ## ✅ Notes on Cache & Data Persistence
-- Local JSON cache used for fundamentals (`cache_utils.py`)
-- Hosted database stores computed financials (configured via `DATABASE_URL`)
-- Gmail alerts use credentials from `credentials.json` (optional)
+
+- **Cache backend** configurable via environment variables:
+  - `CACHE_BACKEND` – `local` (default), `redis`, or `s3`
+  - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
+  - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix)
+- **Local JSON cache** used for fundamentals when `CACHE_BACKEND` is `local` (`cache_utils.py`)
+- **Database configuration**:
+  1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
+  2. If not set, it tries `st.secrets["DATABASE_URL"]` (common on Streamlit Cloud).
+  3. If still missing, it falls back to a **local SQLite database** (`data/stocks_data.db`) for development/testing.
+- **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
+- Gmail alerts use credentials from `credentials.json` (optional).
 
 ---
 
