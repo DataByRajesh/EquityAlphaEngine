@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy import (Column, Float, MetaData, Table, Text as SAText,
                         create_engine, inspect, text)
 
-import config
+from . import config
 
 
 class DBHelper:

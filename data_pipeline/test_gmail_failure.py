@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
-from gmail_utils import send_message
+from data_pipeline.gmail_utils import send_message
 
 class TestGmailFailure(unittest.TestCase):
     def test_send_failure(self):
