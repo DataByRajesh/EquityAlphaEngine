@@ -22,8 +22,14 @@ st.title("📊 InvestWiseUK Multi-Factor Stock Screener")
 
 st.sidebar.header("Filter Options")
 st.sidebar.info(
-    "Requires `DATABASE_URL` to connect to a hosted database such as Supabase/PostgreSQL"
+    "Requires `DATABASE_URL` to connect to a hosted database such as "
+    "Supabase/PostgreSQL. If omitted, falls back to a local SQLite database."
 )
+
+db_type = (
+    "local SQLite" if config.DATABASE_URL.startswith("sqlite://") else "hosted"
+)
+st.sidebar.caption(f"Using {db_type} database")
 years = st.sidebar.number_input("Years of history", min_value=1, value=10)
 min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
 top_n = st.sidebar.slider("Number of Top Stocks", min_value=5, max_value=50, value=10)
@@ -51,7 +57,9 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
                 min_date = pd.to_datetime(date_range["min_date"].iloc[0])
                 max_date = pd.to_datetime(date_range["max_date"].iloc[0])
                 if pd.notna(min_date) and pd.notna(max_date):
-                    if min_date <= pd.to_datetime(start_date) and max_date >= pd.to_datetime(end_date):
+                    if min_date <= pd.to_datetime(
+                        start_date
+                    ) and max_date >= pd.to_datetime(end_date):
                         needs_fetch = False
 
         if needs_fetch:
@@ -85,6 +93,7 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
             "return_12m, earnings_yield, norm_quality_score, marketCap "
             "FROM financial_tbl "
             "WHERE Date BETWEEN %(start)s AND %(end)s"
+
         )
         df = pd.read_sql(query, engine, params={"start": start_date, "end": end_date})
     except SQLAlchemyError as exc:
@@ -144,7 +153,9 @@ else:
     )
 
 # 3. Sort by factor_composite
-filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(drop=True)
+filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(
+    drop=True
+)
 
 # 4. Ensure CompanyName exists — if not, fetch it separately or add placeholder
 if "CompanyName" not in filtered.columns:
@@ -180,4 +191,3 @@ st.download_button(
 st.info(
     "Uses InvestWiseUK analytics engine pipeline. Replace with your real factor output for production if demoing."
 )
-
