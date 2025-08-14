@@ -71,7 +71,6 @@ except ImportError:  # pragma: no cover - fallback for script execution
 
 def load_cached_fundamentals(
     ticker: str,
-    cache_dir: str = config.CACHE_DIR,
     expiry_minutes: int = config.CACHE_EXPIRY_MINUTES,
 ) -> Optional[dict]:
     try:
@@ -81,9 +80,7 @@ def load_cached_fundamentals(
         return None
 
 
-def save_fundamentals_cache(
-    ticker: str, data: dict, cache_dir: str = config.CACHE_DIR
-) -> None:
+def save_fundamentals_cache(ticker: str, data: dict) -> None:
     try:
         _save_fundamentals_cache(ticker, data)
     except Exception as e:  # pragma: no cover - best effort logging
