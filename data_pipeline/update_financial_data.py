@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta
+import logging
 
 import pandas as pd
 from sqlalchemy import create_engine, inspect
@@ -20,6 +21,9 @@ try:  # Prefer package-relative imports
 except ImportError:  # pragma: no cover - fallback when run as script
     import config  # type: ignore
     import UK_data  # type: ignore
+
+
+logger = logging.getLogger(__name__)
 
 
 def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
@@ -53,7 +57,7 @@ def main(start_date: str, end_date: str) -> None:
         if _needs_fetch(engine, start_date, end_date):
             UK_data.main(config.FTSE_100_TICKERS, start_date, end_date)
         else:
-            print("financial_tbl already contains requested data; skipping fetch.")
+            logger.info("financial_tbl already contains requested data; skipping fetch.")
     finally:
         engine.dispose()
 
