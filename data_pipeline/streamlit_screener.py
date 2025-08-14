@@ -33,32 +33,9 @@ end_date = today.strftime("%Y-%m-%d")
 start_date = (today - timedelta(days=years * 365)).strftime("%Y-%m-%d")
 
 
-@st.cache_resource(show_spinner=False)
-def ensure_indexes() -> None:
-    """Ensure database indexes exist for faster queries.
+# Cache data for one hour (TTL 3600s) to balance database load with freshness
+@st.cache_data(show_spinner=False, ttl=3600)
 
-    This runs only once per app startup thanks to Streamlit's resource caching.
-    """
-    engine = create_engine(config.DATABASE_URL)
-    try:
-        with engine.begin() as conn:
-            conn.execute(
-                text('CREATE INDEX IF NOT EXISTS idx_financial_tbl_date ON financial_tbl("Date")')
-            )
-            conn.execute(
-                text('CREATE INDEX IF NOT EXISTS idx_financial_tbl_ticker ON financial_tbl("Ticker")')
-            )
-    except SQLAlchemyError as exc:
-        logging.error("Error creating indexes: %s", exc)
-    finally:
-        engine.dispose()
-
-
-# Execute index creation once at startup
-ensure_indexes()
-
-
-@st.cache_data(show_spinner=False)
 def load_data(start_date: str, end_date: str) -> pd.DataFrame:
     """Load data from database, caching the result."""
 
