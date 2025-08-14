@@ -251,43 +251,46 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.error("Failed to compute and not saved to DB. Exiting.")
 
 if __name__ == "__main__":
-    # Command line argument parsing
+    import argparse
+    from datetime import datetime, timedelta
 
+    # CLI
     parser = argparse.ArgumentParser(
         description="Fetch historical and fundamental data for FTSE 100 stocks."
     )
     parser.add_argument(
         "--start_date",
         type=str,
-        help="Start date for historical data (YYYY-MM-DD)",
+        help="Start date for historical data (YYYY-MM-DD). If provided, takes precedence over --years.",
     )
     parser.add_argument(
         "--end_date",
         type=str,
-        help="End date for historical data (YYYY-MM-DD)",
+        help="End date for historical data (YYYY-MM-DD). Defaults to today if omitted.",
     )
     parser.add_argument(
         "--years",
         type=int,
         default=10,
-        help="Number of years back to fetch if start_date is not provided (default: 10)",
+        help="Number of years back to fetch when --start_date is not provided (default: 10).",
     )
 
-
     args = parser.parse_args()
-    if args.years:
-        end = datetime.today()
-        start = end - timedelta(days=args.years * 365)
-        args.start_date = start.strftime('%Y-%m-%d')
-        args.end_date = end.strftime('%Y-%m-%d')
 
+    # Resolve dates
     end_date = args.end_date or datetime.today().strftime("%Y-%m-%d")
+
     if args.start_date:
         start_date = args.start_date
     else:
-        start_date = (
-            datetime.strptime(end_date, "%Y-%m-%d")
-            - timedelta(days=365 * args.years)
-        ).strftime("%Y-%m-%d")
+        years = args.years if (args.years and args.years > 0) else 10
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        start_dt = end_dt - timedelta(days=years * 365)
+        start_date = start_dt.strftime("%Y-%m-%d")
+
+    # Basic validation
+    if datetime.strptime(start_date, "%Y-%m-%d") > datetime.strptime(end_date, "%Y-%m-%d"):
+        raise SystemExit(f"start_date ({start_date}) cannot be after end_date ({end_date}).")
 
     main(config.FTSE_100_TICKERS, start_date, end_date)
+
