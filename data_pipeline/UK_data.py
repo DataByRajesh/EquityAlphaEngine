@@ -4,8 +4,8 @@
 # import necessary libraries
 import logging
 
-# Setup logging ONCE, right after the first import
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Module-level logger
+logger = logging.getLogger(__name__)
 
 # Importing required libraries
 
@@ -64,7 +64,7 @@ def load_cached_fundamentals(
     try:
         return _load_cached_fundamentals(ticker, expiry_minutes=expiry_minutes)
     except Exception as e:  # pragma: no cover - best effort logging
-        logging.warning(f"Failed to load cache for {ticker}: {e}")
+        logger.warning(f"Failed to load cache for {ticker}: {e}")
         return None
 
 
@@ -74,7 +74,7 @@ def save_fundamentals_cache(
     try:
         _save_fundamentals_cache(ticker, data)
     except Exception as e:  # pragma: no cover - best effort logging
-        logging.warning(f"Failed to save cache for {ticker}: {e}")
+        logger.warning(f"Failed to save cache for {ticker}: {e}")
 
 def fetch_historical_data(
     tickers: list[str], start_date: str, end_date: str
@@ -83,9 +83,9 @@ def fetch_historical_data(
     Downloads historical price data for tickers, cleans and rounds it.
     Returns a DataFrame or empty DataFrame on failure.
     """
-    logging.info(f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}...")
+    logger.info(f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}...")
     if not tickers:
-        logging.error("No tickers provided.")
+        logger.error("No tickers provided.")
         return pd.DataFrame()
     try:
         data = yf.download(tickers, start=start_date, end=end_date, progress=False)
@@ -93,10 +93,10 @@ def fetch_historical_data(
         data.rename(columns={'level_1': 'Ticker'}, inplace=True)
         if 'Volume' in data.columns:
             data['Volume'] = data['Volume'].fillna(0).astype(int)
-        logging.info("Historical data fetched successfully.")
+        logger.info("Historical data fetched successfully.")
         return data
     except Exception as e:
-        logging.error(f"Error downloading historical data: {e}")
+        logger.error(f"Error downloading historical data: {e}")
         return pd.DataFrame()
 
 def fetch_fundamental_data(
@@ -113,7 +113,7 @@ def fetch_fundamental_data(
     if use_cache:
         cached = load_cached_fundamentals(ticker_symbol,expiry_minutes=cache_expiry_minutes)
         if cached is not None:
-            logging.info(f"Loaded cached fundamentals for {ticker_symbol}")
+            logger.info(f"Loaded cached fundamentals for {ticker_symbol}")
             return cached
 
     ticker = yf.Ticker(ticker_symbol)
@@ -141,17 +141,17 @@ def fetch_fundamental_data(
                 'beta': info.get('beta'),
                 'averageVolume': info.get('averageVolume')
             }
-            logging.info(f"Company Name: {info.get('longName')}")
+            logger.info(f"Company Name: {info.get('longName')}")
             if use_cache:
                 save_fundamentals_cache(ticker_symbol, key_ratios)
-            logging.info(f"Fetched fundamentals for {ticker_symbol}")
+            logger.info(f"Fetched fundamentals for {ticker_symbol}")
             return key_ratios
         except Exception as e:
-            logging.warning(f"Attempt {attempt+1} failed for {ticker_symbol}: {e}")
+            logger.warning(f"Attempt {attempt+1} failed for {ticker_symbol}: {e}")
             attempt += 1
             time.sleep(delay)
             delay *= backoff_factor
-    logging.error(f"Failed to fetch fundamentals for {ticker_symbol} after {retries} attempts")
+    logger.error(f"Failed to fetch fundamentals for {ticker_symbol} after {retries} attempts")
     return {}
 
 def fetch_fundamentals_threaded(
@@ -171,9 +171,9 @@ def fetch_fundamentals_threaded(
                 if res:
                     results.append(res)
                 else:
-                    logging.warning(f"No data returned for {ticker}")
+                    logger.warning(f"No data returned for {ticker}")
             except Exception as e:
-                logging.error(f"Error fetching data for {ticker}: {e}")
+                logger.error(f"Error fetching data for {ticker}: {e}")
     return results
 
 def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: list[dict]) -> pd.DataFrame:
@@ -203,23 +203,23 @@ def main(tickers, start_date, end_date, use_cache=True):
 
     hist_df = fetch_historical_data(tickers, start_date, end_date)
     if hist_df.empty:
-        logging.error("No historical data fetched. Exiting.")
+        logger.error("No historical data fetched. Exiting.")
         return
 
     fundamentals_list = fetch_fundamentals_threaded(tickers, use_cache=use_cache)
     if not fundamentals_list:
-        logging.error("No fundamentals data fetched. Exiting.")
+        logger.error("No fundamentals data fetched. Exiting.")
         return
     
     price_fundamentals_df = combine_price_and_fundamentals(hist_df, fundamentals_list)
     
     
     # Compute factors
-    logging.info("Computing factors...")
+    logger.info("Computing factors...")
     financial_df = compute_factors(price_fundamentals_df)
 
     if financial_df is None or financial_df.empty:
-        logging.error("Failed to compute financial factors. Exiting.")
+        logger.error("Failed to compute financial factors. Exiting.")
         return
     financial_df = round_financial_columns(financial_df)
     
@@ -235,7 +235,7 @@ def main(tickers, start_date, end_date, use_cache=True):
         gmail_service = get_gmail_service()  # Initialize Gmail API service once
 
         if gmail_service is None:
-            logging.error("Failed to initialize Gmail service. Email notification will not be sent.")
+            logger.error("Failed to initialize Gmail service. Email notification will not be sent.")
             return
     
         sender = "raj.analystdata@gmail.com"
@@ -245,10 +245,10 @@ def main(tickers, start_date, end_date, use_cache=True):
 
         msg = create_message(sender, recipient, subject, body)
         send_message(gmail_service, "me", msg)
-        logging.info("Email notification sent successfully.")
-        logging.info("Financial data computed and saved to DB.")
+        logger.info("Email notification sent successfully.")
+        logger.info("Financial data computed and saved to DB.")
     else:
-        logging.error("Failed to compute and not saved to DB. Exiting.")
+        logger.error("Failed to compute and not saved to DB. Exiting.")
 
 if __name__ == "__main__":
     # Command line argument parsing
