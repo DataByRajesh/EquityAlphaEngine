@@ -55,6 +55,27 @@ pip install -r requirements.txt
 - ✅ Ensure your Gmail credentials are available (optional for alerts). Use
   `GMAIL_CREDENTIALS_FILE` and `GMAIL_TOKEN_FILE` to override default paths.
 
+#### Required credentials
+
+Set the following variables in a `.env` file or in `.streamlit/secrets.toml`:
+
+```env
+QUANDL_API_KEY=your_quandl_key
+DATABASE_URL=postgresql://user:password@host:5432/database
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=us-west-2
+CACHE_S3_BUCKET=your-bucket
+CACHE_S3_PREFIX=cache/prefix
+```
+
+- `QUANDL_API_KEY` – used by `Macro_data.py` to pull macroeconomic data.
+- `DATABASE_URL` – consumed by `config.py` and all database helpers.
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION` –
+  authenticate to S3 when `CACHE_BACKEND=s3`.
+- `CACHE_S3_BUCKET` and `CACHE_S3_PREFIX` – identify the S3 location for cached
+  fundamentals in `cache_utils.py`.
+
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
 - Ensure your hosted database is reachable by the `DATABASE_URL`
