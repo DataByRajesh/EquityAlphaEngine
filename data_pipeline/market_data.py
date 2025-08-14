@@ -9,7 +9,6 @@ implementation.
 """
 
 
-from . import config
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -41,6 +40,7 @@ __all__ = [
     "save_fundamentals_cache",
     "fetch_historical_data",
     "fetch_fundamental_data",
+    "fetch_fundamentals_threaded",
     "combine_price_and_fundamentals",
     "round_financial_columns",
 ]
@@ -70,4 +70,3 @@ def fetch_fundamentals_threaded(tickers: list[str], use_cache: bool = True) -> l
                 logging.error(f"Error fetching data for {ticker}: {exc}")
     return results
 
-__all__.insert(4, "fetch_fundamentals_threaded")
