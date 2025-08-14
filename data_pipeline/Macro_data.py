@@ -27,8 +27,8 @@ class FiveYearMacroDataLoader:
         self.api_key = api_key or DEFAULT_API_KEY
         if self.api_key is None:
             raise ValueError(
-                "No Quandl API key provided. Configure the QUANDL_API_KEY "
-                "environment variable or pass api_key to FiveYearMacroDataLoader."
+                "QUANDL_API_KEY is not configured. Set the env var or pass api_key."
+
             )
         quandl.ApiConfig.api_key = self.api_key
         self.start_date = start_date
