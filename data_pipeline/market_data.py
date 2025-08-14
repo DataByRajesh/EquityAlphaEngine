@@ -8,18 +8,31 @@ this thin wrapper restores the original interface without duplicating
 implementation.
 """
 
-import config
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from tqdm import tqdm
-from UK_data import (
-    load_cached_fundamentals,
-    save_fundamentals_cache,
-    fetch_historical_data,
-    fetch_fundamental_data,
-    combine_price_and_fundamentals,
-)
-from financial_utils import round_financial_columns
+
+try:
+    from . import config
+    from .UK_data import (
+        load_cached_fundamentals,
+        save_fundamentals_cache,
+        fetch_historical_data,
+        fetch_fundamental_data,
+        combine_price_and_fundamentals,
+    )
+    from .financial_utils import round_financial_columns
+except ImportError:  # pragma: no cover
+    import config
+    from UK_data import (
+        load_cached_fundamentals,
+        save_fundamentals_cache,
+        fetch_historical_data,
+        fetch_fundamental_data,
+        combine_price_and_fundamentals,
+    )
+    from financial_utils import round_financial_columns
 
 __all__ = [
     "load_cached_fundamentals",
