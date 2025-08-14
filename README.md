@@ -31,6 +31,27 @@ The data pipeline first checks the `DATABASE_URL` environment variable and then
 `st.secrets["DATABASE_URL"]`. If neither is provided a SQLite database named
 `app.db` will be created inside the pipeline's data directory.
 
+### Required Environment Variables
+
+Create a `.env` file or export the following variables before running the
+pipeline:
+
+```env
+QUANDL_API_KEY=your_quandl_api_key
+GMAIL_CREDENTIALS_FILE=credentials.json
+GMAIL_TOKEN_FILE=token.json
+DATABASE_URL=postgresql://user:password@host:5432/database
+```
+
+- `QUANDL_API_KEY` – required for retrieving macro indicators and UK market
+  data. If this variable is missing, macro and UK data retrieval will fail.
+- `GMAIL_CREDENTIALS_FILE` – path to your Gmail OAuth credentials file.
+- `GMAIL_TOKEN_FILE` – location to store the Gmail OAuth token.
+- `DATABASE_URL` – connection string for the database.
+
+Additional optional variables include `MAX_THREADS`, `CACHE_BACKEND`,
+`CACHE_REDIS_URL`, `CACHE_S3_BUCKET`, and `CACHE_S3_PREFIX`.
+
 ### Running the Streamlit Screener
 
 An interactive stock screener is available via Streamlit. Run it from the
