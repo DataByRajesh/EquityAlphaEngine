@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import ta
 
 
@@ -25,6 +25,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         Bollinger Bands), value ratios, quality metrics, size/liquidity
         measures and a composite factor.
     """
+    # Ensure chronological order for time-series calculations
+    df = df.sort_values(["Ticker", "Date"]).copy()
+
     # --- Momentum ---
     for period, label in zip([21, 63, 126, 252], ['1m', '3m', '6m', '12m']):
         df[f'return_{label}'] = (
@@ -86,12 +89,14 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # --- Size / Liquidity ---
     df['log_marketCap'] = np.log(df['marketCap'])
     df['avg_volume_21d'] = df.groupby('Ticker')['Volume'].transform(lambda x: x.rolling(21).mean())
+
     # Replace zero volumes with NaN prior to Amihud calculation
     adj_volume = df['Volume'].replace(0, np.nan)
     # Calculate raw Amihud
     df['amihud_raw'] = df['Close'].pct_change().abs() / (adj_volume * df['Close'])
     # Replace infinite values with NaN
     df['amihud_raw'] = df['amihud_raw'].replace([np.inf, -np.inf], np.nan)
+
     # 21-day rolling mean by ticker (final Amihud)
     df['amihud_illiquidity'] = df.groupby('Ticker')['amihud_raw'].transform(lambda x: x.rolling(21).mean())
     # Optionally: drop the intermediate column
