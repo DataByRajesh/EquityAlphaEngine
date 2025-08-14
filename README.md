@@ -51,11 +51,16 @@ fetches the last decade of data by default; adjust `--years` as needed:
 python data_pipeline/UK_data.py --years 10
 ```
 
-### Optimized Data Loading
 
-The `load_data` function now retrieves only the necessary columns within the
-requested date range using a parameterized SQL query. Database indexes on the
-`Date` and `Ticker` columns are created automatically to speed up subsequent
-queries.
+### Concurrency configuration
+
+The pipeline executes many network-bound requests in parallel. The default
+thread count now scales with available CPU cores (roughly five threads per
+core) for better performance on larger machines. You can override this by
+setting the `MAX_THREADS` environment variable:
+
+```bash
+MAX_THREADS=20 python data_pipeline/UK_data.py --years 10
+```
 
 
