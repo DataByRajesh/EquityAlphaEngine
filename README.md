@@ -42,4 +42,13 @@ streamlit run streamlit_app.py
 On Streamlit Community Cloud, set the app's entry point to `streamlit_app.py`
 to launch the screener without extra path configuration.
 
+### Fetching UK Market Data
+
+Run the data pipeline script to download FTSE 100 data. The command below
+fetches the last decade of data by default; adjust `--years` as needed:
+
+```bash
+python data_pipeline/UK_data.py --years 10
+```
+
 
