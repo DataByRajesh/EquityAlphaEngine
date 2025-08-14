@@ -255,7 +255,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch historical and fundamental data for FTSE 100 stocks.")
     parser.add_argument('--start_date', type=str, default='2020-01-01', help='Start date for historical data (YYYY-MM-DD)')
     parser.add_argument('--end_date', type=str, default=datetime.today().strftime('%Y-%m-%d'), help='End date for historical data (YYYY-MM-DD)')
-    
+    parser.add_argument('--years', type=int, default=None, help='Number of years of data to fetch; overrides start/end dates')
+
     args = parser.parse_args()
+
+    if args.years is not None:
+        end_date = datetime.today()
+        start_date = end_date - timedelta(days=365 * args.years)
+        args.start_date = start_date.strftime('%Y-%m-%d')
+        args.end_date = end_date.strftime('%Y-%m-%d')
 
     main(config.FTSE_100_TICKERS, args.start_date, args.end_date)
