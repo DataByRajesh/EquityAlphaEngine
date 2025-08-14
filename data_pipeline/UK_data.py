@@ -252,10 +252,35 @@ def main(tickers, start_date, end_date, use_cache=True):
 
 if __name__ == "__main__":
     # Command line argument parsing
-    parser = argparse.ArgumentParser(description="Fetch historical and fundamental data for FTSE 100 stocks.")
-    parser.add_argument('--start_date', type=str, default='2020-01-01', help='Start date for historical data (YYYY-MM-DD)')
-    parser.add_argument('--end_date', type=str, default=datetime.today().strftime('%Y-%m-%d'), help='End date for historical data (YYYY-MM-DD)')
-    
+    parser = argparse.ArgumentParser(
+        description="Fetch historical and fundamental data for FTSE 100 stocks."
+    )
+    parser.add_argument(
+        "--start_date",
+        type=str,
+        help="Start date for historical data (YYYY-MM-DD)",
+    )
+    parser.add_argument(
+        "--end_date",
+        type=str,
+        help="End date for historical data (YYYY-MM-DD)",
+    )
+    parser.add_argument(
+        "--years",
+        type=int,
+        default=10,
+        help="Number of years back to fetch if start_date is not provided (default: 10)",
+    )
+
     args = parser.parse_args()
 
-    main(config.FTSE_100_TICKERS, args.start_date, args.end_date)
+    end_date = args.end_date or datetime.today().strftime("%Y-%m-%d")
+    if args.start_date:
+        start_date = args.start_date
+    else:
+        start_date = (
+            datetime.strptime(end_date, "%Y-%m-%d")
+            - timedelta(days=365 * args.years)
+        ).strftime("%Y-%m-%d")
+
+    main(config.FTSE_100_TICKERS, start_date, end_date)
