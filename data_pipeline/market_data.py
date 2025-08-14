@@ -8,6 +8,8 @@ this thin wrapper restores the original interface without duplicating
 implementation.
 """
 
+
+from . import config
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 

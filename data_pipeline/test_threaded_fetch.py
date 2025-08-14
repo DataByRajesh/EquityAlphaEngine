@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
-import market_data
+from data_pipeline import market_data
 
 class TestThreadedFetch(unittest.TestCase):
-    @patch('market_data.fetch_fundamental_data')
+    @patch('data_pipeline.market_data.fetch_fundamental_data')
     def test_multi_ticker_threaded(self, mock_fetch):
         mock_fetch.side_effect = [
             {"Ticker": "A.L", "returnOnEquity": 0.1},

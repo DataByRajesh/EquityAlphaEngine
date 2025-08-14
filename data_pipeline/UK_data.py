@@ -30,6 +30,7 @@ import yfinance as yf # For fetching financial data
 
 
 # Local imports
+
 try:  # Prefer package-relative imports
     from .compute_factors import compute_factors  # Function to compute financial factors
     from .db_utils import DBHelper  # Importing the DBHelper class for database operations
@@ -42,7 +43,6 @@ except ImportError:  # Fallback for running as a script without package context
     from gmail_utils import get_gmail_service, create_message, send_message  # type: ignore  # pragma: no cover
     import config  # type: ignore  # pragma: no cover
     from financial_utils import round_financial_columns  # type: ignore  # pragma: no cover
-
 
 # Ensure cache directory exists or create it
 os.makedirs(config.CACHE_DIR, exist_ok=True)
@@ -57,6 +57,7 @@ os.makedirs(config.DATA_DIR, exist_ok=True)
 # module does not need to know which backend is in use.  Any failures from the
 # remote cache are logged and ignored so pipeline execution can continue.
 
+
 try:
     from .cache_utils import (
         load_cached_fundamentals as _load_cached_fundamentals,
@@ -67,7 +68,6 @@ except ImportError:  # pragma: no cover - fallback for script execution
         load_cached_fundamentals as _load_cached_fundamentals,
         save_fundamentals_cache as _save_fundamentals_cache,
     )
-
 
 def load_cached_fundamentals(
     ticker: str,
