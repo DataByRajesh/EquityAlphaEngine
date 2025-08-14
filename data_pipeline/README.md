@@ -74,7 +74,7 @@ point to `streamlit_app.py` when deploying there.
 - **Database configuration**:
   1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
   2. If not set, it tries `st.secrets["DATABASE_URL"]` (common on Streamlit Cloud).
-  3. If still missing, it falls back to a **local SQLite database** (`data/stocks_data.db`) for development/testing.
+  3. If still missing, it falls back to a **local SQLite database** (`data/app.db`) for development/testing.
 - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
 - Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
   `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.

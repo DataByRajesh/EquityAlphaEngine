@@ -28,7 +28,7 @@ paste the contents of your local `secrets.toml`.
 
 The data pipeline reads the connection string using
 `st.secrets["DATABASE_URL"]`. If it is not provided a SQLite database named
-`stocks_data.db` will be created inside the pipeline's data directory.
+`app.db` will be created inside the pipeline's data directory.
 
 ### Running the Streamlit Screener
 
@@ -51,6 +51,7 @@ fetches the last decade of data by default; adjust `--years` as needed:
 python data_pipeline/UK_data.py --years 10
 ```
 
+
 ### Concurrency configuration
 
 The pipeline executes many network-bound requests in parallel. The default
@@ -61,6 +62,5 @@ setting the `MAX_THREADS` environment variable:
 ```bash
 MAX_THREADS=20 python data_pipeline/UK_data.py --years 10
 ```
-
 
 
