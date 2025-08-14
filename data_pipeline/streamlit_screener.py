@@ -163,6 +163,10 @@ if "CompanyName" not in filtered.columns:
 # 5. Add proper rank
 filtered["rank"] = filtered.index + 1
 
+if filtered.empty:
+    st.warning("No rows match the selected filters.")
+    st.stop()
+
 st.markdown(f"### Top {top_n} UK Stocks by Multi-Factor Composite Score")
 cols_to_show = [
     "Ticker",
@@ -175,14 +179,15 @@ cols_to_show = [
     "rank",
 ]
 cols_to_show = [c for c in cols_to_show if c in filtered.columns]
-st.dataframe(filtered.head(top_n)[cols_to_show])
+filtered_top = filtered.head(top_n)
+st.dataframe(filtered_top[cols_to_show])
 
 st.markdown("#### 📈 Factor Composite Score Bar Chart")
-st.bar_chart(filtered.head(top_n).set_index("Ticker")["factor_composite"])
+st.bar_chart(filtered_top.set_index("Ticker")["factor_composite"])
 
 st.download_button(
     label="Download as CSV",
-    data=filtered.head(top_n).to_csv(index=False),
+    data=filtered_top.to_csv(index=False),
     file_name="screener_output.csv",
     mime="text/csv",
 )
