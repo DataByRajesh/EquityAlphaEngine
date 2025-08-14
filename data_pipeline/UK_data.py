@@ -16,8 +16,7 @@ import math # For mathematical operations
 import os # For file and directory operations
 import sys # For system operations
 import sqlite3 # For SQLite database operations
-import time # For time-related functions
-from concurrent.futures import ThreadPoolExecutor, as_completed # For multithreading
+import asyncio  # For asynchronous operations
 from datetime import datetime, timedelta # For date handling
 from typing import Optional # For type hinting
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation # For precise decimal rounding
@@ -25,17 +24,23 @@ from decimal import Decimal, ROUND_HALF_UP, InvalidOperation # For precise decim
 # Third-party imports
 import numpy as np # For numerical operations
 import pandas as pd # For data manipulation
-from tqdm import tqdm # For progress bar
 import yfinance as yf # For fetching financial data
 
 
 # Local imports
-from compute_factors import compute_factors # Function to compute financial factors
-from db_utils import DBHelper # Importing the DBHelper class for database operations
-from gmail_utils import get_gmail_service, create_message, send_message # For Gmail API operations
-import config # Importing configuration file
-from financial_utils import round_financial_columns # For financial rounding utilities
 
+try:  # Prefer package-relative imports
+    from .compute_factors import compute_factors  # Function to compute financial factors
+    from .db_utils import DBHelper  # Importing the DBHelper class for database operations
+    from .gmail_utils import get_gmail_service, create_message, send_message  # For Gmail API operations
+    from . import config  # Importing configuration file
+    from .financial_utils import round_financial_columns  # For financial rounding utilities
+except ImportError:  # Fallback for running as a script without package context
+    from compute_factors import compute_factors  # type: ignore  # pragma: no cover
+    from db_utils import DBHelper  # type: ignore  # pragma: no cover
+    from gmail_utils import get_gmail_service, create_message, send_message  # type: ignore  # pragma: no cover
+    import config  # type: ignore  # pragma: no cover
+    from financial_utils import round_financial_columns  # type: ignore  # pragma: no cover
 
 # Ensure cache directory exists or create it
 os.makedirs(config.CACHE_DIR, exist_ok=True)
@@ -50,15 +55,20 @@ os.makedirs(config.DATA_DIR, exist_ok=True)
 # module does not need to know which backend is in use.  Any failures from the
 # remote cache are logged and ignored so pipeline execution can continue.
 
-from cache_utils import (
-    load_cached_fundamentals as _load_cached_fundamentals,
-    save_fundamentals_cache as _save_fundamentals_cache,
-)
 
+try:
+    from .cache_utils import (
+        load_cached_fundamentals as _load_cached_fundamentals,
+        save_fundamentals_cache as _save_fundamentals_cache,
+    )
+except ImportError:  # pragma: no cover - fallback for script execution
+    from cache_utils import (  # type: ignore
+        load_cached_fundamentals as _load_cached_fundamentals,
+        save_fundamentals_cache as _save_fundamentals_cache,
+    )
 
 def load_cached_fundamentals(
     ticker: str,
-    cache_dir: str = config.CACHE_DIR,
     expiry_minutes: int = config.CACHE_EXPIRY_MINUTES,
 ) -> Optional[dict]:
     try:
@@ -68,9 +78,7 @@ def load_cached_fundamentals(
         return None
 
 
-def save_fundamentals_cache(
-    ticker: str, data: dict, cache_dir: str = config.CACHE_DIR
-) -> None:
+def save_fundamentals_cache(ticker: str, data: dict) -> None:
     try:
         _save_fundamentals_cache(ticker, data)
     except Exception as e:  # pragma: no cover - best effort logging
@@ -99,31 +107,73 @@ def fetch_historical_data(
         logger.error(f"Error downloading historical data: {e}")
         return pd.DataFrame()
 
+async def _fetch_single_info(ticker_obj: yf.Ticker, ticker: str, retries: int, backoff_factor: int, request_timeout: int) -> tuple[str, dict]:
+    """Asynchronously fetch ``info`` for a single ticker with retries.
+
+    This helper runs the blocking ``ticker_obj.info`` call in a thread and
+    retries with exponential backoff, using ``asyncio.sleep`` to avoid blocking
+    the event loop. Returns a ``(ticker, info_dict)`` tuple where ``info_dict``
+    is empty on failure.
+    """
+    delay = config.INITIAL_DELAY
+    for attempt in range(retries):
+        try:
+            info = await asyncio.wait_for(asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout)
+            return ticker, info
+        except Exception as exc:  # pragma: no cover - network errors are non-deterministic
+            logger.warning(f"Attempt {attempt+1} failed for {ticker}: {exc}")
+            if attempt < retries - 1:
+                await asyncio.sleep(delay)
+                delay *= backoff_factor
+    return ticker, {}
+
+
 def fetch_fundamental_data(
-    ticker_symbol: str,
+    ticker_symbols: list[str],
     retries: int = config.MAX_RETRIES,
     backoff_factor: int = config.BACKOFF_FACTOR,
     use_cache: bool = True,
-    cache_expiry_minutes: int = config.CACHE_EXPIRY_MINUTES # 1 day expires by default
-) -> dict:
-    """
-    Fetches fundamental data for a given ticker, with optional caching.
-    Returns the data as a dict.
-    """
-    if use_cache:
-        cached = load_cached_fundamentals(ticker_symbol,expiry_minutes=cache_expiry_minutes)
-        if cached is not None:
-            logger.info(f"Loaded cached fundamentals for {ticker_symbol}")
-            return cached
+    cache_expiry_minutes: int = config.CACHE_EXPIRY_MINUTES,
+    request_timeout: int = 10,
+) -> list[dict]:
+    """Fetch fundamental data for multiple tickers concurrently.
 
-    ticker = yf.Ticker(ticker_symbol)
-    attempt = 0
-    delay = config.INITIAL_DELAY
-    while attempt < retries:
-        try:
-            info = ticker.info
+    The function first serves data from the cache when available. Remaining
+    tickers are fetched concurrently using ``yf.Tickers`` and non-blocking
+    retry logic. Returns a list of dictionaries with key ratios.
+    """
+
+    results: list[dict] = []
+    remaining: list[str] = []
+    if use_cache:
+        for symbol in ticker_symbols:
+            cached = load_cached_fundamentals(symbol, expiry_minutes=cache_expiry_minutes)
+            if cached is not None:
+                logger.info(f"Loaded cached fundamentals for {symbol}")
+                results.append(cached)
+            else:
+                remaining.append(symbol)
+    else:
+        remaining = list(ticker_symbols)
+
+    if remaining:
+        tickers_obj = yf.Tickers(" ".join(remaining))
+
+        async def _fetch_all() -> list[tuple[str, dict]]:
+            tasks = [
+                _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout)
+                for t in remaining
+            ]
+            return await asyncio.gather(*tasks)
+
+        fetched = asyncio.run(_fetch_all())
+
+        for symbol, info in fetched:
+            if not info:
+                logger.error(f"Failed to fetch fundamentals for {symbol} after {retries} attempts")
+                continue
             key_ratios = {
-                'Ticker': ticker_symbol,
+                'Ticker': symbol,
                 'CompanyName': info.get('longName'),
                 'returnOnEquity': info.get('returnOnEquity'),
                 'grossMargins': info.get('grossMargins'),
@@ -139,42 +189,24 @@ def fetch_fundamental_data(
                 'dividendYield': info.get('dividendYield'),
                 'marketCap': info.get('marketCap'),
                 'beta': info.get('beta'),
-                'averageVolume': info.get('averageVolume')
+                'averageVolume': info.get('averageVolume'),
             }
-            logger.info(f"Company Name: {info.get('longName')}")
+            results.append(key_ratios)
             if use_cache:
-                save_fundamentals_cache(ticker_symbol, key_ratios)
-            logger.info(f"Fetched fundamentals for {ticker_symbol}")
-            return key_ratios
-        except Exception as e:
-            logger.warning(f"Attempt {attempt+1} failed for {ticker_symbol}: {e}")
-            attempt += 1
-            time.sleep(delay)
-            delay *= backoff_factor
-    logger.error(f"Failed to fetch fundamentals for {ticker_symbol} after {retries} attempts")
-    return {}
+                save_fundamentals_cache(symbol, key_ratios)
+
+    return results
 
 def fetch_fundamentals_threaded(
     tickers: list[str], use_cache: bool = True
 ) -> list[dict]:
+    """Backward compatible wrapper for ``fetch_fundamental_data``.
+
+    Historically, fundamentals were fetched in separate threads per ticker. The
+    new implementation already performs concurrent requests, so this wrapper
+    simply delegates to :func:`fetch_fundamental_data`.
     """
-    Fetches fundamental data for a list of tickers using threads.
-    Returns a list of dicts (one per successful fetch).
-    """
-    results = []
-    with ThreadPoolExecutor(max_workers=config.MAX_THREADS) as executor:
-        futures = {executor.submit(fetch_fundamental_data, ticker, use_cache=use_cache): ticker for ticker in tickers}
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching Fundamentals"):
-            ticker = futures[future]
-            try:
-                res = future.result()
-                if res:
-                    results.append(res)
-                else:
-                    logger.warning(f"No data returned for {ticker}")
-            except Exception as e:
-                logger.error(f"Error fetching data for {ticker}: {e}")
-    return results
+    return fetch_fundamental_data(tickers, use_cache=use_cache)
 
 def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: list[dict]) -> pd.DataFrame:
     """
@@ -206,7 +238,7 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.error("No historical data fetched. Exiting.")
         return
 
-    fundamentals_list = fetch_fundamentals_threaded(tickers, use_cache=use_cache)
+    fundamentals_list = fetch_fundamental_data(tickers, use_cache=use_cache)
     if not fundamentals_list:
         logger.error("No fundamentals data fetched. Exiting.")
         return
@@ -232,7 +264,11 @@ def main(tickers, start_date, end_date, use_cache=True):
         Dbhelper.close()
 
         # Prepare and send email notification
-        gmail_service = get_gmail_service()  # Initialize Gmail API service once
+        try:
+            gmail_service = get_gmail_service()  # Initialize Gmail API service once
+        except FileNotFoundError as e:
+            logger.error(e)
+            gmail_service = None
 
         if gmail_service is None:
             logger.error("Failed to initialize Gmail service. Email notification will not be sent.")
@@ -251,11 +287,46 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.error("Failed to compute and not saved to DB. Exiting.")
 
 if __name__ == "__main__":
-    # Command line argument parsing
-    parser = argparse.ArgumentParser(description="Fetch historical and fundamental data for FTSE 100 stocks.")
-    parser.add_argument('--start_date', type=str, default='2020-01-01', help='Start date for historical data (YYYY-MM-DD)')
-    parser.add_argument('--end_date', type=str, default=datetime.today().strftime('%Y-%m-%d'), help='End date for historical data (YYYY-MM-DD)')
-    
+    import argparse
+    from datetime import datetime, timedelta
+
+    # CLI
+    parser = argparse.ArgumentParser(
+        description="Fetch historical and fundamental data for FTSE 100 stocks."
+    )
+    parser.add_argument(
+        "--start_date",
+        type=str,
+        help="Start date for historical data (YYYY-MM-DD). If provided, takes precedence over --years.",
+    )
+    parser.add_argument(
+        "--end_date",
+        type=str,
+        help="End date for historical data (YYYY-MM-DD). Defaults to today if omitted.",
+    )
+    parser.add_argument(
+        "--years",
+        type=int,
+        default=10,
+        help="Number of years back to fetch when --start_date is not provided (default: 10).",
+    )
+
     args = parser.parse_args()
 
-    main(config.FTSE_100_TICKERS, args.start_date, args.end_date)
+    # Resolve dates
+    end_date = args.end_date or datetime.today().strftime("%Y-%m-%d")
+
+    if args.start_date:
+        start_date = args.start_date
+    else:
+        years = args.years if (args.years and args.years > 0) else 10
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        start_dt = end_dt - timedelta(days=years * 365)
+        start_date = start_dt.strftime("%Y-%m-%d")
+
+    # Basic validation
+    if datetime.strptime(start_date, "%Y-%m-%d") > datetime.strptime(end_date, "%Y-%m-%d"):
+        raise SystemExit(f"start_date ({start_date}) cannot be after end_date ({end_date}).")
+
+    main(config.FTSE_100_TICKERS, start_date, end_date)
+

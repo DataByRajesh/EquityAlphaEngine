@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import streamlit as st
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
 try:
@@ -24,6 +24,7 @@ st.sidebar.header("Filter Options")
 st.sidebar.info(
     "Requires `DATABASE_URL` to connect to a hosted database such as Supabase/PostgreSQL"
 )
+
 years = st.sidebar.number_input("Years of history", min_value=1, value=10)
 min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
 top_n = st.sidebar.slider("Number of Top Stocks", min_value=5, max_value=50, value=10)
@@ -36,6 +37,7 @@ start_date = (today - timedelta(days=years * 365)).strftime("%Y-%m-%d")
 @st.cache_data(show_spinner=False)
 def load_data(start_date: str, end_date: str) -> pd.DataFrame:
     """Fetch data and load from database, caching the result."""
+
     try:
         UK_data.main(config.FTSE_100_TICKERS, start_date, end_date)
     except Exception as exc:  # pragma: no cover - best effort logging
@@ -44,12 +46,55 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
     engine = create_engine(config.DATABASE_URL)
     try:
         inspector = inspect(engine)
+        needs_fetch = True
+        if inspector.has_table("financial_tbl"):
+            # Check existing data range
+            date_range = pd.read_sql(
+                "SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM financial_tbl",
+                engine,
+            )
+            if not date_range.empty:
+                min_date = pd.to_datetime(date_range["min_date"].iloc[0])
+                max_date = pd.to_datetime(date_range["max_date"].iloc[0])
+                if pd.notna(min_date) and pd.notna(max_date):
+                    if min_date <= pd.to_datetime(
+                        start_date
+                    ) and max_date >= pd.to_datetime(end_date):
+                        needs_fetch = False
+
+        if needs_fetch:
+            try:
+                UK_data.main(config.FTSE_100_TICKERS, start_date, end_date)
+            except Exception as exc:  # pragma: no cover - best effort logging
+                logging.error("Error fetching data: %s", exc)
+            inspector = inspect(engine)
+
         if not inspector.has_table("financial_tbl"):
             st.error(
                 "Table `financial_tbl` not found. Please run `python data_pipeline/UK_data.py` to populate the database.",
             )
             return pd.DataFrame()
-        df = pd.read_sql("SELECT * FROM financial_tbl", engine)
+
+        # Ensure helpful indexes exist for faster queries
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    'CREATE INDEX IF NOT EXISTS idx_financial_tbl_date ON financial_tbl("Date")'
+                )
+            )
+            conn.execute(
+                text(
+                    'CREATE INDEX IF NOT EXISTS idx_financial_tbl_ticker ON financial_tbl("Ticker")'
+                )
+            )
+
+        query = text(
+            "SELECT Date, Ticker, CompanyName, factor_composite, "
+            "return_12m, earnings_yield, norm_quality_score, marketCap "
+            "FROM financial_tbl "
+            "WHERE Date BETWEEN :start AND :end"
+        )
+        df = pd.read_sql(query, engine, params={"start": start_date, "end": end_date})
     except SQLAlchemyError as exc:
         logging.error("Error loading financial data: %s", exc)
         st.error(
@@ -107,7 +152,9 @@ else:
     )
 
 # 3. Sort by factor_composite
+
 filtered = filtered.sort_values("factor_composite", ascending=False).reset_index(drop=True)
+
 
 # 4. Ensure CompanyName exists — if not, fetch it separately or add placeholder
 if "CompanyName" not in filtered.columns:
@@ -138,9 +185,12 @@ st.download_button(
     data=filtered.head(top_n).to_csv(index=False),
     file_name="screener_output.csv",
     mime="text/csv",
+
 )
 
 st.info(
     "Uses InvestWiseUK analytics engine pipeline. Replace with your real factor output for production if demoing."
 )
+
+=======
 

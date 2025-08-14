@@ -28,7 +28,7 @@ paste the contents of your local `secrets.toml`.
 
 The data pipeline reads the connection string using
 `st.secrets["DATABASE_URL"]`. If it is not provided a SQLite database named
-`stocks_data.db` will be created inside the pipeline's data directory.
+`app.db` will be created inside the pipeline's data directory.
 
 ### Running the Streamlit Screener
 
@@ -41,5 +41,26 @@ streamlit run streamlit_app.py
 
 On Streamlit Community Cloud, set the app's entry point to `streamlit_app.py`
 to launch the screener without extra path configuration.
+
+### Fetching UK Market Data
+
+Run the data pipeline script to download FTSE 100 data. The command below
+fetches the last decade of data by default; adjust `--years` as needed:
+
+```bash
+python data_pipeline/UK_data.py --years 10
+```
+
+
+### Concurrency configuration
+
+The pipeline executes many network-bound requests in parallel. The default
+thread count now scales with available CPU cores (roughly five threads per
+core) for better performance on larger machines. You can override this by
+setting the `MAX_THREADS` environment variable:
+
+```bash
+MAX_THREADS=20 python data_pipeline/UK_data.py --years 10
+```
 
 

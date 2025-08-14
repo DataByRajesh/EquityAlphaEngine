@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 from sqlalchemy import inspect, text
 
-from db_utils import DBHelper
+from data_pipeline.db_utils import DBHelper
 
 
 class TestDBHelperSQLInjection(unittest.TestCase):

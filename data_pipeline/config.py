@@ -67,6 +67,15 @@ if not DATABASE_URL:
 ENGINE = create_engine(DATABASE_URL)
 
 # ---------------------------------------------------------------------------
+# Gmail API configuration
+#
+# Paths to the OAuth client secrets and token files can be overridden via the
+# ``GMAIL_CREDENTIALS_FILE`` and ``GMAIL_TOKEN_FILE`` environment variables.
+# ---------------------------------------------------------------------------
+GMAIL_CREDENTIALS_FILE = os.environ.get("GMAIL_CREDENTIALS_FILE", "credentials.json")
+GMAIL_TOKEN_FILE = os.environ.get("GMAIL_TOKEN_FILE", "token.json")
+
+# ---------------------------------------------------------------------------
 # Cache backend configuration
 #
 # The cache system can be backed by different stores. Set
@@ -93,7 +102,11 @@ MAX_RETRIES = 5               # Maximum retry attempts for fetching data
 BACKOFF_FACTOR = 2            # Exponential backoff multiplier
 INITIAL_DELAY = 1             # Initial delay (seconds) before retrying a failed request
 RATE_LIMIT_DELAY = 1.5        # Delay (seconds) between API calls to avoid rate limits
-MAX_THREADS = 5               # Max concurrent threads for parallel API calls
+# Concurrency for parallel API calls. Default scales with CPU cores but can be
+# overridden via the ``MAX_THREADS`` environment variable.
+MAX_THREADS = int(
+    os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5)
+)
 CACHE_EXPIRY_MINUTES = 1440   # Cache expiry time in minutes (24 hours)
 
 # Logging configuration
