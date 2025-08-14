@@ -1,11 +1,18 @@
+import os
 import quandl
 import pandas as pd
-import streamlit as st
 
 try:
-    DEFAULT_API_KEY = st.secrets["QUANDL_API_KEY"]
-except Exception:
-    DEFAULT_API_KEY = None
+    import streamlit as st
+except ImportError:  # pragma: no cover - optional dependency
+    st = None  # type: ignore
+
+DEFAULT_API_KEY = os.environ.get("QUANDL_API_KEY")
+if DEFAULT_API_KEY is None and st is not None:
+    try:
+        DEFAULT_API_KEY = st.secrets["QUANDL_API_KEY"]  # type: ignore[index]
+    except Exception:
+        pass
 
 class FiveYearMacroDataLoader:
     def __init__(self, api_key: str | None = None,
