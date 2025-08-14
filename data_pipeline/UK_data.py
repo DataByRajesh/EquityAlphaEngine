@@ -140,7 +140,12 @@ def fetch_fundamental_data(
 
     The function first serves data from the cache when available. Remaining
     tickers are fetched concurrently using ``yf.Tickers`` and non-blocking
-    retry logic. Returns a list of dictionaries with key ratios.
+    retry logic.  If an event loop is already running (e.g. inside a notebook
+    or other async-aware environment) the existing loop is reused via
+    :func:`asyncio.get_event_loop` and ``run_until_complete``.  Should the async
+    execution fail for any reason, the function falls back to sequential
+    fetching to ensure callers receive best-effort data.  Returns a list of
+    dictionaries with key ratios.
     """
 
     results: list[dict] = []
@@ -166,7 +171,27 @@ def fetch_fundamental_data(
             ]
             return await asyncio.gather(*tasks)
 
-        fetched = asyncio.run(_fetch_all())
+        fetched: list[tuple[str, dict]] = []
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                fetched = loop.run_until_complete(_fetch_all())
+            else:
+                fetched = loop.run_until_complete(_fetch_all())
+        except RuntimeError:
+            fetched = asyncio.run(_fetch_all())
+        except Exception as e:
+            logger.error(
+                f"Asynchronous fetch failed, falling back to sequential execution: {e}",
+                exc_info=True,
+            )
+            for t in remaining:
+                try:
+                    info = tickers_obj.tickers[t].info
+                except Exception as exc:  # pragma: no cover - best effort fallback
+                    logger.error(f"Synchronous fetch failed for {t}: {exc}")
+                    info = {}
+                fetched.append((t, info))
 
         for symbol, info in fetched:
             if not info:
