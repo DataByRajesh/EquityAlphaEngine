@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 import numpy as np
 import streamlit as st
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 try:
@@ -22,6 +22,12 @@ st.title("📊 InvestWiseUK Multi-Factor Stock Screener")
 def load_data():
     engine = create_engine(config.DATABASE_URL)
     try:
+        inspector = inspect(engine)
+        if not inspector.has_table("financial_tbl"):
+            st.error(
+                "Table `financial_tbl` not found. Please run `python data_pipeline/UK_data.py` to populate the database."
+            )
+            return pd.DataFrame()
         df = pd.read_sql("SELECT * FROM financial_tbl", engine)
     except SQLAlchemyError as exc:
         logging.error("Error loading financial data: %s", exc)
