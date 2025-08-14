@@ -16,7 +16,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Dict
 
-import config
+from . import config
 
 
 CACHE_FILE = os.path.join(config.CACHE_DIR, "fundamentals_cache.json")

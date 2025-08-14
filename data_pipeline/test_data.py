@@ -7,9 +7,9 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 
-import market_data
-from db_utils import DBHelper
-from compute_factors import compute_factors
+from data_pipeline import market_data
+from data_pipeline.db_utils import DBHelper
+from data_pipeline.compute_factors import compute_factors
 
 class TestMarketData(unittest.TestCase):
     @classmethod

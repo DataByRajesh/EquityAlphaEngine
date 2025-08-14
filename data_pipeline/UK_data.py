@@ -30,11 +30,11 @@ import yfinance as yf # For fetching financial data
 
 
 # Local imports
-from compute_factors import compute_factors # Function to compute financial factors
-from db_utils import DBHelper # Importing the DBHelper class for database operations
-from gmail_utils import get_gmail_service, create_message, send_message # For Gmail API operations
-import config # Importing configuration file
-from financial_utils import round_financial_columns # For financial rounding utilities
+from .compute_factors import compute_factors # Function to compute financial factors
+from .db_utils import DBHelper # Importing the DBHelper class for database operations
+from .gmail_utils import get_gmail_service, create_message, send_message # For Gmail API operations
+from . import config # Importing configuration file
+from .financial_utils import round_financial_columns # For financial rounding utilities
 
 
 # Ensure cache directory exists or create it
@@ -50,7 +50,7 @@ os.makedirs(config.DATA_DIR, exist_ok=True)
 # module does not need to know which backend is in use.  Any failures from the
 # remote cache are logged and ignored so pipeline execution can continue.
 
-from cache_utils import (
+from .cache_utils import (
     load_cached_fundamentals as _load_cached_fundamentals,
     save_fundamentals_cache as _save_fundamentals_cache,
 )
