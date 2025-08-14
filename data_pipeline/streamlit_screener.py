@@ -1,7 +1,10 @@
-import streamlit as st
+import logging
+
 import pandas as pd
 import numpy as np
+import streamlit as st
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 
 try:
     from . import config
@@ -18,10 +21,23 @@ st.title("📊 InvestWiseUK Multi-Factor Stock Screener")
 @st.cache_data
 def load_data():
     engine = create_engine(config.DATABASE_URL)
-    df = pd.read_sql("SELECT * FROM financial_tbl", engine)
-    engine.dispose()
+    try:
+        df = pd.read_sql("SELECT * FROM financial_tbl", engine)
+    except SQLAlchemyError as exc:
+        logging.error("Error loading financial data: %s", exc)
+        st.error(
+            "Unable to load financial data. Please ensure the database is initialized."
+        )
+        return pd.DataFrame()
+    finally:
+        engine.dispose()
     # Clean NaNs/infs
-    for col in ['factor_composite', 'return_12m', 'earnings_yield', 'norm_quality_score']:
+    for col in [
+        "factor_composite",
+        "return_12m",
+        "earnings_yield",
+        "norm_quality_score",
+    ]:
         if col in df.columns:
             df[col] = df[col].replace([np.inf, -np.inf], np.nan).fillna(0)
     return df
@@ -29,6 +45,9 @@ def load_data():
 # Load the data with a spinner for user feedback
 with st.spinner("Loading data..."):
     df = load_data()
+
+if df is None or df.empty:
+    st.stop()
 
 
 # --- Sidebar filters ---
