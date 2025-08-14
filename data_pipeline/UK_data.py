@@ -16,8 +16,7 @@ import math # For mathematical operations
 import os # For file and directory operations
 import sys # For system operations
 import sqlite3 # For SQLite database operations
-import time # For time-related functions
-from concurrent.futures import ThreadPoolExecutor, as_completed # For multithreading
+import asyncio  # For asynchronous operations
 from datetime import datetime, timedelta # For date handling
 from typing import Optional # For type hinting
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation # For precise decimal rounding
@@ -25,7 +24,6 @@ from decimal import Decimal, ROUND_HALF_UP, InvalidOperation # For precise decim
 # Third-party imports
 import numpy as np # For numerical operations
 import pandas as pd # For data manipulation
-from tqdm import tqdm # For progress bar
 import yfinance as yf # For fetching financial data
 
 
@@ -109,31 +107,73 @@ def fetch_historical_data(
         logger.error(f"Error downloading historical data: {e}")
         return pd.DataFrame()
 
+async def _fetch_single_info(ticker_obj: yf.Ticker, ticker: str, retries: int, backoff_factor: int, request_timeout: int) -> tuple[str, dict]:
+    """Asynchronously fetch ``info`` for a single ticker with retries.
+
+    This helper runs the blocking ``ticker_obj.info`` call in a thread and
+    retries with exponential backoff, using ``asyncio.sleep`` to avoid blocking
+    the event loop. Returns a ``(ticker, info_dict)`` tuple where ``info_dict``
+    is empty on failure.
+    """
+    delay = config.INITIAL_DELAY
+    for attempt in range(retries):
+        try:
+            info = await asyncio.wait_for(asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout)
+            return ticker, info
+        except Exception as exc:  # pragma: no cover - network errors are non-deterministic
+            logger.warning(f"Attempt {attempt+1} failed for {ticker}: {exc}")
+            if attempt < retries - 1:
+                await asyncio.sleep(delay)
+                delay *= backoff_factor
+    return ticker, {}
+
+
 def fetch_fundamental_data(
-    ticker_symbol: str,
+    ticker_symbols: list[str],
     retries: int = config.MAX_RETRIES,
     backoff_factor: int = config.BACKOFF_FACTOR,
     use_cache: bool = True,
-    cache_expiry_minutes: int = config.CACHE_EXPIRY_MINUTES # 1 day expires by default
-) -> dict:
-    """
-    Fetches fundamental data for a given ticker, with optional caching.
-    Returns the data as a dict.
-    """
-    if use_cache:
-        cached = load_cached_fundamentals(ticker_symbol,expiry_minutes=cache_expiry_minutes)
-        if cached is not None:
-            logger.info(f"Loaded cached fundamentals for {ticker_symbol}")
-            return cached
+    cache_expiry_minutes: int = config.CACHE_EXPIRY_MINUTES,
+    request_timeout: int = 10,
+) -> list[dict]:
+    """Fetch fundamental data for multiple tickers concurrently.
 
-    ticker = yf.Ticker(ticker_symbol)
-    attempt = 0
-    delay = config.INITIAL_DELAY
-    while attempt < retries:
-        try:
-            info = ticker.info
+    The function first serves data from the cache when available. Remaining
+    tickers are fetched concurrently using ``yf.Tickers`` and non-blocking
+    retry logic. Returns a list of dictionaries with key ratios.
+    """
+
+    results: list[dict] = []
+    remaining: list[str] = []
+    if use_cache:
+        for symbol in ticker_symbols:
+            cached = load_cached_fundamentals(symbol, expiry_minutes=cache_expiry_minutes)
+            if cached is not None:
+                logger.info(f"Loaded cached fundamentals for {symbol}")
+                results.append(cached)
+            else:
+                remaining.append(symbol)
+    else:
+        remaining = list(ticker_symbols)
+
+    if remaining:
+        tickers_obj = yf.Tickers(" ".join(remaining))
+
+        async def _fetch_all() -> list[tuple[str, dict]]:
+            tasks = [
+                _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout)
+                for t in remaining
+            ]
+            return await asyncio.gather(*tasks)
+
+        fetched = asyncio.run(_fetch_all())
+
+        for symbol, info in fetched:
+            if not info:
+                logger.error(f"Failed to fetch fundamentals for {symbol} after {retries} attempts")
+                continue
             key_ratios = {
-                'Ticker': ticker_symbol,
+                'Ticker': symbol,
                 'CompanyName': info.get('longName'),
                 'returnOnEquity': info.get('returnOnEquity'),
                 'grossMargins': info.get('grossMargins'),
@@ -149,42 +189,24 @@ def fetch_fundamental_data(
                 'dividendYield': info.get('dividendYield'),
                 'marketCap': info.get('marketCap'),
                 'beta': info.get('beta'),
-                'averageVolume': info.get('averageVolume')
+                'averageVolume': info.get('averageVolume'),
             }
-            logger.info(f"Company Name: {info.get('longName')}")
+            results.append(key_ratios)
             if use_cache:
-                save_fundamentals_cache(ticker_symbol, key_ratios)
-            logger.info(f"Fetched fundamentals for {ticker_symbol}")
-            return key_ratios
-        except Exception as e:
-            logger.warning(f"Attempt {attempt+1} failed for {ticker_symbol}: {e}")
-            attempt += 1
-            time.sleep(delay)
-            delay *= backoff_factor
-    logger.error(f"Failed to fetch fundamentals for {ticker_symbol} after {retries} attempts")
-    return {}
+                save_fundamentals_cache(symbol, key_ratios)
+
+    return results
 
 def fetch_fundamentals_threaded(
     tickers: list[str], use_cache: bool = True
 ) -> list[dict]:
+    """Backward compatible wrapper for ``fetch_fundamental_data``.
+
+    Historically, fundamentals were fetched in separate threads per ticker. The
+    new implementation already performs concurrent requests, so this wrapper
+    simply delegates to :func:`fetch_fundamental_data`.
     """
-    Fetches fundamental data for a list of tickers using threads.
-    Returns a list of dicts (one per successful fetch).
-    """
-    results = []
-    with ThreadPoolExecutor(max_workers=config.MAX_THREADS) as executor:
-        futures = {executor.submit(fetch_fundamental_data, ticker, use_cache=use_cache): ticker for ticker in tickers}
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching Fundamentals"):
-            ticker = futures[future]
-            try:
-                res = future.result()
-                if res:
-                    results.append(res)
-                else:
-                    logger.warning(f"No data returned for {ticker}")
-            except Exception as e:
-                logger.error(f"Error fetching data for {ticker}: {e}")
-    return results
+    return fetch_fundamental_data(tickers, use_cache=use_cache)
 
 def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: list[dict]) -> pd.DataFrame:
     """
@@ -216,7 +238,7 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.error("No historical data fetched. Exiting.")
         return
 
-    fundamentals_list = fetch_fundamentals_threaded(tickers, use_cache=use_cache)
+    fundamentals_list = fetch_fundamental_data(tickers, use_cache=use_cache)
     if not fundamentals_list:
         logger.error("No fundamentals data fetched. Exiting.")
         return
