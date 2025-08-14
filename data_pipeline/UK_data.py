@@ -252,6 +252,7 @@ def main(tickers, start_date, end_date, use_cache=True):
 
 if __name__ == "__main__":
     # Command line argument parsing
+
     parser = argparse.ArgumentParser(
         description="Fetch historical and fundamental data for FTSE 100 stocks."
     )
@@ -272,7 +273,13 @@ if __name__ == "__main__":
         help="Number of years back to fetch if start_date is not provided (default: 10)",
     )
 
+
     args = parser.parse_args()
+    if args.years:
+        end = datetime.today()
+        start = end - timedelta(days=args.years * 365)
+        args.start_date = start.strftime('%Y-%m-%d')
+        args.end_date = end.strftime('%Y-%m-%d')
 
     end_date = args.end_date or datetime.today().strftime("%Y-%m-%d")
     if args.start_date:
