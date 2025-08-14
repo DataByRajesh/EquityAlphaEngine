@@ -10,6 +10,22 @@
 > This is a **pre-release** version. The project is under active development.
 > Phase 2 (Macro Data Integration) is planned in upcoming releases.
 
+### Installing dependencies
+
+For a lightweight setup that only runs the Streamlit screener locally, install
+the packages in `requirements.txt`:
+
+```bash
+pip install -r requirements.txt
+```
+
+To run the full data pipeline or deploy in a cloud environment, use the
+broader dependency set in `requirements-pipeline.txt`:
+
+```bash
+pip install -r requirements-pipeline.txt
+```
+
 ### Database configuration
 
 The data pipeline now relies on SQLAlchemy for database access.  Set the

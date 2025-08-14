@@ -10,6 +10,11 @@
 - Provides an interactive stock screener via Streamlit
 - Sends Gmail alerts on data pipeline events
 
+> ℹ️ **Dependency Note:**
+> The root `requirements.txt` installs only the Streamlit screener.
+> For the complete data pipeline or cloud deployment, use
+> `requirements-pipeline.txt`.
+
 ---
 
 ## ✅ Local Deployment Checklist
@@ -24,7 +29,7 @@ cd EquityAlphaEngine/data_pipeline
 ```
 python -m venv env
 source env/bin/activate  # or env\Scripts\activate on Windows
-pip install -r requirements.txt
+pip install -r ../requirements-pipeline.txt
 ```
 
 ### 3️⃣ Configure Your `config.py`
