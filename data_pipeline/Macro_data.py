@@ -1,4 +1,5 @@
 import os
+import logging
 
 import quandl
 import pandas as pd
@@ -23,6 +24,10 @@ class FiveYearMacroDataLoader:
                  start_date: str = "2020-01-01",
                  end_date: str = "2025-01-01"):
         self.api_key = api_key or DEFAULT_API_KEY
+        if self.api_key is None:
+            raise ValueError(
+                "QUANDL_API_KEY is not configured. Set the env var or pass api_key."
+            )
         quandl.ApiConfig.api_key = self.api_key
         self.start_date = start_date
         self.end_date = end_date
