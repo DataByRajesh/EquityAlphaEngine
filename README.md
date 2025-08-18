@@ -24,6 +24,8 @@ Edit `.streamlit/secrets.toml` and fill in your own values. At a minimum set
 required API keys like `QUANDL_API_KEY`. These values can also be supplied via
 environment variables when Streamlit's secrets are not available.
 
+> **Deployment note:** The Streamlit screener will not run without a database connection. Set the `DATABASE_URL` secret or environment variable in your hosting environment (e.g. Streamlit Community Cloud) before starting the app.
+
 When deploying to Streamlit Cloud, open the app's **⚙️ Settings → Secrets** and
 paste the contents of your local `secrets.toml`.
 
@@ -68,6 +70,8 @@ streamlit run streamlit_app.py
 
 On Streamlit Community Cloud, set the app's entry point to `streamlit_app.py`
 to launch the screener without extra path configuration.
+
+Ensure the `DATABASE_URL` environment variable or Streamlit secret is set before running; the screener requires a live database connection.
 
 ### Fetching UK Market Data
 
