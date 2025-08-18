@@ -42,10 +42,9 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
     try:
         inspector = inspect(engine)
         if not inspector.has_table("financial_tbl"):
-            st.error(
-                "Table `financial_tbl` not found. Please run `python data_pipeline/update_financial_data.py` to populate the database.",
+            raise RuntimeError(
+                "Table `financial_tbl` not found. Please run `python data_pipeline/update_financial_data.py` to populate the database."
             )
-            return pd.DataFrame()
 
         # Check existing data range so we can warn when data is missing
         date_range = pd.read_sql(
@@ -91,9 +90,19 @@ def load_data(start_date: str, end_date: str) -> pd.DataFrame:
             df[col] = df[col].replace([np.inf, -np.inf], np.nan).fillna(0)
     return df
 
-
-with st.spinner("Loading data..."):
-    df = load_data(start_date, end_date)
+database_url = getattr(config, "DATABASE_URL", None)
+if not database_url:
+    st.error(
+        "`DATABASE_URL` is not configured. Set it via Streamlit secrets or the `DATABASE_URL` environment variable."
+    )
+    df = pd.DataFrame()
+else:
+    with st.spinner("Loading data..."):
+        try:
+            df = load_data(start_date, end_date)
+        except RuntimeError as exc:
+            st.error(str(exc))
+            df = pd.DataFrame()
 
 if df is None or df.empty:
     st.warning("No data found. Adjust filters or initialize the database.")
