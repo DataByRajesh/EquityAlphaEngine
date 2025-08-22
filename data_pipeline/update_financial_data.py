@@ -2,9 +2,9 @@
 
 This script inspects the existing ``financial_tbl`` table in the configured
 ``DATABASE_URL``. If the requested date range is not present it will invoke the
-full UK data pipeline to fetch and store the data.  Intended for use as a
-scheduled job so that the Streamlit app can simply read from an already
-populated database.
+full UK data pipeline to fetch and store the data. Intended for use as a
+scheduled job so that dashboards can simply read from an already populated
+database.
 """
 
 from __future__ import annotations
