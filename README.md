@@ -10,32 +10,10 @@
 > This is a **pre-release** version. The project is under active development.
 > Phase 2 (Macro Data Integration) is planned in upcoming releases.
 
-### Secrets configuration
-
-Streamlit's secrets mechanism is used for values such as database connection
-strings and API keys. Start by copying the example secrets file:
-
-```bash
-cp .streamlit/secrets.example.toml .streamlit/secrets.toml
-```
-
-Edit `.streamlit/secrets.toml` and fill in your own values. At a minimum set
-`DATABASE_URL` (e.g. `postgresql://user:password@host:5432/database`) and any
-required API keys like `QUANDL_API_KEY`. These values can also be supplied via
-environment variables when Streamlit's secrets are not available.
-
-When deploying to Streamlit Cloud, open the app's **⚙️ Settings → Secrets** and
-paste the contents of your local `secrets.toml`.
-
-The data pipeline first checks the `DATABASE_URL` environment variable and then
-`st.secrets["DATABASE_URL"]`. If neither is provided a SQLite database named
-`app.db` will be created inside the pipeline's data directory.
-
-
 ### Required credentials
 
 The project expects several environment variables for external services. They
-can be supplied via a local `.env` file or added to `.streamlit/secrets.toml`.
+can be supplied via a local `.env` file.
 
 ```env
 QUANDL_API_KEY=your_quandl_key
@@ -49,25 +27,16 @@ CACHE_S3_PREFIX=cache/prefix
 
 - `QUANDL_API_KEY` – used by `data_pipeline/Macro_data.py` for macroeconomic
   data downloads.
-- `DATABASE_URL` – consumed throughout the pipeline and Streamlit app for
-  database connections.
+- `DATABASE_URL` – consumed throughout the pipeline for database connections.
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION` –
   authenticate to Amazon S3 when using the S3 cache backend.
 - `CACHE_S3_BUCKET` and `CACHE_S3_PREFIX` – define the S3 location for cached
   fundamentals in `data_pipeline/cache_utils.py`.
 
+### Dashboard integration
 
-### Running the Streamlit Screener
-
-An interactive stock screener is available via Streamlit. Run it from the
-project root with:
-
-```bash
-streamlit run streamlit_app.py
-```
-
-On Streamlit Community Cloud, set the app's entry point to `streamlit_app.py`
-to launch the screener without extra path configuration.
+Connect business intelligence tools such as Tableau or PowerBI directly to the
+database populated by the data pipeline to build visual dashboards.
 
 ### Fetching UK Market Data
 
