@@ -14,7 +14,7 @@ _PACKAGE_DIR = Path(__file__).resolve().parent
 if str(_PACKAGE_DIR) not in sys.path:
     sys.path.append(str(_PACKAGE_DIR))
 
-__all__ = ["streamlit_screener"]
+__all__: list[str] = []
 
 
 def __getattr__(name: str) -> Any:
