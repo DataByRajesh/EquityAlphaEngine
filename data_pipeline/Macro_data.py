@@ -1,21 +1,10 @@
 import logging
 import os
-import logging
 
 import quandl
 import pandas as pd
 
-try:
-    import streamlit as st
-except ImportError:  # pragma: no cover - optional dependency
-    st = None  # type: ignore
-
 DEFAULT_API_KEY = os.environ.get("QUANDL_API_KEY")
-if DEFAULT_API_KEY is None and st is not None:
-    try:
-        DEFAULT_API_KEY = st.secrets["QUANDL_API_KEY"]  # type: ignore[index]
-    except Exception:
-        pass
 
 
 logger = logging.getLogger(__name__)
