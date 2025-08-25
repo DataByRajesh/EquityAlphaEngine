@@ -1,6 +1,6 @@
 import pandas as pd
 
-from data_pipeline import UK_data
+from data_pipeline import market_data
 
 
 def test_main_stores_macro_data(monkeypatch):
@@ -19,9 +19,9 @@ def test_main_stores_macro_data(monkeypatch):
         def close(self):
             calls.append(("close",))
 
-    monkeypatch.setattr(UK_data, "DBHelper", DummyDB)
+    monkeypatch.setattr(market_data, "DBHelper", DummyDB)
     monkeypatch.setattr(
-        UK_data,
+        market_data,
         "fetch_historical_data",
         lambda tickers, start, end: pd.DataFrame(
             {
@@ -37,18 +37,18 @@ def test_main_stores_macro_data(monkeypatch):
         ),
     )
     monkeypatch.setattr(
-        UK_data,
+        market_data,
         "fetch_fundamental_data",
         lambda tickers, use_cache=True: [{"Ticker": "A"}],
     )
     monkeypatch.setattr(
-        UK_data,
+        market_data,
         "compute_factors",
         lambda df: pd.DataFrame({"Date": [pd.Timestamp("2020-01-01")], "Ticker": ["A"]}),
     )
-    monkeypatch.setattr(UK_data, "round_financial_columns", lambda df: df)
+    monkeypatch.setattr(market_data, "round_financial_columns", lambda df: df)
     monkeypatch.setattr(
-        UK_data,
+        market_data,
         "fetch_macro_data",
         lambda start, end: pd.DataFrame(
             {
@@ -58,11 +58,11 @@ def test_main_stores_macro_data(monkeypatch):
             }
         ),
     )
-    monkeypatch.setattr(UK_data, "get_gmail_service", lambda: object())
-    monkeypatch.setattr(UK_data, "create_message", lambda *args, **kwargs: None)
-    monkeypatch.setattr(UK_data, "send_message", lambda *args, **kwargs: None)
+    monkeypatch.setattr(market_data, "get_gmail_service", lambda: object())
+    monkeypatch.setattr(market_data, "create_message", lambda *args, **kwargs: None)
+    monkeypatch.setattr(market_data, "send_message", lambda *args, **kwargs: None)
 
-    UK_data.main(["A"], "2020-01-01", "2020-12-31")
+    market_data.main(["A"], "2020-01-01", "2020-12-31")
 
     created_tables = [c[1] for c in calls if c[0] == "create"]
     assert "macro_data_tbl" in created_tables
