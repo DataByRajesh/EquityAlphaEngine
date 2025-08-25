@@ -1,0 +1,22 @@
+# Ignore Git metadata
+.git
+.gitignore
+.github
+
+# Exclude tests
+tests
+
+# Python caches and local artifacts
+__pycache__/
+*.py[cod]
+*.so
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
