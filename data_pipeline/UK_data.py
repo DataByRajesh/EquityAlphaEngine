@@ -238,17 +238,6 @@ def fetch_fundamental_data(
     else:
         return asyncio.create_task(_fetch_all())
 
-def fetch_fundamentals_threaded(
-    tickers: list[str], use_cache: bool = True
-) -> list[dict]:
-    """Backward compatible wrapper for ``fetch_fundamental_data``.
-
-    Historically, fundamentals were fetched in separate threads per ticker. The
-    new implementation already performs concurrent requests, so this wrapper
-    simply delegates to :func:`fetch_fundamental_data`.
-    """
-    return fetch_fundamental_data(tickers, use_cache=use_cache)
-
 def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: list[dict]) -> pd.DataFrame:
     """
     Merges price data DataFrame with a list of fundamental dicts (as DataFrame).
