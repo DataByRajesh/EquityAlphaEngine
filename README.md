@@ -38,6 +38,8 @@ CACHE_S3_PREFIX=cache/prefix
 
 Connect business intelligence tools such as Tableau or PowerBI directly to the
 database populated by the data pipeline to build visual dashboards.
+For step-by-step instructions on connecting Tableau, see
+[docs/tableau.md](docs/tableau.md).
 
 ### Fetching UK Market Data
 
