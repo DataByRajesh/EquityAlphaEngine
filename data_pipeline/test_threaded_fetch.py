@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from data_pipeline import market_data
+from data_pipeline.market_data import fetch_fundamentals_threaded
 
 class TestThreadedFetch(unittest.TestCase):
     @patch('data_pipeline.market_data.fetch_fundamental_data')
@@ -11,7 +11,7 @@ class TestThreadedFetch(unittest.TestCase):
             {"Ticker": "C.L", "returnOnEquity": 0.3}
         ]
         tickers = ["A.L", "B.L", "C.L"]
-        out = market_data.fetch_fundamentals_threaded(tickers, use_cache=False)
+        out = fetch_fundamentals_threaded(tickers, use_cache=False)
         self.assertEqual(len(out), 3)
         tickers_seen = set([d['Ticker'] for d in out])
         self.assertEqual(tickers_seen, set(["A.L", "B.L", "C.L"]))
