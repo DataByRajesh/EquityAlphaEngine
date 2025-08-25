@@ -1,0 +1,24 @@
+{
+  "family": "equity-alpha-engine",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/equity-alpha-engine:latest",
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {"name": "ENV", "value": "production"},
+        {"name": "LOG_LEVEL", "value": "info"}
+      ]
+    }
+  ]
+}
