@@ -8,7 +8,8 @@
 
 > 📝 **Note:**
 > This is a **pre-release** version. The project is under active development.
-> Phase 2 (Macro Data Integration) is planned in upcoming releases.
+> Macroeconomic data is integrated into the pipeline and stored alongside market
+> data.
 
 ### Required credentials
 
@@ -25,8 +26,8 @@ CACHE_S3_BUCKET=your-bucket
 CACHE_S3_PREFIX=cache/prefix
 ```
 
-- `QUANDL_API_KEY` – used by `data_pipeline/Macro_data.py` for macroeconomic
-  data downloads.
+- `QUANDL_API_KEY` – used by `data_pipeline/Macro_data.py` and consumed by
+  `data_pipeline/UK_data.py` to persist macroeconomic indicators.
 - `DATABASE_URL` – consumed throughout the pipeline for database connections.
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION` –
   authenticate to Amazon S3 when using the S3 cache backend.
