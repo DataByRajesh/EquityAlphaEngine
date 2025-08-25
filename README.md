@@ -27,7 +27,7 @@ CACHE_S3_PREFIX=cache/prefix
 ```
 
 - `QUANDL_API_KEY` – used by `data_pipeline/Macro_data.py` and consumed by
-  `data_pipeline/UK_data.py` to persist macroeconomic indicators.
+  `data_pipeline/market_data.py` to persist macroeconomic indicators.
 - `DATABASE_URL` – consumed throughout the pipeline for database connections.
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION` –
   authenticate to Amazon S3 when using the S3 cache backend.
@@ -45,7 +45,7 @@ Run the data pipeline script to download FTSE 100 data. The command below
 fetches the last decade of data by default; adjust `--years` as needed:
 
 ```bash
-python data_pipeline/UK_data.py --years 10
+python data_pipeline/market_data.py --years 10
 ```
 
 
@@ -57,7 +57,7 @@ core) for better performance on larger machines. You can override this by
 setting the `MAX_THREADS` environment variable:
 
 ```bash
-MAX_THREADS=20 python data_pipeline/UK_data.py --years 10
+MAX_THREADS=20 python data_pipeline/market_data.py --years 10
 ```
 
 

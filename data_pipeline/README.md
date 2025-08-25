@@ -107,7 +107,7 @@ GMAIL_TOKEN_FILE=token.json
 ## ✅ Running the Data Pipeline Locally
 This will fetch data, compute factors, and update the database.
 ```
-python UK_data.py --start_date 2020-01-01 --end_date 2025-07-17
+python market_data.py --start_date 2020-01-01 --end_date 2025-07-17
 ```
 The pipeline also pulls UK GDP growth and inflation figures and stores them in
 the `macro_data_tbl` table.

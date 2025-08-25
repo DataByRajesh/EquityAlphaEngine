@@ -65,8 +65,8 @@ class TestMarketData(unittest.TestCase):
         mock_tickers.return_value.tickers = {ticker_name: mock_ticker_obj}
 
         original_run = asyncio.run
-        with patch('data_pipeline.UK_data.asyncio.run', side_effect=original_run) as mock_run, \
-             patch('data_pipeline.UK_data.asyncio.create_task') as mock_ct:
+        with patch('data_pipeline.market_data.asyncio.run', side_effect=original_run) as mock_run, \
+             patch('data_pipeline.market_data.asyncio.create_task') as mock_ct:
             result_list = market_data.fetch_fundamental_data([ticker_name], use_cache=False)
             self.assertTrue(mock_run.called)
             mock_ct.assert_not_called()
@@ -84,8 +84,8 @@ class TestMarketData(unittest.TestCase):
 
         async def runner():
             original_create = asyncio.create_task
-            with patch('data_pipeline.UK_data.asyncio.run', wraps=asyncio.run) as mock_run, \
-                 patch('data_pipeline.UK_data.asyncio.create_task', side_effect=original_create) as mock_ct:
+            with patch('data_pipeline.market_data.asyncio.run', wraps=asyncio.run) as mock_run, \
+                 patch('data_pipeline.market_data.asyncio.create_task', side_effect=original_create) as mock_ct:
                 result = await market_data.fetch_fundamental_data([ticker_name], use_cache=False)
                 self.assertFalse(mock_run.called)
                 self.assertTrue(mock_ct.called)
