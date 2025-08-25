@@ -1,4 +1,4 @@
-import io
+from io import StringIO
 import logging
 import pandas as pd
 from sqlalchemy import create_engine
