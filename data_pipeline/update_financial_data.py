@@ -2,7 +2,7 @@
 
 This script inspects the existing ``financial_tbl`` table in the configured
 ``DATABASE_URL``. If the requested date range is not present it will invoke the
-full UK data pipeline to fetch and store the data. Intended for use as a
+full market data pipeline to fetch and store the data. Intended for use as a
 scheduled job so that dashboards can simply read from an already populated
 database.
 """
@@ -17,10 +17,10 @@ import pandas as pd
 from sqlalchemy import create_engine, inspect
 
 try:  # Prefer package-relative imports
-    from . import config, UK_data
+    from . import config, market_data
 except ImportError:  # pragma: no cover - fallback when run as script
     import config  # type: ignore
-    import UK_data  # type: ignore
+    import market_data  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -51,11 +51,11 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
 
 
 def main(start_date: str, end_date: str) -> None:
-    """Run ``UK_data.main`` if the database is missing requested data."""
+    """Run ``market_data.main`` if the database is missing requested data."""
     engine = create_engine(config.DATABASE_URL)
     try:
         if _needs_fetch(engine, start_date, end_date):
-            UK_data.main(config.FTSE_100_TICKERS, start_date, end_date)
+            market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
         else:
             logger.info("financial_tbl already contains requested data; skipping fetch.")
     finally:

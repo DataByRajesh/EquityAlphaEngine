@@ -1,20 +1,21 @@
 import unittest
 from unittest.mock import patch
-from data_pipeline.market_data import fetch_fundamentals_threaded
+from data_pipeline import market_data
 
-class TestThreadedFetch(unittest.TestCase):
+
+class TestFundamentalFetch(unittest.TestCase):
     @patch('data_pipeline.market_data.fetch_fundamental_data')
-    def test_multi_ticker_threaded(self, mock_fetch):
+    def test_multi_ticker_fetch(self, mock_fetch):
         mock_fetch.return_value = [
             {"Ticker": "A.L", "returnOnEquity": 0.1},
             {"Ticker": "B.L", "returnOnEquity": 0.2},
             {"Ticker": "C.L", "returnOnEquity": 0.3}
         ]
         tickers = ["A.L", "B.L", "C.L"]
-        out = fetch_fundamentals_threaded(tickers, use_cache=False)
+        out = market_data.fetch_fundamental_data(tickers, use_cache=False)
         self.assertEqual(len(out), 3)
-        tickers_seen = set([d['Ticker'] for d in out])
-        self.assertEqual(tickers_seen, set(["A.L", "B.L", "C.L"]))
+        tickers_seen = {d['Ticker'] for d in out}
+        self.assertEqual(tickers_seen, {"A.L", "B.L", "C.L"})
         return_on_equity = {d['Ticker']: d['returnOnEquity'] for d in out}
         self.assertAlmostEqual(return_on_equity["A.L"], 0.1)
         self.assertAlmostEqual(return_on_equity["B.L"], 0.2)
