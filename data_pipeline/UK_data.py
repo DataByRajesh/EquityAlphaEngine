@@ -22,12 +22,14 @@ try:  # Prefer package-relative imports
     from .gmail_utils import get_gmail_service, create_message, send_message  # For Gmail API operations
     from . import config  # Importing configuration file
     from .financial_utils import round_financial_columns  # For financial rounding utilities
+    from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
 except ImportError:  # Fallback for running as a script without package context
     from compute_factors import compute_factors  # type: ignore  # pragma: no cover
     from db_utils import DBHelper  # type: ignore  # pragma: no cover
     from gmail_utils import get_gmail_service, create_message, send_message  # type: ignore  # pragma: no cover
     import config  # type: ignore  # pragma: no cover
     from financial_utils import round_financial_columns  # type: ignore  # pragma: no cover
+    from Macro_data import FiveYearMacroDataLoader  # type: ignore  # pragma: no cover
 
 # Module-level logger
 logger = logging.getLogger(__name__)
@@ -73,6 +75,24 @@ def save_fundamentals_cache(ticker: str, data: dict) -> None:
         _save_fundamentals_cache(ticker, data)
     except Exception as e:  # pragma: no cover - best effort logging
         logger.warning(f"Failed to save cache for {ticker}: {e}")
+
+
+def fetch_macro_data(start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+    """Fetch macroeconomic indicators for the given date range.
+
+    Returns a DataFrame or ``None`` if the loader fails or returns no data.
+    """
+    try:
+        loader = FiveYearMacroDataLoader(start_date=start_date, end_date=end_date)
+        macro_df = loader.get_combined_macro_data()
+        if macro_df is None or macro_df.empty:
+            logger.error("No macroeconomic data fetched.")
+            return None
+        logger.info("Macroeconomic data fetched successfully.")
+        return macro_df
+    except Exception as exc:  # pragma: no cover - best effort logging
+        logger.error(f"Error fetching macroeconomic data: {exc}")
+        return None
 
 def fetch_historical_data(
     tickers: list[str], start_date: str, end_date: str
@@ -310,6 +330,21 @@ def main(tickers, start_date, end_date, use_cache=True):
             financial_df,
             unique_cols=["Date", "Ticker"],
         )  # Upsert computed factors
+
+        macro_df = fetch_macro_data(start_date, end_date)
+        if macro_df is not None:
+            macro_tbl = "macro_data_tbl"
+            Dbhelper.create_table(
+                macro_tbl,
+                macro_df,
+                primary_keys=["Date"],
+            )  # Create table if not exists
+            Dbhelper.insert_dataframe(
+                macro_tbl,
+                macro_df,
+                unique_cols=["Date"],
+            )  # Upsert macro data
+
         Dbhelper.close()
 
         # Prepare and send email notification

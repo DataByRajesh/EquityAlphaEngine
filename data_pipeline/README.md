@@ -5,6 +5,7 @@
 
 **EquityAlphaEngine** is a UK Equity Analytics Platform that:
 - Fetches financial fundamentals and historical data
+- Ingests UK macroeconomic indicators (GDP growth and inflation)
 - Computes multi-factor scoring models
 - Caches data locally with expiry control
 - Outputs data that can be visualized in tools like Tableau or PowerBI
@@ -108,6 +109,8 @@ This will fetch data, compute factors, and update the database.
 ```
 python UK_data.py --start_date 2020-01-01 --end_date 2025-07-17
 ```
+The pipeline also pulls UK GDP growth and inflation figures and stores them in
+the `macro_data_tbl` table.
 
 ## ✅ Notes on Cache & Data Persistence
 
