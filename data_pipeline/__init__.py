@@ -1,18 +1,11 @@
 """Data pipeline package initialization.
 
-Adds the package directory to ``sys.path`` so legacy imports like
-``import market_data`` continue to work.  Common submodules are exposed
-via ``__all__`` and imported lazily to avoid side effects during package
-import."""
+Expose common submodules such as :mod:`market_data` while allowing lazy
+imports to avoid side effects during package import.
+"""
 
 from importlib import import_module
-from pathlib import Path
 from typing import Any
-import sys
-
-_PACKAGE_DIR = Path(__file__).resolve().parent
-if str(_PACKAGE_DIR) not in sys.path:
-    sys.path.append(str(_PACKAGE_DIR))
 
 # Commonly used submodules are defined here for convenient access while
 # still allowing lazy importing via ``__getattr__``.
