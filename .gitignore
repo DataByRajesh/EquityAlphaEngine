@@ -16,3 +16,5 @@ Thumbs.db
 token.json
 .vscode/
 .idea/
+
+.streamlit/
