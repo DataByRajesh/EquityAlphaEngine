@@ -14,7 +14,14 @@ _PACKAGE_DIR = Path(__file__).resolve().parent
 if str(_PACKAGE_DIR) not in sys.path:
     sys.path.append(str(_PACKAGE_DIR))
 
-__all__: list[str] = []
+# Commonly used submodules are defined here for convenient access while
+# still allowing lazy importing via ``__getattr__``.
+__all__: list[str] = [
+    "market_data",
+    "compute_factors",
+    "db_utils",
+    "config",
+]
 
 
 def __getattr__(name: str) -> Any:
