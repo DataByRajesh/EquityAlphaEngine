@@ -19,19 +19,23 @@ can be supplied via a local `.env` file.
 ```env
 QUANDL_API_KEY=your_quandl_key
 DATABASE_URL=postgresql://user:password@host:5432/database
+
 GOOGLE_CLOUD_PROJECT=your_project_id
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 GCS_BUCKET=your-bucket
 GCS_PREFIX=cache/prefix
+
 ```
 
 - `QUANDL_API_KEY` – used by `data_pipeline/Macro_data.py` and consumed by
   `data_pipeline/market_data.py` to persist macroeconomic indicators.
 - `DATABASE_URL` – consumed throughout the pipeline for database connections.
+
 - `GOOGLE_CLOUD_PROJECT` and `GOOGLE_APPLICATION_CREDENTIALS` – authenticate to
   Google Cloud when using the GCS cache backend.
 - `GCS_BUCKET` and `GCS_PREFIX` – define the Google Cloud Storage location for
   cached fundamentals in `data_pipeline/cache_utils.py`.
+
 
 ### Dashboard integration
 
@@ -66,6 +70,7 @@ The pipeline defaults to a local filesystem cache. To use Redis or Google Cloud
 Storage as the cache backend, install the corresponding optional packages:
 
 ```bash
+
 pip install redis                   # required for CACHE_BACKEND=redis
 pip install google-cloud-storage    # required for CACHE_BACKEND=gcs
 ```
@@ -117,7 +122,9 @@ Load the variables with a tool like [`python-dotenv`](https://github.com/theskum
 - `gcloud` CLI configured with your project and default region.
 - An Artifact Registry repository to store container images.
 
-#### Build and push the image
+
+#### Build and deploy
+
 
 ```bash
 # Build the Docker image and push to Artifact Registry
@@ -144,9 +151,10 @@ gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION
 kubectl create deployment equity-alpha \
   --image=$REGION-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/$AR_REPO/equity-alpha:latest
 kubectl expose deployment equity-alpha --type=LoadBalancer --port 80 --target-port 8080
-```
 
-#### Troubleshooting
+
+#### IAM & Networking
+
 
 - **Networking** – ensure your Cloud Run service or GKE cluster has access to any required external resources.
 - **IAM permissions** – verify that the service account used for deployment can read from Artifact Registry and access GCP services.
