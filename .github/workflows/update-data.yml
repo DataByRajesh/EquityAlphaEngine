@@ -44,4 +44,4 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         run: |
-          python data_pipeline/UK_data.py --years 10
+          python data_pipeline/update_financial_data.py --years 10
