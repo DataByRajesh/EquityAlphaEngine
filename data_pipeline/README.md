@@ -23,8 +23,8 @@ GMAIL_CREDENTIALS_FILE=credentials.json
 GMAIL_TOKEN_FILE=token.json
 DATABASE_URL=postgresql://user:password@host:5432/database
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service_account.json
-GCS_BUCKET=your-bucket
-GCS_PREFIX=cache/prefix
+CACHE_GCS_BUCKET=your-bucket
+CACHE_GCS_PREFIX=cache/prefix
 ```
 
 - `QUANDL_API_KEY` – required for macro indicators and UK market data; missing
@@ -33,11 +33,11 @@ GCS_PREFIX=cache/prefix
 - `GMAIL_TOKEN_FILE` – location to store the Gmail OAuth token.
 - `DATABASE_URL` – connection string to the database.
 - `GOOGLE_APPLICATION_CREDENTIALS` – path to a Google Cloud service account key.
-- `GCS_BUCKET` and `GCS_PREFIX` – Cloud Storage bucket and prefix when `CACHE_BACKEND=gcs`.
+- `CACHE_GCS_BUCKET` and `CACHE_GCS_PREFIX` – Cloud Storage bucket and prefix when `CACHE_BACKEND=gcs`.
 
 Additional optional variables include `CACHE_BACKEND`, `CACHE_REDIS_URL`,
 
-`GOOGLE_APPLICATION_CREDENTIALS`, `GCS_BUCKET`, `GCS_PREFIX`, and `MAX_THREADS`.
+`GOOGLE_APPLICATION_CREDENTIALS`, `CACHE_GCS_BUCKET`, `CACHE_GCS_PREFIX`, and `MAX_THREADS`.
 
 
 ---
@@ -72,8 +72,8 @@ QUANDL_API_KEY=your_quandl_key
 DATABASE_URL=postgresql://user:password@host:5432/database
 
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service_account.json
-GCS_BUCKET=your-bucket
-GCS_PREFIX=cache/prefix
+CACHE_GCS_BUCKET=your-bucket
+CACHE_GCS_PREFIX=cache/prefix
 
 ```
 
@@ -81,7 +81,7 @@ GCS_PREFIX=cache/prefix
 - `DATABASE_URL` – consumed by `config.py` and all database helpers.
 
 - `GOOGLE_APPLICATION_CREDENTIALS` – service account JSON for accessing Google Cloud services.
-- `GCS_BUCKET` and `GCS_PREFIX` – identify the Cloud Storage location for cached fundamentals in `cache_utils.py`.
+- `CACHE_GCS_BUCKET` and `CACHE_GCS_PREFIX` – identify the Cloud Storage location for cached fundamentals in `cache_utils.py`.
 
 
 ### 4️⃣ Initialize Cache & Database (Optional)
@@ -125,7 +125,7 @@ the `macro_data_tbl` table.
   - `CACHE_BACKEND` – `local` (default), `redis`, or `gcs`
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
 
-  - `GCS_BUCKET` / `GCS_PREFIX` – Cloud Storage bucket (and optional key prefix).
+  - `CACHE_GCS_BUCKET` / `CACHE_GCS_PREFIX` – Cloud Storage bucket (and optional key prefix).
     Requires `GOOGLE_APPLICATION_CREDENTIALS` with appropriate permissions
 
   - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
