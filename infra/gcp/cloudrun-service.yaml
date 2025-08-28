@@ -1,0 +1,18 @@
+# Cloud Run service definition for EquityAlphaEngine
+# Replace PROJECT_ID and REGION with your GCP project and region
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: equity-alpha-engine
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/PROJECT_ID/equity-alpha-engine:latest
+          ports:
+            - containerPort: 8080
+      containerConcurrency: 80
+  traffic:
+    - latestRevision: true
+      percent: 100
