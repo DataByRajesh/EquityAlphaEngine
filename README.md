@@ -22,8 +22,8 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 
 GOOGLE_CLOUD_PROJECT=your_project_id
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-GCS_BUCKET=your-bucket
-GCS_PREFIX=cache/prefix
+CACHE_GCS_BUCKET=your-bucket
+CACHE_GCS_PREFIX=cache/prefix
 
 ```
 
@@ -33,8 +33,8 @@ GCS_PREFIX=cache/prefix
 
 - `GOOGLE_CLOUD_PROJECT` and `GOOGLE_APPLICATION_CREDENTIALS` – authenticate to
   Google Cloud when using the GCS cache backend.
-- `GCS_BUCKET` and `GCS_PREFIX` – define the Google Cloud Storage location for
-  cached fundamentals in `data_pipeline/cache_utils.py`.
+- `CACHE_GCS_BUCKET` and `CACHE_GCS_PREFIX` – define the Google Cloud Storage
+  location for cached fundamentals in `data_pipeline/cache_utils.py`.
 
 
 ### Dashboard integration
@@ -86,8 +86,8 @@ the GCS cache backend:
 
 - `GOOGLE_CLOUD_PROJECT` – your Google Cloud project ID.
 - `GOOGLE_APPLICATION_CREDENTIALS` – path to a service account JSON key.
-- `GCS_BUCKET` – bucket name used when `CACHE_BACKEND=gcs`.
-- `GCS_PREFIX` – optional object prefix within the bucket.
+- `CACHE_GCS_BUCKET` – bucket name used when `CACHE_BACKEND=gcs`.
+- `CACHE_GCS_PREFIX` – optional object prefix within the bucket.
 
 If your database runs on Cloud SQL, set `DATABASE_URL` accordingly.
 
@@ -107,8 +107,8 @@ Create a `.env` file in the project root (already ignored by Git) and populate i
 ```bash
 GOOGLE_CLOUD_PROJECT=your-project
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-GCS_BUCKET=your-bucket
-GCS_PREFIX=your/prefix
+CACHE_GCS_BUCKET=your-bucket
+CACHE_GCS_PREFIX=your/prefix
 ```
 
 Load the variables with a tool like [`python-dotenv`](https://github.com/theskumar/python-dotenv) or by running
