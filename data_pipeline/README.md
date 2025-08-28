@@ -31,7 +31,7 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 - `DATABASE_URL` – connection string to the database.
 
 Additional optional variables include `CACHE_BACKEND`, `CACHE_REDIS_URL`,
-`CACHE_S3_BUCKET`, `CACHE_S3_PREFIX`, and `MAX_THREADS`.
+`CACHE_GCS_BUCKET`, `CACHE_GCS_PREFIX`, and `MAX_THREADS`.
 
 ---
 
@@ -63,19 +63,14 @@ Set the following variables in a `.env` file:
 ```env
 QUANDL_API_KEY=your_quandl_key
 DATABASE_URL=postgresql://user:password@host:5432/database
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_DEFAULT_REGION=us-west-2
-CACHE_S3_BUCKET=your-bucket
-CACHE_S3_PREFIX=cache/prefix
+CACHE_GCS_BUCKET=your-bucket
+CACHE_GCS_PREFIX=cache/prefix
 ```
 
 - `QUANDL_API_KEY` – used by `Macro_data.py` to pull macroeconomic data.
 - `DATABASE_URL` – consumed by `config.py` and all database helpers.
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION` –
-  authenticate to S3 when `CACHE_BACKEND=s3`.
-- `CACHE_S3_BUCKET` and `CACHE_S3_PREFIX` – identify the S3 location for cached
-  fundamentals in `cache_utils.py`.
+- `CACHE_GCS_BUCKET` and `CACHE_GCS_PREFIX` – identify the Cloud Storage
+  location for cached fundamentals in `cache_utils.py`.
 
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
@@ -115,16 +110,15 @@ the `macro_data_tbl` table.
 ## ✅ Notes on Cache & Data Persistence
 
 - **Cache backend** configurable via environment variables:
-  - `CACHE_BACKEND` – `local` (default), `redis`, or `s3`
+  - `CACHE_BACKEND` – `local` (default), `redis`, or `gcs`
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
-  - `CACHE_S3_BUCKET` / `CACHE_S3_PREFIX` – S3 bucket (and optional key prefix).
-    Requires the AWS credentials detailed in [AWS Configuration](#aws-configuration)
+  - `CACHE_GCS_BUCKET` / `CACHE_GCS_PREFIX` – Cloud Storage bucket (and optional key prefix)
   - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
 - Optional packages for remote backends:
 
   ```bash
   pip install redis   # required for CACHE_BACKEND=redis
-  pip install boto3   # required for CACHE_BACKEND=s3
+  pip install google-cloud-storage   # required for CACHE_BACKEND=gcs
   ```
    - **Database configuration**:
       1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
@@ -132,53 +126,6 @@ the `macro_data_tbl` table.
       - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
       - Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
         `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
-
-## AWS Configuration
-
-Set these variables when connecting to AWS services such as RDS or the S3 cache backend:
-
-- `AWS_ACCESS_KEY_ID` – access key for an IAM user with S3 permissions.
-- `AWS_SECRET_ACCESS_KEY` – secret key associated with the IAM user.
-- `AWS_DEFAULT_REGION` – AWS region where your resources reside.
-- `CACHE_S3_BUCKET` – bucket name used when `CACHE_BACKEND=s3`.
-- `CACHE_S3_PREFIX` – optional key prefix within the bucket.
-
-To connect to a PostgreSQL database on AWS RDS, export `DATABASE_URL` as follows:
-
-```bash
-DATABASE_URL=postgresql://user:pass@mydb.xxxxx.eu-west-1.rds.amazonaws.com:5432/dbname
-```
-
-These variables are only necessary when using AWS resources, particularly the S3 cache backend discussed in [Notes on Cache & Data Persistence](#-notes-on-cache--data-persistence).
-
-### AWS Configuration
-
-To use Amazon S3 for caching, set these environment variables:
-
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_DEFAULT_REGION`
-- `CACHE_S3_BUCKET`
-- `CACHE_S3_PREFIX`
-
-#### GitHub Secrets
-
-1. Go to **Settings → Secrets and variables → Actions** in your GitHub repository.
-2. Add each of the variables above as new repository secrets using the same names.
-
-#### Local development
-
-Create a `.env` file alongside this README and include:
-
-```bash
-AWS_ACCESS_KEY_ID=YOUR_KEY
-AWS_SECRET_ACCESS_KEY=YOUR_SECRET
-AWS_DEFAULT_REGION=us-east-1
-CACHE_S3_BUCKET=your-bucket
-CACHE_S3_PREFIX=your/prefix
-```
-
-Load these values into your shell with `export $(grep -v '^#' .env | xargs)` or use a helper such as `python-dotenv`.
 
 ---
 

@@ -67,7 +67,7 @@ GMAIL_TOKEN_FILE = os.environ.get("GMAIL_TOKEN_FILE", "token.json")
 # ``CACHE_BACKEND`` to one of:
 #   * ``local`` – use a JSON file in ``CACHE_DIR`` (default)
 #   * ``redis`` – use a Redis instance specified by ``CACHE_REDIS_URL``
-#   * ``s3`` – use an S3 bucket specified by ``CACHE_S3_BUCKET``
+#   * ``gcs`` – use a Cloud Storage bucket specified by ``CACHE_GCS_BUCKET``
 # ---------------------------------------------------------------------------
 CACHE_BACKEND = os.environ.get("CACHE_BACKEND", "local").lower()
 
@@ -75,10 +75,10 @@ CACHE_BACKEND = os.environ.get("CACHE_BACKEND", "local").lower()
 # Example: ``redis://localhost:6379/0``
 CACHE_REDIS_URL = os.environ.get("CACHE_REDIS_URL", "redis://localhost:6379/0")
 
-# S3 configuration. Only used when ``CACHE_BACKEND`` is ``s3``.
-# ``CACHE_S3_BUCKET`` is required, ``CACHE_S3_PREFIX`` is optional.
-CACHE_S3_BUCKET = os.environ.get("CACHE_S3_BUCKET")
-CACHE_S3_PREFIX = os.environ.get("CACHE_S3_PREFIX", "")
+# Cloud Storage configuration. Only used when ``CACHE_BACKEND`` is ``gcs``.
+# ``CACHE_GCS_BUCKET`` is required, ``CACHE_GCS_PREFIX`` is optional.
+CACHE_GCS_BUCKET = os.environ.get("CACHE_GCS_BUCKET")
+CACHE_GCS_PREFIX = os.environ.get("CACHE_GCS_PREFIX", "")
 
 # ---------------------------------------------------------------------------
 # Configuration settings
