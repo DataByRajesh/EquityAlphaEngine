@@ -36,7 +36,9 @@ GCS_PREFIX=cache/prefix
 - `GCS_BUCKET` and `GCS_PREFIX` – Cloud Storage bucket and prefix when `CACHE_BACKEND=gcs`.
 
 Additional optional variables include `CACHE_BACKEND`, `CACHE_REDIS_URL`,
+
 `GOOGLE_APPLICATION_CREDENTIALS`, `GCS_BUCKET`, `GCS_PREFIX`, and `MAX_THREADS`.
+
 
 ---
 
@@ -68,15 +70,19 @@ Set the following variables in a `.env` file:
 ```env
 QUANDL_API_KEY=your_quandl_key
 DATABASE_URL=postgresql://user:password@host:5432/database
+
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service_account.json
 GCS_BUCKET=your-bucket
 GCS_PREFIX=cache/prefix
+
 ```
 
 - `QUANDL_API_KEY` – used by `Macro_data.py` to pull macroeconomic data.
 - `DATABASE_URL` – consumed by `config.py` and all database helpers.
+
 - `GOOGLE_APPLICATION_CREDENTIALS` – service account JSON for accessing Google Cloud services.
 - `GCS_BUCKET` and `GCS_PREFIX` – identify the Cloud Storage location for cached fundamentals in `cache_utils.py`.
+
 
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
@@ -118,14 +124,18 @@ the `macro_data_tbl` table.
 - **Cache backend** configurable via environment variables:
   - `CACHE_BACKEND` – `local` (default), `redis`, or `gcs`
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
+
   - `GCS_BUCKET` / `GCS_PREFIX` – Cloud Storage bucket (and optional key prefix).
     Requires `GOOGLE_APPLICATION_CREDENTIALS` with appropriate permissions
+
   - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
 - Optional packages for remote backends:
 
   ```bash
+
   pip install redis                 # required for CACHE_BACKEND=redis
   pip install google-cloud-storage  # required for CACHE_BACKEND=gcs
+
   ```
    - **Database configuration**:
       1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
@@ -147,6 +157,7 @@ DATABASE_URL=postgresql://user:password@/cloudsql/project:region:instance/dbname
 ```
 
 This variable is only necessary when using a hosted database; otherwise the pipeline defaults to a local SQLite database.
+
 
 ---
 

@@ -5,7 +5,7 @@ The caching layer supports multiple backends controlled by
 
 * ``local`` – each ticker stored as a JSON file under ``CACHE_DIR``.
 * ``redis`` – Redis hash referenced by ``CACHE_REDIS_URL``.
-* ``s3`` – Amazon S3 bucket defined by ``CACHE_S3_BUCKET``.
+* ``gcs`` – Google Cloud Storage bucket defined by ``CACHE_GCS_BUCKET``.
 
 Entries are kept in an in-memory dictionary for the duration of the session
 and only modified tickers are persisted back to the backing store. Remote
@@ -44,19 +44,20 @@ if config.CACHE_BACKEND == "redis":
 
     _client = redis.Redis.from_url(config.CACHE_REDIS_URL)
     _key = "fundamentals_cache"  # Redis hash name
-elif config.CACHE_BACKEND == "s3":
+elif config.CACHE_BACKEND == "gcs":
     try:
-        import boto3  # type: ignore
+        from google.cloud import storage  # type: ignore
     except ImportError as exc:
         raise ImportError(
-            "S3 backend selected but the 'boto3' package is not installed. "
-            "Install it with 'pip install boto3'."
+            "GCS backend selected but the 'google-cloud-storage' package is not installed. "
+            "Install it with 'pip install google-cloud-storage'."
         ) from exc
 
-    _client = boto3.client("s3")
+    _client = storage.Client()
+    _bucket = _client.bucket(config.CACHE_GCS_BUCKET)
     _prefix = (
-        os.path.join(config.CACHE_S3_PREFIX, "fundamentals_cache")
-        if config.CACHE_S3_PREFIX
+        os.path.join(config.CACHE_GCS_PREFIX, "fundamentals_cache")
+        if config.CACHE_GCS_PREFIX
         else "fundamentals_cache"
     )
 else:  # local file backend
@@ -68,7 +69,7 @@ def _redis_key(ticker: str) -> str:
     return ticker
 
 
-def _s3_key(ticker: str) -> str:
+def _gcs_blob_name(ticker: str) -> str:
     return f"{_prefix}/{ticker}.json" if _prefix else f"{ticker}.json"
 
 
@@ -94,17 +95,18 @@ def _load_entry(ticker: str) -> Optional[Dict]:
             with _CACHE_LOCK:
                 _CACHE[ticker] = value
                 return _CACHE[ticker]
-    elif config.CACHE_BACKEND == "s3":
+    elif config.CACHE_BACKEND == "gcs":
+        from google.api_core.exceptions import NotFound
+
+        blob = _bucket.blob(_gcs_blob_name(ticker))
         try:
-            obj = _client.get_object(
-                Bucket=config.CACHE_S3_BUCKET, Key=_s3_key(ticker)
-            )
-        except _client.exceptions.NoSuchKey:
+            data = blob.download_as_text()
+        except NotFound:
             return None
         except Exception as e:  # pragma: no cover - network failure
-            logger.warning("Failed to load %s from S3: %s", ticker, e)
+            logger.warning("Failed to load %s from Cloud Storage: %s", ticker, e)
             return None
-        value = json.loads(obj["Body"].read().decode("utf-8"))
+        value = json.loads(data)
         with _CACHE_LOCK:
             _CACHE[ticker] = value
             return _CACHE[ticker]
@@ -132,15 +134,12 @@ def _persist_entry(ticker: str) -> None:
             _client.hset(_key, _redis_key(ticker), json.dumps(entry))
         except Exception as e:  # pragma: no cover - network failure
             logger.warning("Failed to persist %s to Redis: %s", ticker, e)
-    elif config.CACHE_BACKEND == "s3":
+    elif config.CACHE_BACKEND == "gcs":
+        blob = _bucket.blob(_gcs_blob_name(ticker))
         try:
-            _client.put_object(
-                Bucket=config.CACHE_S3_BUCKET,
-                Key=_s3_key(ticker),
-                Body=json.dumps(entry).encode("utf-8"),
-            )
+            blob.upload_from_string(json.dumps(entry))
         except Exception as e:  # pragma: no cover - network failure
-            logger.warning("Failed to persist %s to S3: %s", ticker, e)
+            logger.warning("Failed to persist %s to Cloud Storage: %s", ticker, e)
     else:  # local
         path = _local_path(ticker)
         with open(path, "w") as f:
@@ -175,10 +174,11 @@ def clear_cached_fundamentals(ticker: str) -> None:
         _CACHE.pop(ticker, None)
     if config.CACHE_BACKEND == "redis":
         _client.hdel(_key, _redis_key(ticker))
-    elif config.CACHE_BACKEND == "s3":
+    elif config.CACHE_BACKEND == "gcs":
+        blob = _bucket.blob(_gcs_blob_name(ticker))
         try:
-            _client.delete_object(Bucket=config.CACHE_S3_BUCKET, Key=_s3_key(ticker))
-        except _client.exceptions.NoSuchKey:
+            blob.delete()
+        except Exception:
             pass
     else:  # local
         path = _local_path(ticker)
@@ -193,21 +193,15 @@ def clear_all_cache() -> None:
         _CACHE.clear()
     if config.CACHE_BACKEND == "redis":
         _client.delete(_key)
-    elif config.CACHE_BACKEND == "s3":
-        continuation_token = None
-        kwargs = {
-            "Bucket": config.CACHE_S3_BUCKET,
-            "Prefix": _prefix,
-        }
-        while True:
-            if continuation_token:
-                kwargs["ContinuationToken"] = continuation_token
-            resp = _client.list_objects_v2(**kwargs)
-            for obj in resp.get("Contents", []):
-                _client.delete_object(Bucket=config.CACHE_S3_BUCKET, Key=obj["Key"])
-            if not resp.get("IsTruncated"):
-                break
-            continuation_token = resp.get("NextContinuationToken")
+    elif config.CACHE_BACKEND == "gcs":
+        try:
+            for blob in _client.list_blobs(config.CACHE_GCS_BUCKET, prefix=_prefix):
+                try:
+                    blob.delete()
+                except Exception:
+                    pass
+        except Exception:  # pragma: no cover - network failure
+            logger.warning("Failed to clear Cloud Storage cache")
     else:  # local
         for filename in os.listdir(_prefix):
             if filename.endswith(".json"):
