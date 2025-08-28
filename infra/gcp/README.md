@@ -1,6 +1,7 @@
 # GCP Deployment
 
 This directory contains configuration and scripts for deploying the EquityAlphaEngine to [Cloud Run](https://cloud.google.com/run).
+Container images are stored in an [Artifact Registry](https://cloud.google.com/artifact-registry) repository.
 
 ## Deploying
 
@@ -9,7 +10,11 @@ This directory contains configuration and scripts for deploying the EquityAlphaE
    gcloud auth login
    gcloud config set project <PROJECT_ID>
    ```
-2. Build and deploy using the provided script:
+2. Configure Docker to authenticate to Artifact Registry (replace REGION with your deploy region):
+   ```bash
+   gcloud auth configure-docker REGION-docker.pkg.dev
+   ```
+3. Build and deploy using the provided script. The script pushes the container image to the `AR_REPO` Artifact Registry repository in your project:
    ```bash
    cd infra/gcp
    ./deploy-cloud-run.sh

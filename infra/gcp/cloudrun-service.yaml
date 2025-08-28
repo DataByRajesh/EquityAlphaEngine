@@ -9,7 +9,7 @@ spec:
   template:
     spec:
       containers:
-        - image: gcr.io/PROJECT_ID/equity-alpha-engine:latest
+        - image: REGION-docker.pkg.dev/PROJECT_ID/AR_REPO/equity-alpha-engine:latest
           ports:
             - containerPort: 8080
       containerConcurrency: 80

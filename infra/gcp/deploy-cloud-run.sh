@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ID=${PROJECT_ID:-$(gcloud config get-value project)}
+GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project)}
 REGION=${REGION:-us-central1}
 SERVICE_NAME=${SERVICE_NAME:-equity-alpha-engine}
-IMAGE="gcr.io/${PROJECT_ID}/${SERVICE_NAME}:latest"
+AR_REPO=${AR_REPO:-containers}
+IMAGE="${REGION}-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${AR_REPO}/${SERVICE_NAME}:latest"
 
 # Build container image using Cloud Build
 echo "Building image ${IMAGE}"
