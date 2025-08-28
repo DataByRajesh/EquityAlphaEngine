@@ -159,3 +159,7 @@ kubectl expose deployment equity-alpha --type=LoadBalancer --port 80 --target-po
 - **Networking** – ensure your Cloud Run service or GKE cluster has access to any required external resources.
 - **IAM permissions** – verify that the service account used for deployment can read from Artifact Registry and access GCP services.
 - **Environment variables** – confirm that all required variables and secrets are provided during deployment.
+
+### License
+
+This project is licensed under the [MIT License](LICENSE).
