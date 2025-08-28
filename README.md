@@ -127,40 +127,34 @@ CACHE_S3_PREFIX=your/prefix
 
 Load the variables with a tool like [`python-dotenv`](https://github.com/theskumar/python-dotenv) or by running `export $(grep -v '^#' .env | xargs)`.
 
-### Deploying to AWS ECS
+### Deploying to Google Cloud Run
+
+The repository includes a script and YAML definition for deploying the service to [Cloud Run](https://cloud.google.com/run).
 
 #### Prerequisites
 
-- Docker installed and available on your machine.
-- AWS CLI configured with credentials and default region.
-- An Amazon ECR repository to store container images.
-- An ECS task-definition JSON template describing the service.
+- Docker or a compatible container runtime.
+- The `gcloud` CLI authenticated with your Google Cloud project.
 
-#### Build and push the image
+#### Build and deploy
 
-```bash
-# Build the Docker image
-docker build -t $ECR_REPO_URI:latest .
-
-# Authenticate Docker to Amazon ECR and push the image
-aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
-  docker login --username AWS --password-stdin $ECR_REPO_URI
-docker push $ECR_REPO_URI:latest
-```
-
-#### Launch or update the service
-
-Use the AWS CLI to register the task definition and update the ECS service:
+Use Cloud Build and Cloud Run to build and deploy the container image:
 
 ```bash
-aws ecs register-task-definition --cli-input-json file://task-definition.json
-aws ecs update-service --cluster $CLUSTER_NAME \
-  --service $SERVICE_NAME --force-new-deployment
+cd infra/gcp
+./deploy-cloud-run.sh
 ```
 
-#### Troubleshooting
+The script invokes `gcloud builds submit` to build the image and `gcloud run deploy` to create or update the Cloud Run service.
 
-- **Networking** – verify that the service's subnets and security groups allow the necessary inbound and outbound traffic.
-- **IAM permissions** – ensure the task execution role can pull from ECR and access any required AWS services.
-- **Environment variables** – confirm that all required variables and secrets are provided in the task definition or ECS service configuration.
+Alternatively, deploy using the YAML definition:
+
+```bash
+gcloud run services replace cloudrun-service.yaml --region <REGION>
+```
+
+#### IAM & Networking
+
+Ensure the deploying account has `roles/run.admin`, `roles/iam.serviceAccountUser`, and `roles/cloudbuild.builds.editor`.
+To restrict network access or connect to a VPC, adjust the deploy command with `--ingress` and `--vpc-connector` as needed.
 
