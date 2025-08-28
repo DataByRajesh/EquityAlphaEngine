@@ -22,6 +22,9 @@ QUANDL_API_KEY=your_quandl_api_key
 GMAIL_CREDENTIALS_FILE=credentials.json
 GMAIL_TOKEN_FILE=token.json
 DATABASE_URL=postgresql://user:password@host:5432/database
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service_account.json
+GCS_BUCKET=your-bucket
+GCS_PREFIX=cache/prefix
 ```
 
 - `QUANDL_API_KEY` – required for macro indicators and UK market data; missing
@@ -29,9 +32,13 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 - `GMAIL_CREDENTIALS_FILE` – path to Gmail OAuth credentials.
 - `GMAIL_TOKEN_FILE` – location to store the Gmail OAuth token.
 - `DATABASE_URL` – connection string to the database.
+- `GOOGLE_APPLICATION_CREDENTIALS` – path to a Google Cloud service account key.
+- `GCS_BUCKET` and `GCS_PREFIX` – Cloud Storage bucket and prefix when `CACHE_BACKEND=gcs`.
 
 Additional optional variables include `CACHE_BACKEND`, `CACHE_REDIS_URL`,
-`CACHE_GCS_BUCKET`, `CACHE_GCS_PREFIX`, and `MAX_THREADS`.
+
+`GOOGLE_APPLICATION_CREDENTIALS`, `GCS_BUCKET`, `GCS_PREFIX`, and `MAX_THREADS`.
+
 
 ---
 
@@ -51,7 +58,7 @@ pip install -r requirements.txt
 ```
 
 ### 3️⃣ Configure Your Environment
-- ✅ Set the `DATABASE_URL` for a hosted database (e.g., Supabase/PostgreSQL)
+- ✅ Set the `DATABASE_URL` for a hosted database (e.g., Cloud SQL/PostgreSQL)
 - ✅ Set your cache expiry settings
 - ✅ Ensure your Gmail credentials are available (optional for alerts). Use
   `GMAIL_CREDENTIALS_FILE` and `GMAIL_TOKEN_FILE` to override default paths.
@@ -63,14 +70,19 @@ Set the following variables in a `.env` file:
 ```env
 QUANDL_API_KEY=your_quandl_key
 DATABASE_URL=postgresql://user:password@host:5432/database
-CACHE_GCS_BUCKET=your-bucket
-CACHE_GCS_PREFIX=cache/prefix
+
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service_account.json
+GCS_BUCKET=your-bucket
+GCS_PREFIX=cache/prefix
+
 ```
 
 - `QUANDL_API_KEY` – used by `Macro_data.py` to pull macroeconomic data.
 - `DATABASE_URL` – consumed by `config.py` and all database helpers.
-- `CACHE_GCS_BUCKET` and `CACHE_GCS_PREFIX` – identify the Cloud Storage
-  location for cached fundamentals in `cache_utils.py`.
+
+- `GOOGLE_APPLICATION_CREDENTIALS` – service account JSON for accessing Google Cloud services.
+- `GCS_BUCKET` and `GCS_PREFIX` – identify the Cloud Storage location for cached fundamentals in `cache_utils.py`.
+
 
 ### 4️⃣ Initialize Cache & Database (Optional)
 - Cache will create itself on first run
@@ -112,20 +124,40 @@ the `macro_data_tbl` table.
 - **Cache backend** configurable via environment variables:
   - `CACHE_BACKEND` – `local` (default), `redis`, or `gcs`
   - `CACHE_REDIS_URL` – Redis connection string when using the Redis backend
-  - `CACHE_GCS_BUCKET` / `CACHE_GCS_PREFIX` – Cloud Storage bucket (and optional key prefix)
+
+  - `GCS_BUCKET` / `GCS_PREFIX` – Cloud Storage bucket (and optional key prefix).
+    Requires `GOOGLE_APPLICATION_CREDENTIALS` with appropriate permissions
+
   - **In-memory fundamentals cache** keeps entries for the session and only writes modified tickers back to the chosen backend (`cache_utils.py`)
 - Optional packages for remote backends:
 
   ```bash
-  pip install redis   # required for CACHE_BACKEND=redis
-  pip install google-cloud-storage   # required for CACHE_BACKEND=gcs
+
+  pip install redis                 # required for CACHE_BACKEND=redis
+  pip install google-cloud-storage  # required for CACHE_BACKEND=gcs
+
   ```
    - **Database configuration**:
       1. The app first checks the `DATABASE_URL` environment variable (recommended for production).
       2. If not set, it falls back to a **local SQLite database** (`data/app.db`) for development/testing.
-      - **Hosted database** (e.g., Supabase/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
+       - **Hosted database** (e.g., Cloud SQL/PostgreSQL) is strongly recommended for production to ensure persistence across runs.
       - Gmail alerts use credentials from `GMAIL_CREDENTIALS_FILE` (defaults to
         `credentials.json`) and store the token in `GMAIL_TOKEN_FILE`.
+
+## Cloud SQL Configuration
+
+If you need a hosted PostgreSQL database, you can use Google Cloud SQL:
+
+- Create a Cloud SQL instance and database.
+- Grant your service account access and set `GOOGLE_APPLICATION_CREDENTIALS` accordingly.
+- Set `DATABASE_URL` to the instance connection string, for example:
+
+```bash
+DATABASE_URL=postgresql://user:password@/cloudsql/project:region:instance/dbname
+```
+
+This variable is only necessary when using a hosted database; otherwise the pipeline defaults to a local SQLite database.
+
 
 ---
 
