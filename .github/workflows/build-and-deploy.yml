@@ -25,6 +25,10 @@ env:
   # Optional app envs (set in repo variables/secrets as needed)
   APP_ENV:        ${{ vars.APP_ENV || 'prod' }}
   LOG_LEVEL:      ${{ vars.LOG_LEVEL || 'INFO' }}
+  DATABASE_URL:   ${{ secrets.DATABASE_URL }}
+  GCP_SA_KEY:    ${{ secrets.GCP_SA_KEY }}
+  GMAIL_CREDENTIALS_FILE: ${{ secrets.GMAIL_CREDENTIALS_FILE }}
+  QUANDL_API_KEY: ${{ secrets.QUANDL_API_KEY }}
 
 jobs:
   build-and-deploy:

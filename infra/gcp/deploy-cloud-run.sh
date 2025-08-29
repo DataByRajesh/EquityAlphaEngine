@@ -35,10 +35,13 @@ gcloud run deploy $SERVICE_NAME \
   --image $IMAGE_NAME \
   --region $REGION \
   --platform managed \
+  --cpu=1 \
+  --memory=256Mi \
+  --min-instances=0 \
+  --max-instances=1 \
+  --set-env-vars "APP_ENV=${APP_ENV},LOG_LEVEL=${LOG_LEVEL},BUILD_SHA=${IMAGE_TAG},DATABASE_URL=${DATABASE_URL}" \
   --allow-unauthenticated \
-  --set-env-vars "DATABASE_URL=your-cloudsql-connection-string" \
-  --memory 2Gi \
-  --port 8080
+  --quiet
 
 echo "Cloud Run service deployed: $SERVICE_NAME"
 
