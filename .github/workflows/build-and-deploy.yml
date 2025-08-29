@@ -36,8 +36,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # OIDC auth (no JSON key)
+
+      # Authenticate to Google Cloud using Service Account Key if set, otherwise OIDC
+      - name: Authenticate to Google Cloud (Service Account Key)
+        if: env.GCP_SA_KEY != ''
+        run: |
+          echo "$GCP_SA_KEY" > /tmp/key.json
+          gcloud auth activate-service-account --key-file=/tmp/key.json
+
       - name: Authenticate to Google Cloud (OIDC)
+        if: env.GCP_SA_KEY == ''
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
