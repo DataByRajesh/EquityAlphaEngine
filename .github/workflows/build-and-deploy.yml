@@ -103,10 +103,5 @@ jobs:
             --min-instances=0 \
             --max-instances=1 \
             --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE}, GCP_REGION=${GCP_REGION}, REPO=${REPO}" \
-            --quiet
+          
 
-      - name: Service URL
-        run: |
-          gcloud run services describe "$CLOUD_RUN_SERVICE" \
-            --region "$GCP_REGION" \
-            --format='value(status.url)'
