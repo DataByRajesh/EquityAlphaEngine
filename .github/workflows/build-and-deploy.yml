@@ -19,7 +19,7 @@ env:
   CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}    # Cloud Run service name
   REPO:            ${{ vars.REPO }}                       # Artifact Registry repo
   IMAGE_TAG:      ${{ github.sha }}
-  IMAGE_URI:      ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPO }}/${{ secrets.CLOUD_RUN_SERVICE }}
+  IMAGE_URI:      ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ vars.REPO }}/${{ vars.CLOUD_RUN_SERVICE }}
   # Optional app envs (set in repo variables/secrets as needed)
   APP_ENV:        ${{ vars.APP_ENV || 'prod' }}
   LOG_LEVEL:      ${{ vars.LOG_LEVEL || 'INFO' }}
