@@ -1,16 +1,20 @@
+
+# Standard library imports
 from io import StringIO
-import logging
+
+
+# Third-party imports
 import pandas as pd
 from sqlalchemy import create_engine
 
-import config
+# Local imports
+from . import config
 
 
-logger = logging.getLogger(__name__)
+# Use the config helper to create a file logger
+logger = config.get_file_logger(__name__)
 
 DB_PATH = config.DATABASE_URL
-
-logger = logging.getLogger(__name__)
 
 def main() -> None:
     """Load stock data from the DB and log summary information."""

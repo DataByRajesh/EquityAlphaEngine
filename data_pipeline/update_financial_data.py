@@ -1,4 +1,10 @@
-"""CLI to populate or refresh the financial data table.
+"""
+CLI to populate or refresh the financial data table.
+
+Deployment context:
+All secrets and config (e.g., DATABASE_URL, API keys) are loaded from environment variables
+as set by the GitHub Actions workflow or your cloud deployment environment.
+No secrets are hardcoded or loaded from files; config.py centralizes all env var usage.
 
 This script inspects the existing ``financial_tbl`` table in the configured
 ``DATABASE_URL``. If the requested date range is not present it will invoke the

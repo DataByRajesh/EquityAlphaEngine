@@ -1,17 +1,27 @@
+# Core data pipeline dependencies
 numpy==2.3.1
 pandas==2.3.0
 quandl==3.7.0
 ta==0.11.0
 yfinance==0.2.63
 SQLAlchemy==2.0.41
+
+# GCP and cloud-native dependencies
 google-auth==2.40.3
 google-auth-oauthlib==1.2.2
 google-api-python-client==2.175.0
+google-cloud-storage==2.14.0      # GCS cache backend
+
+# API and web server (Cloud Run)
 fastapi==0.111.0
 uvicorn==0.30.1
 
-# Optional extras
+# Optional extras (uncomment if needed)
 # investpy==1.0.8        # alternative data source
 # selenium==4.34.0       # web scraping utilities
 # technical_analysis==0.0.7  # additional indicators
-# google-cloud-storage==2.14.0  # GCS cache backend
+
+# Notes:
+# - All secrets/config are loaded from environment variables for GCP deployment.
+# - No AWS/Redis/local cache dependencies.
+# - This requirements file is ready for GCP Cloud Run, Cloud SQL, and GCS.
