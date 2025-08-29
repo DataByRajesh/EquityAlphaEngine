@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
 # Step-by-step deployment script for EquityAlphaEngine on GCP Cloud Run
@@ -7,7 +7,7 @@ set -euo pipefail
 ###############################################
 # 1. Set essential and mandatory variables
 ###############################################
-GCP_PROJECT_ID=${secrets.GCP_PROJECT_ID:-}
+GCP_PROJECT_ID=${secrets.GCP_PROJECT_ID}
 GCP_REGION=${vars.GCP_REGION:-}
 CLOUD_RUN_SERVICE=${vars.CLOUD_RUN_SERVICE:-}
 REPO=${vars.REPO:-}
