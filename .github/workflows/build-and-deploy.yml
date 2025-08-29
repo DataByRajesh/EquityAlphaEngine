@@ -103,7 +103,7 @@ jobs:
             --min-instances=0 \
             --max-instances=1 \
             --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE}, GCP_REGION=${GCP_REGION}, REPO=${REPO}" \
-            --set-secrets "DATABASE_URL=${DATABASE_URL} \
+            --set-secrets "DATABASE_URL=${DATABASE_URL}" \
             --quiet
 
       - name: Service URL
