@@ -7,17 +7,17 @@ set -euo pipefail
 ###############################################
 # 1. Set essential and mandatory variables
 ###############################################
-GCP_PROJECT_ID="${GCP_PROJECT_ID:-}"
-GCP_REGION="${GCP_REGION:-}"
-CLOUD_RUN_SERVICE="${CLOUD_RUN_SERVICE:-}"
-REPO="${REPO:-}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
-IMAGE_URI="${IMAGE_URI:-$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$CLOUD_RUN_SERVICE}"
-DATABASE_URL="${DATABASE_URL:-}"
-GCP_SA_KEY="${GCP_SA_KEY:-}"
-GMAIL_CREDENTIALS_FILE="${GMAIL_CREDENTIALS_FILE:-}"
-QUANDL_API_KEY="${QUANDL_API_KEY:-}"
-BUILD_SHA="${BUILD_SHA:-$IMAGE_TAG}"
+GCP_PROJECT_ID="${secrets.GCP_PROJECT_ID:-}"
+GCP_REGION="${secrets.GCP_REGION:-}"
+CLOUD_RUN_SERVICE="${secrets.CLOUD_RUN_SERVICE:-}"
+REPO="${secrets.REPO:-}"
+IMAGE_TAG="${secrets.IMAGE_TAG:-latest}"
+IMAGE_URI="${secrets.IMAGE_URI:-$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$CLOUD_RUN_SERVICE}"
+DATABASE_URL="${secrets.DATABASE_URL:-}"
+GCP_SA_KEY="${secrets.GCP_SA_KEY:-}"
+GMAIL_CREDENTIALS_FILE="${secrets.GMAIL_CREDENTIALS_FILE:-}"
+QUANDL_API_KEY="${secrets.QUANDL_API_KEY:-}"
+BUILD_SHA="${secrets.BUILD_SHA:-$IMAGE_TAG}"
 
 # Warn if any required variable is missing
 for var in GCP_PROJECT_ID GCP_REGION CLOUD_RUN_SERVICE REPO DATABASE_URL GCP_SA_KEY GMAIL_CREDENTIALS_FILE QUANDL_API_KEY; do
