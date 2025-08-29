@@ -8,10 +8,10 @@ set -euo pipefail
 # 1. Set essential and mandatory variables
 ###############################################
 GCP_PROJECT_ID=${secrets.GCP_PROJECT_ID:-}
-GCP_REGION=${secrets.GCP_REGION:-}
-CLOUD_RUN_SERVICE=${secrets.CLOUD_RUN_SERVICE:-}
-REPO=${secrets.REPO:-}
-IMAGE_TAG=${secrets.IMAGE_TAG:-latest}
+GCP_REGION=${vars.GCP_REGION:-}
+CLOUD_RUN_SERVICE=${vars.CLOUD_RUN_SERVICE:-}
+REPO=${vars.REPO:-}
+IMAGE_TAG=${{ github.sha }}
 IMAGE_URI=${secrets.IMAGE_URI:-$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$CLOUD_RUN_SERVICE}
 DATABASE_URL=${secrets.DATABASE_URL:-}
 GCP_SA_KEY=${secrets.GCP_SA_KEY:-}
