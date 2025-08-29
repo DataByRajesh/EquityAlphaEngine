@@ -1,16 +1,48 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project)}
-REGION=${REGION:-us-central1}
-SERVICE_NAME=${SERVICE_NAME:-equity-alpha-engine}
-AR_REPO=${AR_REPO:-containers}
-IMAGE="${REGION}-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${AR_REPO}/${SERVICE_NAME}:latest"
+# Step-by-step deployment script for EquityAlphaEngine on GCP Cloud Run
+# Usage: bash infra/gcp/deploy-cloud-run.sh
 
-# Build container image using Cloud Build
-echo "Building image ${IMAGE}"
-gcloud builds submit --tag "${IMAGE}" ..
+# 1. Set variables
+PROJECT_ID="equity-alpha-engine-alerts"
+REGION="europe-west2"
+AR_REPO="equity-images"
+SERVICE_NAME="equity-alpha-engine"
+IMAGE_NAME="$REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/$SERVICE_NAME:latest"
 
-# Deploy to Cloud Run
-echo "Deploying ${SERVICE_NAME} to Cloud Run region ${REGION}"
-gcloud run deploy "${SERVICE_NAME}" --image "${IMAGE}" --region "${REGION}" --platform managed --allow-unauthenticated
+# 2. Authenticate with GCP
+gcloud auth login
+gcloud config set project $PROJECT_ID
+
+# 3. Build Docker image
+
+docker build -t $IMAGE_NAME .
+
+echo "Docker image built: $IMAGE_NAME"
+
+# 4. Push image to Artifact Registry
+
+gcloud auth configure-docker $REGION-docker.pkg.dev
+
+docker push $IMAGE_NAME
+
+echo "Docker image pushed to Artifact Registry"
+
+# 5. Deploy to Cloud Run
+
+gcloud run deploy $SERVICE_NAME \
+  --image $IMAGE_NAME \
+  --region $REGION \
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars "DATABASE_URL=your-cloudsql-connection-string" \
+  --memory 2Gi \
+  --port 8080
+
+echo "Cloud Run service deployed: $SERVICE_NAME"
+
+# 6. (Optional) Replace with YAML config
+# gcloud run services replace infra/gcp/cloudrun-service.yaml --region $REGION
+
+echo "Deployment complete."
