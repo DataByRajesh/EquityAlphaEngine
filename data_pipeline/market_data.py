@@ -38,10 +38,20 @@ except ImportError:  # Fallback for running as a script without package context
 # Module-level logger
 logger = logging.getLogger(__name__)
 
-# Ensure cache directory exists or create it
-os.makedirs(config.CACHE_DIR, exist_ok=True)
-# Ensure data directory exists or create it
-os.makedirs(config.DATA_DIR, exist_ok=True)
+
+def ensure_directories(dirs=None):
+    """
+    Ensure required directories exist for pipeline operation.
+    Logs creation for traceability.
+    """
+    if dirs is None:
+        dirs = [config.CACHE_DIR, config.DATA_DIR]
+    for d in dirs:
+        os.makedirs(d, exist_ok=True)
+        logger.info(f"Ensured directory exists: {d}")
+
+# Ensure cache and data directories exist at module import
+ensure_directories()
 
 
 # --- Caching functions ---

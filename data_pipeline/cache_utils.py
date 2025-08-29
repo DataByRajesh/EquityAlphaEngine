@@ -1,211 +1,149 @@
-"""Utilities for caching fundamental data with an in-memory layer.
 
-The caching layer supports multiple backends controlled by
-``config.CACHE_BACKEND``:
+"""Cache fundamentals with in-memory + GCS backing.
 
-* ``local`` – each ticker stored as a JSON file under ``CACHE_DIR``.
-* ``redis`` – Redis hash referenced by ``CACHE_REDIS_URL``.
-* ``gcs`` – Google Cloud Storage bucket defined by ``CACHE_GCS_BUCKET``.
-
-Entries are kept in an in-memory dictionary for the duration of the session
-and only modified tickers are persisted back to the backing store. Remote
-backends may raise exceptions (e.g. connection errors). Callers are expected
-to handle such failures gracefully.
+Requires:
+  - config.CACHE_GCS_BUCKET (str)
+  - optional config.CACHE_GCS_PREFIX (str)
+  - optional config.CACHE_EXPIRY_MINUTES (int)
 """
 
 from __future__ import annotations
 
 import json
-import os
 import logging
-from datetime import datetime, timedelta
+import os
+from datetime import timedelta
 from threading import Lock
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
+from datetime import datetime, timezone
+
+from google.cloud import storage
+from google.api_core.exceptions import NotFound
 
 from . import config
 
-# In-memory cache for this process
-_CACHE: Dict[str, Dict] = {}
+logger = config.get_file_logger(__name__)
+
+# ---------------- In-memory state ----------------
+_CACHE: Dict[str, Dict[str, Any]] = {}
 _CACHE_LOCK = Lock()
 
-logger = logging.getLogger(__name__)
+# ---------------- Lazy GCS handles ----------------
+_client: Optional[storage.Client] = None
+_bucket = None
 
-# ---------------------------------------------------------------------------
-# Backend clients
-# ---------------------------------------------------------------------------
-if config.CACHE_BACKEND == "redis":
-    try:
-        import redis  # type: ignore
-    except ImportError as exc:
-        raise ImportError(
-            "Redis backend selected but the 'redis' package is not installed. "
-            "Install it with 'pip install redis'."
-        ) from exc
+def _ensure_gcs():
+    global _client, _bucket
+    if not getattr(config, "CACHE_GCS_BUCKET", None):
+        raise RuntimeError("CACHE_GCS_BUCKET is required for GCS cache backend.")
+    if _client is None:
+        _client = storage.Client()
+    if _bucket is None:
+        _bucket = _client.bucket(config.CACHE_GCS_BUCKET)
 
-    _client = redis.Redis.from_url(config.CACHE_REDIS_URL)
-    _key = "fundamentals_cache"  # Redis hash name
-elif config.CACHE_BACKEND == "gcs":
-    try:
-        from google.cloud import storage  # type: ignore
-    except ImportError as exc:
-        raise ImportError(
-            "GCS backend selected but the 'google-cloud-storage' package is not installed. "
-            "Install it with 'pip install google-cloud-storage'."
-        ) from exc
+def _prefix() -> str:
+    base = getattr(config, "CACHE_GCS_PREFIX", "") or ""
+    base = base.strip("/")
 
-    _client = storage.Client()
-    _bucket = _client.bucket(config.CACHE_GCS_BUCKET)
-    _prefix = (
-        os.path.join(config.CACHE_GCS_PREFIX, "fundamentals_cache")
-        if config.CACHE_GCS_PREFIX
-        else "fundamentals_cache"
-    )
-else:  # local file backend
-    _client = None
-    _prefix = config.CACHE_DIR
+    return f"{base}/fundamentals_cache" if base else "fundamentals_cache"
 
+def _blob_name(ticker: str) -> str:
+    return f"{_prefix()}/{ticker}.json"
 
-def _redis_key(ticker: str) -> str:
-    return ticker
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
 
-
-def _gcs_blob_name(ticker: str) -> str:
-    return f"{_prefix}/{ticker}.json" if _prefix else f"{ticker}.json"
-
-
-def _local_path(ticker: str) -> str:
-    return os.path.join(_prefix, f"{ticker}.json")
-
-
-def _load_entry(ticker: str) -> Optional[Dict]:
-    """Load ``ticker`` from the backing store into memory."""
-
+def _load_entry(ticker: str) -> Optional[Dict[str, Any]]:
+    """Load ticker from GCS into memory (if present)."""
     with _CACHE_LOCK:
         if ticker in _CACHE:
             return _CACHE[ticker]
 
-    if config.CACHE_BACKEND == "redis":
-        try:
-            data = _client.hget(_key, _redis_key(ticker))
-        except Exception as e:  # pragma: no cover - network failure
-            logger.warning("Failed to load %s from Redis: %s", ticker, e)
-            return None
-        if data:
-            value = json.loads(data)
-            with _CACHE_LOCK:
-                _CACHE[ticker] = value
-                return _CACHE[ticker]
-    elif config.CACHE_BACKEND == "gcs":
-        from google.api_core.exceptions import NotFound
+    _ensure_gcs()
+    blob = _bucket.blob(_blob_name(ticker))
+    try:
+        data = blob.download_as_text()
+    except NotFound:
+        return None
+    except Exception as e:  # network/permission/transient
+        logger.warning("Load from GCS failed for %s: %s", ticker, e, exc_info=True)
+        return None
 
-        blob = _bucket.blob(_gcs_blob_name(ticker))
-        try:
-            data = blob.download_as_text()
-        except NotFound:
-            return None
-        except Exception as e:  # pragma: no cover - network failure
-            logger.warning("Failed to load %s from Cloud Storage: %s", ticker, e)
-            return None
+    try:
         value = json.loads(data)
-        with _CACHE_LOCK:
-            _CACHE[ticker] = value
-            return _CACHE[ticker]
-    else:  # local
-        path = _local_path(ticker)
-        if os.path.exists(path):
-            with open(path, "r") as f:
-                value = json.load(f)
-            with _CACHE_LOCK:
-                _CACHE[ticker] = value
-                return _CACHE[ticker]
-    return None
+    except Exception as e:
+        logger.warning("Invalid JSON for %s in GCS: %s", ticker, e, exc_info=True)
+        return None
 
+    with _CACHE_LOCK:
+        _CACHE[ticker] = value
+        return value
 
 def _persist_entry(ticker: str) -> None:
-    """Persist a single ``ticker`` entry from memory to the backing store."""
-
+    """Persist a single ticker entry from memory to GCS."""
     with _CACHE_LOCK:
         entry = _CACHE.get(ticker)
     if entry is None:
         return
 
-    if config.CACHE_BACKEND == "redis":
-        try:
-            _client.hset(_key, _redis_key(ticker), json.dumps(entry))
-        except Exception as e:  # pragma: no cover - network failure
-            logger.warning("Failed to persist %s to Redis: %s", ticker, e)
-    elif config.CACHE_BACKEND == "gcs":
-        blob = _bucket.blob(_gcs_blob_name(ticker))
-        try:
-            blob.upload_from_string(json.dumps(entry))
-        except Exception as e:  # pragma: no cover - network failure
-            logger.warning("Failed to persist %s to Cloud Storage: %s", ticker, e)
-    else:  # local
-        path = _local_path(ticker)
-        with open(path, "w") as f:
-            json.dump(entry, f, indent=4)
-
+    _ensure_gcs()
+    blob = _bucket.blob(_blob_name(ticker))
+    try:
+        payload = json.dumps(entry, separators=(",", ":"), ensure_ascii=False)
+        blob.upload_from_string(payload, content_type="application/json")
+    except Exception as e:
+        logger.warning("Persist to GCS failed for %s: %s", ticker, e, exc_info=True)
 
 def load_cached_fundamentals(
-    ticker: str, expiry_minutes: int = config.CACHE_EXPIRY_MINUTES
-):
-    """Return cached fundamentals for ``ticker`` if present and fresh."""
+    ticker: str,
+    expiry_minutes: int = getattr(config, "CACHE_EXPIRY_MINUTES", 60),
+) -> Optional[Any]:
+    """Return cached fundamentals for ticker if present and fresh."""
+    entry = _load_entry(ticker)
+    if not entry:
+        return None
 
-    cached_entry = _load_entry(ticker)
-    if cached_entry:
-        timestamp = datetime.fromisoformat(cached_entry["timestamp"])
-        if datetime.utcnow() - timestamp < timedelta(minutes=expiry_minutes):
-            return cached_entry["data"]
+    ts_raw = entry.get("timestamp")
+    try:
+        ts = datetime.fromisoformat(ts_raw)
+        if ts.tzinfo is None:  # legacy records
+            ts = ts.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+    if _now_utc() - ts < timedelta(minutes=expiry_minutes):
+        return entry.get("data")
     return None
 
-
-def save_fundamentals_cache(ticker: str, data) -> None:
-    """Store ``data`` for ``ticker`` in the cache and persist it."""
-
+def save_fundamentals_cache(ticker: str, data: Any) -> None:
+    """Store data for ticker and persist it."""
     with _CACHE_LOCK:
-        _CACHE[ticker] = {"data": data, "timestamp": datetime.utcnow().isoformat()}
+        _CACHE[ticker] = {"data": data, "timestamp": _now_utc().isoformat()}
     _persist_entry(ticker)
 
-
 def clear_cached_fundamentals(ticker: str) -> None:
-    """Remove ``ticker`` from the cache and backing store if present."""
-
+    """Remove ticker from cache and GCS if present."""
     with _CACHE_LOCK:
         _CACHE.pop(ticker, None)
-    if config.CACHE_BACKEND == "redis":
-        _client.hdel(_key, _redis_key(ticker))
-    elif config.CACHE_BACKEND == "gcs":
-        blob = _bucket.blob(_gcs_blob_name(ticker))
-        try:
-            blob.delete()
-        except Exception:
-            pass
-    else:  # local
-        path = _local_path(ticker)
-        if os.path.exists(path):
-            os.remove(path)
 
+    try:
+        _ensure_gcs()
+        _bucket.blob(_blob_name(ticker)).delete()
+    except NotFound:
+        pass
+    except Exception:
+        logger.warning("Failed to delete %s from GCS", ticker, exc_info=True)
 
 def clear_all_cache() -> None:
-    """Clear the entire fundamentals cache."""
-
+    """Clear entire fundamentals cache."""
     with _CACHE_LOCK:
         _CACHE.clear()
-    if config.CACHE_BACKEND == "redis":
-        _client.delete(_key)
-    elif config.CACHE_BACKEND == "gcs":
-        try:
-            for blob in _client.list_blobs(config.CACHE_GCS_BUCKET, prefix=_prefix):
-                try:
-                    blob.delete()
-                except Exception:
-                    pass
-        except Exception:  # pragma: no cover - network failure
-            logger.warning("Failed to clear Cloud Storage cache")
-    else:  # local
-        for filename in os.listdir(_prefix):
-            if filename.endswith(".json"):
-                try:
-                    os.remove(os.path.join(_prefix, filename))
-                except FileNotFoundError:
-                    pass
+    try:
+        _ensure_gcs()
+        for blob in _client.list_blobs(config.CACHE_GCS_BUCKET, prefix=_prefix()):
+            try:
+                blob.delete()
+            except Exception:
+                logger.warning("Failed deleting blob %s", blob.name, exc_info=True)
+    except Exception:
+        logger.warning("Failed to clear GCS cache listing", exc_info=True)

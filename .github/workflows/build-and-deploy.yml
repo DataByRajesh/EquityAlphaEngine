@@ -1,50 +1,102 @@
-name: Build and deploy
 
-# Builds the Docker image and deploys it to Amazon ECS.
-# Required secrets:
-#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY - IAM user credentials.
-#   AWS_ACCOUNT_ID - Account that owns the ECR repository.
-#   AWS_DEFAULT_REGION - AWS region (e.g. us-east-1).
-#   ECR_REPOSITORY - ECR repository name.
-#   ECS_CLUSTER - ECS cluster to update.
-#   ECS_SERVICE - ECS service to update.
+
+name: Build and Deploy to GCP Cloud Run
 
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required for OIDC
+
+concurrency:
+  group: cloudrun-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION:     ${{ secrets.GCP_REGION }}              # e.g. europe-west1
+  CLOUD_RUN_SERVICE: ${{ secrets.CLOUD_RUN_SERVICE }}    # Cloud Run service name
+  REPO:           alpha-artifacts                        # Artifact Registry repo
+  IMAGE_TAG:      ${{ github.sha }}
+  IMAGE_URI:      ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/alpha-artifacts/${{ secrets.CLOUD_RUN_SERVICE }}
+  # Optional app envs (set in repo variables/secrets as needed)
+  APP_ENV:        ${{ vars.APP_ENV || 'prod' }}
+  LOG_LEVEL:      ${{ vars.LOG_LEVEL || 'INFO' }}
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      AWS_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-      ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
-      ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
-      IMAGE_TAG: ${{ github.sha }}
+    timeout-minutes: 25
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - uses: actions/checkout@v4
+
+      # OIDC auth (no JSON key)
+      - name: Authenticate to Google Cloud (OIDC)
+        uses: google-github-actions/auth@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Build Docker image
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      # Ensure AR repo exists (first run safety)
+      - name: Ensure Artifact Registry repo
         run: |
-          IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY
-          docker build -t $IMAGE_URI:$IMAGE_TAG -t $IMAGE_URI:latest .
-      - name: Push image to Amazon ECR
+          gcloud artifacts repositories describe "$REPO" --location="$GCP_REGION" >/dev/null 2>&1 || \
+          gcloud artifacts repositories create "$REPO" \
+            --repository-format=docker \
+            --location="$GCP_REGION" \
+            --immutable-tags
+
+      - name: Configure Docker for Artifact Registry
         run: |
-          IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY
-          docker push $IMAGE_URI:$IMAGE_TAG
-          docker push $IMAGE_URI:latest
-      - name: Update ECS service
+          gcloud auth configure-docker $GCP_REGION-docker.pkg.dev --quiet
+
+      # Buildx + cached build to registry
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image (with cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_URI }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_URI }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_URI }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_URI }}:buildcache,mode=max
+          provenance: false   # optional: speed up by skipping SBOM/provenance
+          sbom: false
+
+      # Deploy with Cloud Run flags
+      - name: Deploy to Cloud Run (no-cost tier)
         run: |
-          aws ecs update-service \
-            --cluster $ECS_CLUSTER \
-            --service $ECS_SERVICE \
-            --force-new-deployment
+          # Deploys with settings that restrict usage to the free tier:
+          # - min-instances=0 (no always-on cost)
+          # - max-instances=1 (prevents scaling beyond free tier)
+          # - cpu=1, memory=256Mi (lowest free tier config)
+          # - allow-unauthenticated: remove if not needed (public access may incur cost if abused)
+          gcloud run deploy "$CLOUD_RUN_SERVICE" \
+            --image "$IMAGE_URI:$IMAGE_TAG" \
+            --region "$GCP_REGION" \
+            --platform managed \
+            --cpu=1 \
+            --memory=256Mi \
+            --min-instances=0 \
+            --max-instances=1 \
+            --set-env-vars "APP_ENV=${APP_ENV},LOG_LEVEL=${LOG_LEVEL},BUILD_SHA=${IMAGE_TAG}" \
+            --quiet
+
+      - name: Service URL
+        run: |
+          gcloud run services describe "$CLOUD_RUN_SERVICE" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)'

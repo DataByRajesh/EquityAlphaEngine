@@ -1,127 +1,258 @@
+
 import numpy as np
 import pandas as pd
 import ta
+from . import config
 
+# Config-driven logger
+logger = config.get_file_logger(__name__)
 
-def _safe_zscore(x: pd.Series, fill_value: float = 0) -> pd.Series:
-    """Return z-score while safely handling zero standard deviation.
-
-    If the standard deviation of ``x`` is zero, a Series filled with
-    ``fill_value`` is returned instead to avoid division-by-zero issues.
+def _safe_zscore(x: pd.Series, fill_value: float = 0.0) -> pd.Series:
     """
+    Cross-sectional z-score; safe for zero/NaN std.
+    Logs entry, exit, and edge cases.
+    """
+    logger.debug("_safe_zscore called for series of length %d", len(x))
     std = x.std()
-    if std == 0:
+    if pd.isna(std) or std == 0:
+        logger.debug("Standard deviation is zero or NaN; returning fill_value %s", fill_value)
         return pd.Series(fill_value, index=x.index)
-    return (x - x.mean()) / std
-
+    result = (x - x.mean()) / std
+    logger.debug("_safe_zscore completed for series of length %d", len(x))
+    return result
 
 def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Compute technical, value, quality and liquidity factors for a price
-    and fundamentals :class:`~pandas.DataFrame`.
+    Compute technical, value, quality, liquidity, and a composite factor.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input data containing at least ``Date``, ``Ticker``, ``Close`` and
-        ``Volume`` columns, plus fundamental fields such as ``trailingPE``,
-        ``priceToBook``, ``returnOnEquity``, ``profitMargins`` and
-        ``marketCap``. Optional columns like ``dividendYield`` and
-        ``priceToSalesTrailing12Months`` are used when available.
-
-    Returns
-    -------
-    pd.DataFrame
-        The original DataFrame with additional columns for momentum,
-        volatility, moving averages, technical indicators (RSI, MACD,
-        Bollinger Bands), value ratios, quality metrics, size/liquidity
-        measures and a composite factor.
+    Requires columns:
+      Date, Ticker, Close, Volume
+    Uses when available:
+      trailingPE, priceToBook, returnOnEquity, profitMargins,
+      marketCap, dividendYield, priceToSalesTrailing12Months
     """
-    # Ensure chronological order for time-series calculations
-    df = df.sort_values(["Ticker", "Date"]).copy()
 
-    # --- Momentum ---
-    for period, label in zip([21, 63, 126, 252], ['1m', '3m', '6m', '12m']):
-        df[f'return_{label}'] = (
-            df.groupby('Ticker')['Close'].pct_change(periods=period)
-        )
+    logger.info("compute_factors called for DataFrame with %d rows", len(df))
+    try:
+        df = df.sort_values(["Ticker", "Date"]).copy()
 
-    # 12-1m momentum
-    df['momentum_12_1'] = (
-        df.groupby('Ticker')['Close'].pct_change(periods=252) -
-        df.groupby('Ticker')['Close'].pct_change(periods=21)
-    )
+    logger.info("compute_factors called for DataFrame with %d rows", len(df))
+    try:
+        df = df.sort_values(["Ticker", "Date"]).copy()
+    except Exception as e:
+        logger.error("Failed to sort DataFrame: %s", e, exc_info=True)
+        raise
+    logger.debug("DataFrame sorted by Ticker and Date")
 
-    # --- Volatility ---
+    # ---------- Momentum ----------
+    logger.debug("Starting momentum calculations")
+    for period, label in zip([21, 63, 126, 252], ["1m", "3m", "6m", "12m"]):
+        try:
+            df[f"return_{label}"] = (
+                df.groupby("Ticker", group_keys=False)["Close"]
+                  .pct_change(periods=period)
+            )
+        except Exception as e:
+            logger.warning(f"Failed to compute return_{label}: %s", e, exc_info=True)
+    # 12-1 momentum
+    try:
+        g = df.groupby("Ticker", group_keys=False)["Close"]
+        df["momentum_12_1"] = g.pct_change(252) - g.pct_change(21)
+    except Exception as e:
+        logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
+
+    # ---------- Volatility ----------
+    logger.debug("Starting volatility calculations")
     for window in [21, 63, 252]:
-        df[f'vol_{window}d'] = (
-            df.groupby('Ticker')['Close'].transform(lambda x: x.pct_change().rolling(window).std())
-        )
+        try:
+            df[f"vol_{window}d"] = (
+                df.groupby("Ticker", group_keys=False)["Close"]
+                  .transform(lambda x: x.pct_change().rolling(window, min_periods=max(2, window//3)).std())
+            )
+        except Exception as e:
+            logger.warning(f"Failed to compute vol_{window}d: %s", e, exc_info=True)
 
-    # --- Moving Averages ---
+    # ---------- Moving Averages ----------
+    logger.debug("Starting moving averages calculations")
     for window in [20, 50, 200]:
-        df[f'ma_{window}'] = (
-            df.groupby('Ticker')['Close'].transform(lambda x: ta.trend.sma_indicator(x, window))
-        )
+        try:
+            df[f"ma_{window}"] = (
+                df.groupby("Ticker", group_keys=False)["Close"]
+                  .transform(lambda x: ta.trend.sma_indicator(x, window=window))
+            )
+        except Exception as e:
+            logger.warning(f"Failed to compute ma_{window}: %s", e, exc_info=True)
 
-    # --- Technicals via ta ---
-    df['RSI_14'] = (
-        df.groupby('Ticker')['Close'].transform(lambda x: ta.momentum.rsi(x, window=14))
+    # ---------- RSI ----------
+    logger.debug("Starting RSI calculation")
+    try:
+        df["RSI_14"] = (
+            df.groupby("Ticker", group_keys=False)["Close"]
+              .transform(lambda x: ta.momentum.rsi(x, window=14))
+        )
+    except Exception as e:
+        logger.warning("Failed to compute RSI_14: %s", e, exc_info=True)
+
+    # ---------- MACD (robust to ta version) ----------
+    logger.debug("Starting MACD calculation")
+    def _macd(series: pd.Series) -> pd.DataFrame:
+        """
+        Compute MACD and MACD histogram for a price series.
+        Logs entry and errors.
+        """
+        logger.debug("_macd called for series of length %d", len(series))
+        try:
+            m = ta.trend.MACD(series, window_slow=26, window_fast=12, window_sign=9)
+            return pd.DataFrame(
+                {"MACD": m.macd(), "MACDh": m.macd_diff()},
+                index=series.index
+            )
+        except Exception as e:
+            logger.warning("MACD calculation failed: %s", e, exc_info=True)
+            return pd.DataFrame({"MACD": np.nan, "MACDh": np.nan}, index=series.index)
+
+    try:
+        macd_df = (
+            df.groupby("Ticker", group_keys=False)["Close"]
+              .apply(_macd)
+              .reset_index(level=0, drop=True)
+        )
+        df[["MACD", "MACDh"]] = macd_df
+    except Exception as e:
+        logger.warning("Failed to compute MACD/MACDh: %s", e, exc_info=True)
+
+    # ---------- Bollinger Bands ----------
+    logger.debug("Starting Bollinger Bands calculation")
+    def _bb(series: pd.Series) -> pd.DataFrame:
+        """
+        Compute Bollinger Bands for a price series.
+        Logs entry and errors.
+        """
+        logger.debug("_bb called for series of length %d", len(series))
+        try:
+            bb = ta.volatility.BollingerBands(series, window=20, window_dev=2)
+            return pd.DataFrame({"BBU_20": bb.bollinger_hband(),
+                                 "BBL_20": bb.bollinger_lband()},
+                                index=series.index)
+        except Exception as e:
+            logger.warning("Bollinger Bands calculation failed: %s", e, exc_info=True)
+            return pd.DataFrame({"BBU_20": np.nan, "BBL_20": np.nan}, index=series.index)
+
+    try:
+        bb_df = (
+            df.groupby("Ticker", group_keys=False)["Close"]
+              .apply(_bb)
+              .reset_index(level=0, drop=True)
+        )
+        df[["BBU_20", "BBL_20"]] = bb_df
+    except Exception as e:
+        logger.warning("Failed to compute Bollinger Bands: %s", e, exc_info=True)
+
+    # ---------- Value ----------
+    logger.debug("Starting value factor calculations")
+    # Earnings yield (handle zero/NaN/neg PE safely)
+    if "trailingPE" in df.columns:
+        pe = pd.to_numeric(df["trailingPE"], errors="coerce")
+        df["earnings_yield"] = 1.0 / pe.replace(0, np.nan)
+    else:
+        logger.warning("Column 'trailingPE' missing; earnings_yield set to NaN.")
+        df["earnings_yield"] = np.nan
+
+    pb = pd.to_numeric(df.get("priceToBook", np.nan), errors="coerce")
+    if "priceToBook" not in df.columns:
+        logger.warning("Column 'priceToBook' missing; book_to_price set to NaN.")
+    df["book_to_price"] = 1.0 / pb.replace(0, np.nan)
+    if "dividendYield" not in df.columns:
+        logger.warning("Column 'dividendYield' missing; dividendYield set to NaN.")
+    df["dividendYield"] = pd.to_numeric(df.get("dividendYield", np.nan), errors="coerce")
+    if "priceToSalesTrailing12Months" not in df.columns:
+        logger.warning("Column 'priceToSalesTrailing12Months' missing; price_to_sales set to NaN.")
+    df["price_to_sales"] = pd.to_numeric(df.get("priceToSalesTrailing12Months", np.nan), errors="coerce")
+
+    # ---------- Quality ----------
+    logger.debug("Starting quality factor calculations")
+    if "returnOnEquity" not in df.columns:
+        logger.warning("Column 'returnOnEquity' missing; quality_score may be inaccurate.")
+    if "profitMargins" not in df.columns:
+        logger.warning("Column 'profitMargins' missing; quality_score may be inaccurate.")
+    df["quality_score"] = (
+        pd.to_numeric(df.get("returnOnEquity", np.nan), errors="coerce")
+        + pd.to_numeric(df.get("profitMargins", np.nan), errors="coerce")
+    ) / 2.0
+    df["norm_quality_score"] = (
+        df.groupby("Date", group_keys=False)["quality_score"].transform(_safe_zscore)
     )
 
-    # MACD and MACD histogram
-    df['MACD'] = df.groupby('Ticker')['Close'].transform(lambda x: ta.trend.macd(x, window_slow=26, window_fast=12))
-    df['MACDh'] = df.groupby('Ticker')['Close'].transform(lambda x: ta.trend.macd_diff(x, window_slow=26, window_fast=12, window_sign=9))
+    # ---------- Size / Liquidity ----------
+    logger.debug("Starting size/liquidity calculations")
+    mc = pd.to_numeric(df.get("marketCap", np.nan), errors="coerce")
+    if "marketCap" not in df.columns:
+        logger.warning("Column 'marketCap' missing; log_marketCap set to NaN.")
+    df["log_marketCap"] = np.where(mc > 0, np.log(mc), np.nan)
 
-    # Bollinger Bands (upper and lower)
-    def bbands_func(x):
-        bb = ta.volatility.BollingerBands(x, window=20, window_dev=2)
-        return pd.DataFrame({'BBU_20': bb.bollinger_hband(), 'BBL_20': bb.bollinger_lband()}, index=x.index)
-
-    bb_df = df.groupby('Ticker')['Close'].apply(bbands_func).reset_index(level=0, drop=True)
-    df[['BBU_20', 'BBL_20']] = bb_df
-
-    # --- Value factors ---
-    if 'trailingPE' in df.columns:
-        df['earnings_yield'] = 1 / df['trailingPE'].replace(0, np.nan)
+    if "Volume" not in df.columns:
+        logger.warning("Column 'Volume' missing; avg_volume_21d set to NaN.")
+        df["avg_volume_21d"] = np.nan
     else:
-        df['earnings_yield'] = np.nan
+        df["avg_volume_21d"] = (
+            df.groupby("Ticker", group_keys=False)["Volume"]
+              .transform(lambda x: x.rolling(21, min_periods=5).mean())
+        )
 
-    df['book_to_price'] = 1 / df['priceToBook'].replace(0, np.nan)
-    df['dividendYield'] = df.get('dividendYield', np.nan)
-    df['price_to_sales'] = df.get('priceToSalesTrailing12Months', np.nan)
+    # ---------- Amihud illiquidity ----------
+    logger.debug("Starting Amihud illiquidity calculation")
+    def _amihud(grp: pd.DataFrame) -> pd.Series:
+        """
+        Compute Amihud illiquidity for a ticker group.
+        Logs entry and errors.
+        """
+        logger.debug("_amihud called for group of length %d", len(grp))
+        try:
+            ret = grp["Close"].pct_change().abs()
+            vol = grp["Volume"].replace(0, np.nan)
+            amt = vol * grp["Close"]
+            raw = ret / amt
+            return raw.rolling(21, min_periods=5).mean()
+        except Exception as e:
+            logger.warning("Amihud calculation failed: %s", e, exc_info=True)
+            return pd.Series(np.nan, index=grp.index)
 
-    # Ensure finite values for subsequent calculations
+    try:
+        df["amihud_illiquidity"] = (
+            df.groupby("Ticker", group_keys=False)[["Close", "Volume"]]
+              .apply(_amihud)
+              .reset_index(level=0, drop=True)
+        )
+    except Exception as e:
+        logger.warning("Failed to compute amihud_illiquidity: %s", e, exc_info=True)
+
+    # ---------- Clean infinities early ----------
+    logger.debug("Cleaning infinities and NaNs")
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
-    # --- Quality factors ---
-    df['quality_score'] = df[['returnOnEquity', 'profitMargins']].mean(axis=1)
-    df['norm_quality_score'] = df.groupby('Date')['quality_score'].transform(_safe_zscore)
-
-    # --- Size / Liquidity ---
-    df['log_marketCap'] = np.log(df['marketCap'])
-    df['avg_volume_21d'] = df.groupby('Ticker')['Volume'].transform(lambda x: x.rolling(21).mean())
-
-    # Replace zero volumes with NaN prior to Amihud calculation
-    adj_volume = df['Volume'].replace(0, np.nan)
-    # Calculate raw Amihud
-    df['amihud_raw'] = df['Close'].pct_change().abs() / (adj_volume * df['Close'])
-    # Replace infinite values with NaN
-    df['amihud_raw'] = df['amihud_raw'].replace([np.inf, -np.inf], np.nan)
-
-    # 21-day rolling mean by ticker (final Amihud)
-    df['amihud_illiquidity'] = df.groupby('Ticker')['amihud_raw'].transform(lambda x: x.rolling(21).mean())
-    # Optionally: drop the intermediate column
-    df.drop(columns=['amihud_raw'], inplace=True)
-
-    # Alternative groupby.apply implementation for Amihud illiquidity removed
-
-
-    # --- Composite factor ---
-    factor_cols = ['return_12m', 'earnings_yield', 'norm_quality_score']
+    # ---------- Composite factor ----------
+    logger.debug("Starting composite factor calculation")
+    factor_cols = ["return_12m", "earnings_yield", "norm_quality_score"]
     for col in factor_cols:
-        df[f'z_{col}'] = df.groupby('Date')[col].transform(_safe_zscore)
+        if col in df.columns:
+            try:
+                df[f"z_{col}"] = df.groupby("Date", group_keys=False)[col].transform(_safe_zscore)
+            except Exception as e:
+                logger.warning(f"Failed to z-score {col}: %s", e, exc_info=True)
+    z_cols = [f"z_{c}" for c in factor_cols if f"z_{c}" in df.columns]
+    try:
+        df["factor_composite"] = df[z_cols].mean(axis=1) if z_cols else np.nan
+    except Exception as e:
+        logger.warning("Failed to compute factor_composite: %s", e, exc_info=True)
 
-    df['factor_composite'] = df[[f'z_{col}' for col in factor_cols if f'z_{col}' in df.columns]].mean(axis=1)
+    logger.info("Factor computation complete for %d rows.", len(df))
+    return df
+                logger.warning(f"Failed to z-score {col}: %s", e, exc_info=True)
+    z_cols = [f"z_{c}" for c in factor_cols if f"z_{c}" in df.columns]
+    try:
+        df["factor_composite"] = df[z_cols].mean(axis=1) if z_cols else np.nan
+    except Exception as e:
+        logger.warning("Failed to compute factor_composite: %s", e, exc_info=True)
 
+    logger.info("Factor computation complete for %d rows.", len(df))
     return df

@@ -58,13 +58,30 @@ class FiveYearMacroDataLoader:
             return None
 
 if __name__ == "__main__":
-    loader = FiveYearMacroDataLoader()
 
+# --- Integration Example: Store Macro Data in Database ---
+def store_macro_data_to_db(macro_df: pd.DataFrame):
+    """
+    Store macroeconomic data in the GCP/Postgres database using DBHelper.
+    """
+    try:
+        from data_pipeline.db_utils import DBHelper
+        db = DBHelper()
+        db.create_table("macro_data", macro_df, primary_keys=["Date"])
+        db.insert_dataframe("macro_data", macro_df, unique_cols=["Date"])
+        db.close()
+        logger.info("✅ Macro data stored in database table 'macro_data'.")
+    except Exception as e:
+        logger.error("❌ Failed to store macro data in DB: %s", e, exc_info=True)
+
+if __name__ == "__main__":
+    loader = FiveYearMacroDataLoader()
     macro_data = loader.get_combined_macro_data()
     if macro_data is not None:
         logger.info("✅ Combined 5-Year UK Macro Data:")
         logger.info("\n%s", macro_data)
-        # Optionally save to CSV
         macro_data.to_csv("UK_5Year_Macro_Data.csv", index=False)
+        # Store macro data in database
+        store_macro_data_to_db(macro_data)
     else:
         logger.error("❌ Failed to fetch macro data.")

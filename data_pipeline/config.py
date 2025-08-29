@@ -1,9 +1,29 @@
+
 # Configuration for the data pipeline
 # This file contains constants and settings used throughout the data pipeline.
+#
+# ---
+# Google Cloud (GCP) Only:
+# This configuration is designed for GCP services (Cloud SQL, Cloud Storage, Artifact Registry, etc.).
+# No AWS services are supported or referenced.
+#
+# ---
+# Google Cloud (GCP) Deployment:
+# Set environment variables in your deployment (e.g., Cloud Run) using the
+# --set-env-vars flag or the GCP console. Example:
+#   gcloud run deploy SERVICE_NAME \
+#     --image IMAGE_URI \
+#     --set-env-vars "DATABASE_URL=your-db-url,CACHE_BACKEND=gcs,CACHE_GCS_BUCKET=your-bucket"
+#
+# If an environment variable is not set, a safe default is used for local development.
 
+
+# Standard library imports
 import os
 import tempfile
+import logging
 
+# Third-party imports
 from sqlalchemy import create_engine
 
 # ---------------------------------------------------------------------------
@@ -37,46 +57,59 @@ LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
 # ---------------------------------------------------------------------------
 # Database configuration
 #
-# Resolution: support multiple sources for DATABASE_URL.
-# 1) Environment variable (preferred in prod/CI)
-# 2) Local SQLite inside DATA_DIR (developer-friendly fallback)
+"""
+Database configuration (GCP-first)
+
+For GCP deployments, store DATABASE_URL as a GitHub repository secret.
+Inject it into your CI/CD pipeline as an environment variable.
+Example (GitHub Actions):
+        - name: Deploy to Cloud Run
+            run: |
+                gcloud run deploy SERVICE_NAME \
+                    --image IMAGE_URI \
+                    --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}"
+
+If DATABASE_URL is not set, the application will raise an error and stop.
+"""
 # ---------------------------------------------------------------------------
 
-# Optional local SQLite fallback path
-DB_PATH = os.path.join(DATA_DIR, "app.db")
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
-    DATABASE_URL = f"sqlite:///{DB_PATH}"
+    raise RuntimeError(
+        "DATABASE_URL environment variable is required for GCP deployments. "
+        "Set it to your PostgreSQL Cloud SQL connection string."
+    )
 
 ENGINE = create_engine(DATABASE_URL)
 
 # ---------------------------------------------------------------------------
 # Gmail API configuration
 #
-# Paths to the OAuth client secrets and token files can be overridden via the
-# ``GMAIL_CREDENTIALS_FILE`` and ``GMAIL_TOKEN_FILE`` environment variables.
-# ---------------------------------------------------------------------------
+"""
+Gmail API configuration (GitHub Secrets for individuals)
+
+Store your Gmail OAuth credentials file as a GitHub repository secret (e.g., GMAIL_CREDENTIALS_FILE).
+Inject it into your CI/CD pipeline as an environment variable and write it to a file before running your app.
+Example (GitHub Actions):
+        - name: Write Gmail credentials
+            run: |
+                echo "${{ secrets.GMAIL_CREDENTIALS_FILE }}" > credentials.json
+                export GMAIL_CREDENTIALS_FILE=credentials.json
+
+Default path is used for local development if the environment variable is not set.
+"""
 GMAIL_CREDENTIALS_FILE = os.environ.get("GMAIL_CREDENTIALS_FILE", "credentials.json")
 GMAIL_TOKEN_FILE = os.environ.get("GMAIL_TOKEN_FILE", "token.json")
 
+
 # ---------------------------------------------------------------------------
-# Cache backend configuration
+# Cache backend configuration (GCS-only)
 #
-# The cache system can be backed by different stores. Set
-# ``CACHE_BACKEND`` to one of:
-#   * ``local`` – use a JSON file in ``CACHE_DIR`` (default)
-#   * ``redis`` – use a Redis instance specified by ``CACHE_REDIS_URL``
-#   * ``gcs`` – use a Cloud Storage bucket specified by ``CACHE_GCS_BUCKET``
+# The cache system uses Google Cloud Storage. Set the bucket name via the
+# environment variable ``CACHE_GCS_BUCKET``. Optionally, set a prefix via
+# ``CACHE_GCS_PREFIX``.
 # ---------------------------------------------------------------------------
-CACHE_BACKEND = os.environ.get("CACHE_BACKEND", "local").lower()
-
-# Redis configuration. Only used when ``CACHE_BACKEND`` is ``redis``.
-# Example: ``redis://localhost:6379/0``
-CACHE_REDIS_URL = os.environ.get("CACHE_REDIS_URL", "redis://localhost:6379/0")
-
-# Cloud Storage configuration. Only used when ``CACHE_BACKEND`` is ``gcs``.
-# ``CACHE_GCS_BUCKET`` is required, ``CACHE_GCS_PREFIX`` is optional.
 CACHE_GCS_BUCKET = os.environ.get("CACHE_GCS_BUCKET")
 CACHE_GCS_PREFIX = os.environ.get("CACHE_GCS_PREFIX", "")
 
@@ -94,9 +127,67 @@ MAX_THREADS = int(
 )
 CACHE_EXPIRY_MINUTES = 1440   # Cache expiry time in minutes (24 hours)
 
+
 # Logging configuration
-LOG_LEVEL = "INFO"
+"""
+Logging configuration
+
+Set the LOG_LEVEL environment variable to control log verbosity at runtime:
+    LOG_LEVEL=DEBUG      # See detailed logs (debugging)
+    LOG_LEVEL=INFO       # See informational logs (default)
+    LOG_LEVEL=WARNING    # See only warnings and errors
+    LOG_LEVEL=ERROR      # See only errors
+    LOG_LEVEL=CRITICAL   # See only critical errors
+
+You can set LOG_LEVEL in your shell, CI/CD, or GCP deployment (Cloud Run, etc).
+If not set, defaults to INFO.
+"""
+
+# --- Logging helpers (formerly in logging_config.py) ---
+VALID_LEVELS = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"}
+
+def level_from_env(default: str = "INFO") -> int:
+    """
+    Get logging level from LOG_LEVEL environment variable, fallback to default.
+    Returns logging level constant (e.g., logging.INFO).
+    """
+    raw = os.environ.get("LOG_LEVEL", default).upper()
+    if raw not in VALID_LEVELS:
+        raw = default
+    return getattr(logging, raw, logging.INFO)
+
+def configure_logging(level: int = None) -> None:
+    """
+    Idempotently set up root logging for CLIs/jobs.
+    - If handlers already exist, only adjusts levels.
+    - If not, creates a simple StreamHandler with a useful format.
+    """
+    lvl = level if level is not None else level_from_env()
+    root = logging.getLogger()
+    if root.handlers:
+        root.setLevel(lvl)
+        return
+    logging.basicConfig(
+        level=lvl,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+LOG_LEVEL = level_from_env()
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+configure_logging(LOG_LEVEL)
+
+def get_file_logger(name: str, filename: str = None):
+    """Create and return a logger that writes to a file in LOG_DIR."""
+    logger = logging.getLogger(name)
+    logger.setLevel(LOG_LEVEL)
+    log_file = os.path.join(LOG_DIR, filename or f"{name}.log")
+    file_handler = logging.FileHandler(log_file)
+    formatter = logging.Formatter(LOG_FORMAT)
+    file_handler.setFormatter(formatter)
+    # Avoid duplicate handlers
+    if not any(isinstance(h, logging.FileHandler) and getattr(h, "baseFilename", None) == file_handler.baseFilename for h in logger.handlers):
+        logger.addHandler(file_handler)
+    return logger
 
 # FTSE 100 Tickers List (as config)
 FTSE_100_TICKERS = [

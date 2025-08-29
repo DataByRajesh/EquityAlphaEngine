@@ -1,44 +1,37 @@
-# Tableau Integration Guide
 
-This guide explains how to connect Tableau to the EquityAlphaEngine database.
+# Tableau Public Integration Guide
 
-## Prerequisites
+This guide explains how to connect your EquityAlphaEngine pipeline output to Tableau Public for free, public dashboarding.
 
-- Access to the PostgreSQL database used by the data pipeline.
-- Tableau Desktop or Tableau Server with the PostgreSQL driver installed.
-- Connection details such as host, port, database name, username, and password.
+## Why Tableau Public?
+- Free for public dashboards
+- Easy to use, runs on Windows and Mac
+- No software install required for viewing dashboards
 
-## Connecting Tableau
+## How to Connect Tableau Public to Your Pipeline
 
-1. Retrieve the connection information from your environment or `.env` file. It
-   follows the pattern: `postgresql://user:password@host:5432/database`.
-2. In Tableau, choose **Connect → PostgreSQL**.
-3. Enter the host, port, database, username, and password.
-4. After connecting, select the desired schema and drag tables like
-   `stock_data` or `macro_data` onto the canvas to begin building views.
+1. **Export Data to CSV:**
+   - Your pipeline writes output to a CSV file (e.g., `financial_tbl.csv`, `macro_data_tbl.csv`).
+   - Example Python code:
+     ```python
+     import pandas as pd
+     from sqlalchemy import create_engine
+     engine = create_engine(DATABASE_URL)
+     df = pd.read_sql("SELECT * FROM financial_tbl", engine)
+     df.to_csv("financial_tbl.csv", index=False)
+     ```
 
-## Sample SQL queries
+2. **Upload CSV to Tableau Public:**
+   - Go to [Tableau Public](https://public.tableau.com/)
+   - Click 'Create a Viz' and upload your CSV file
+   - Build charts and dashboards using your data
 
-```sql
--- Recent close prices
-SELECT symbol, date, close
-FROM stock_data
-ORDER BY date DESC
-LIMIT 100;
+3. **Update Data:**
+   - To refresh your dashboard, export a new CSV and re-upload to Tableau Public
 
--- Macroeconomic indicator example
-SELECT indicator, date, value
-FROM macro_data
-WHERE indicator = 'GDP'
-ORDER BY date DESC;
-```
-
-## Exporting tables to CSV
-
-```bash
-# Export stock data to CSV
-psql $DATABASE_URL -c "\\COPY (SELECT * FROM stock_data) TO 'stock_data.csv' WITH CSV HEADER"
-
+## Notes
+- Tableau Public does not support live connections or scheduled refresh from cloud databases
+- All dashboards are public and discoverable online
 # Export macro data to CSV
 psql $DATABASE_URL -c "\\COPY (SELECT * FROM macro_data) TO 'macro_data.csv' WITH CSV HEADER"
 ```
