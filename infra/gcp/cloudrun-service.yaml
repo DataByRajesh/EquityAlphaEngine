@@ -12,6 +12,29 @@ spec:
         - image: REGION-docker.pkg.dev/PROJECT_ID/AR_REPO/equity-alpha-engine:latest
           ports:
             - containerPort: 8080
+          env:
+            - name: GCP_PROJECT_ID
+              value: "${GCP_PROJECT_ID}"
+            - name: GCP_REGION
+              value: "${GCP_REGION}"
+            - name: CLOUD_RUN_SERVICE
+              value: "${CLOUD_RUN_SERVICE}"
+            - name: REPO
+              value: "${REPO}"
+            - name: IMAGE_TAG
+              value: "${IMAGE_TAG}"
+            - name: IMAGE_URI
+              value: "${IMAGE_URI}"
+            - name: DATABASE_URL
+              value: "${DATABASE_URL}"
+            - name: GCP_SA_KEY
+              value: "${GCP_SA_KEY}"
+            - name: GMAIL_CREDENTIALS_FILE
+              value: "${GMAIL_CREDENTIALS_FILE}"
+            - name: QUANDL_API_KEY
+              value: "${QUANDL_API_KEY}"
+            - name: BUILD_SHA
+              value: "${BUILD_SHA}"
       containerConcurrency: 80
   traffic:
     - latestRevision: true

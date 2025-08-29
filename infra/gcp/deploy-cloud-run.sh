@@ -4,12 +4,30 @@ set -euo pipefail
 # Step-by-step deployment script for EquityAlphaEngine on GCP Cloud Run
 # Usage: bash infra/gcp/deploy-cloud-run.sh
 
-# 1. Set variables
-PROJECT_ID="equity-alpha-engine-alerts"
-REGION="europe-west2"
-AR_REPO="equity-images"
-SERVICE_NAME="equity-alpha-engine"
-IMAGE_NAME="$REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/$SERVICE_NAME:latest"
+###############################################
+# 1. Set essential and mandatory variables
+###############################################
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-}"
+GCP_REGION="${GCP_REGION:-}"
+CLOUD_RUN_SERVICE="${CLOUD_RUN_SERVICE:-}"
+REPO="${REPO:-}"
+IMAGE_TAG="${IMAGE_TAG:-latest}"
+IMAGE_URI="${IMAGE_URI:-$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$CLOUD_RUN_SERVICE}"
+DATABASE_URL="${DATABASE_URL:-}"
+GCP_SA_KEY="${GCP_SA_KEY:-}"
+GMAIL_CREDENTIALS_FILE="${GMAIL_CREDENTIALS_FILE:-}"
+QUANDL_API_KEY="${QUANDL_API_KEY:-}"
+BUILD_SHA="${BUILD_SHA:-$IMAGE_TAG}"
+
+# Warn if any required variable is missing
+for var in GCP_PROJECT_ID GCP_REGION CLOUD_RUN_SERVICE REPO DATABASE_URL GCP_SA_KEY GMAIL_CREDENTIALS_FILE QUANDL_API_KEY; do
+  if [ -z "${!var}" ]; then
+    echo "ERROR: $var is not set. Please set it as an environment variable or in a .env file."
+    exit 1
+  fi
+done
+
+IMAGE_NAME="$IMAGE_URI:$IMAGE_TAG"
 
 # 2. Authenticate with GCP
 gcloud auth login
@@ -31,15 +49,15 @@ echo "Docker image pushed to Artifact Registry"
 
 # 5. Deploy to Cloud Run
 
-gcloud run deploy $SERVICE_NAME \
-  --image $IMAGE_NAME \
-  --region $REGION \
+gcloud run deploy "$CLOUD_RUN_SERVICE" \
+  --image "$IMAGE_NAME" \
+  --region "$GCP_REGION" \
   --platform managed \
   --cpu=1 \
   --memory=256Mi \
   --min-instances=0 \
   --max-instances=1 \
-  --set-env-vars "APP_ENV=${APP_ENV},LOG_LEVEL=${LOG_LEVEL},BUILD_SHA=${IMAGE_TAG},DATABASE_URL=${DATABASE_URL}" \
+  --set-env-vars "GCP_PROJECT_ID=${GCP_PROJECT_ID},GCP_REGION=${GCP_REGION},CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},REPO=${REPO},IMAGE_TAG=${IMAGE_TAG},IMAGE_URI=${IMAGE_URI},DATABASE_URL=${DATABASE_URL},GCP_SA_KEY=${GCP_SA_KEY},GMAIL_CREDENTIALS_FILE=${GMAIL_CREDENTIALS_FILE},QUANDL_API_KEY=${QUANDL_API_KEY},BUILD_SHA=${BUILD_SHA}" \
   --allow-unauthenticated \
   --quiet
 
