@@ -1,3 +1,5 @@
+# Add PostgreSQL driver for SQLAlchemy
+psycopg2-binary
 # Core data pipeline dependencies
 numpy==2.3.1
 pandas==2.3.0
