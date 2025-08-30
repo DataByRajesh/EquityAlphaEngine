@@ -10,14 +10,13 @@ jobs:
   build-and-deploy-streamlit:
     runs-on: ubuntu-latest
     env:
-      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      REGION: ${{ vars.GCP_REGION }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
       REPO: ${{ vars.REPO }}
       IMAGE_NAME: streamlit-app
       SERVICE_NAME: streamlit-app
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -30,26 +29,26 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.PROJECT_ID }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
 
       - name: Build Docker image
         run: |
           docker build -f Dockerfile.streamlit -t $IMAGE_NAME:latest .
-          docker tag $IMAGE_NAME:latest $REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/$IMAGE_NAME:latest
+          docker tag $IMAGE_NAME:latest $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$IMAGE_NAME:latest
 
       - name: Authenticate Docker to Artifact Registry
         run: |
-          gcloud auth configure-docker $REGION-docker.pkg.dev
+          gcloud auth configure-docker $GCP_REGION-docker.pkg.dev
 
       - name: Push Docker image to Artifact Registry
         run: |
-          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/$IMAGE_NAME:latest
+          docker push $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$IMAGE_NAME:latest
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy $SERVICE_NAME \
-            --image=$REGION-docker.pkg.dev/$PROJECT_ID/$AR_REPO/$IMAGE_NAME:latest \
-            --region=$REGION \
+            --image=$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$IMAGE_NAME:latest \
+            --region=$GCP_REGION \
             --platform=managed \
             --allow-unauthenticated \
             --set-secrets=DATABASE_URL=DATABASE_URL,GCP_SA_KEY=GCP_SA_KEY
