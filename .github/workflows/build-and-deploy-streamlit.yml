@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      REGION: ${{ secrets.GCP_REGION }}
-      AR_REPO: ${{ secrets.AR_REPO }}
+      REGION: ${{ vars.GCP_REGION }}
+      REPO: ${{ vars.REPO }}
       IMAGE_NAME: streamlit-app
       SERVICE_NAME: streamlit-app
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
