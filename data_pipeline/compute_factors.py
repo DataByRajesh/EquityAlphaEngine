@@ -234,7 +234,12 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             try:
                 df[f"z_{col}"] = df.groupby("Date", group_keys=False)[col].transform(_safe_zscore)
             except Exception as e:
-                logger.warning(f"Failed to z-score {col}: %s", e, exc_info=True)
+        # ...existing code...
+        try:
+            # ...existing code...
+        except Exception as e:
+            logger.warning(f"Failed to z-score {col}: %s", e, exc_info=True)
+        # ...existing code...
     z_cols = [f"z_{c}" for c in factor_cols if f"z_{c}" in df.columns]
     try:
         df["factor_composite"] = df[z_cols].mean(axis=1) if z_cols else np.nan
