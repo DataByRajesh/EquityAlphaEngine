@@ -1,8 +1,10 @@
+
 import streamlit as st
 import pandas as pd
 import requests
+import os
 
-API_URL = "http://localhost:8000"  # Update with your FastAPI URL
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 def get_data(endpoint, params=None):
     response = requests.get(f"{API_URL}/{endpoint}", params=params)
