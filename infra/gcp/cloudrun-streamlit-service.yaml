@@ -1,0 +1,38 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: streamlit-app
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/AR_REPO/streamlit-app:latest
+          ports:
+            - containerPort: 8501
+          env:
+            - name: GCP_PROJECT_ID
+              value: ${secrets.GCP_PROJECT_ID}
+            - name: GCP_REGION
+              value: ${vars.GCP_REGION}
+            - name: CLOUD_RUN_SERVICE
+              value: ${secrets.CLOUD_RUN_SERVICE}
+            - name: REPO
+              value: ${secrets.REPO}
+            - name: IMAGE_TAG
+              value: ${secrets.IMAGE_TAG}
+            - name: IMAGE_URI
+              value: ${secrets.IMAGE_URI}
+            - name: DATABASE_URL
+              value: ${secrets.DATABASE_URL}
+            - name: GCP_SA_KEY
+              value: ${secrets.GCP_SA_KEY}
+            - name: GMAIL_CREDENTIALS_FILE
+              value: ${secrets.GMAIL_CREDENTIALS_FILE}
+            - name: QUANDL_API_KEY
+              value: ${secrets.QUANDL_API_KEY}
+            - name: BUILD_SHA
+              value: ${secrets.BUILD_SHA}
+      containerConcurrency: 80
+  traffic:
+    - latestRevision: true
