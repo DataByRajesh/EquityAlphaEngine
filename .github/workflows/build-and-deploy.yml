@@ -103,5 +103,6 @@ jobs:
             --max-instances=1 \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
             --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},GCP_REGION=${GCP_REGION},REPO=${REPO}" \
-            --timeout=600
+            --timeout=600 \
+            --allow-unauthenticated
 
