@@ -229,26 +229,14 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- Composite factor ----------
     logger.debug("Starting composite factor calculation")
     factor_cols = ["return_12m", "earnings_yield", "norm_quality_score"]
+
     for col in factor_cols:
         if col in df.columns:
             try:
                 df[f"z_{col}"] = df.groupby("Date", group_keys=False)[col].transform(_safe_zscore)
             except Exception as e:
-        # ...existing code...
-        try:
-            # ...existing code...
-        except Exception as e:
-            logger.warning(f"Failed to z-score {col}: %s", e, exc_info=True)
-        # ...existing code...
-    z_cols = [f"z_{c}" for c in factor_cols if f"z_{c}" in df.columns]
-    try:
-        df["factor_composite"] = df[z_cols].mean(axis=1) if z_cols else np.nan
-    except Exception as e:
-        logger.warning("Failed to compute factor_composite: %s", e, exc_info=True)
-
-    logger.info("Factor computation complete for %d rows.", len(df))
-    return df
                 logger.warning(f"Failed to z-score {col}: %s", e, exc_info=True)
+
     z_cols = [f"z_{c}" for c in factor_cols if f"z_{c}" in df.columns]
     try:
         df["factor_composite"] = df[z_cols].mean(axis=1) if z_cols else np.nan
