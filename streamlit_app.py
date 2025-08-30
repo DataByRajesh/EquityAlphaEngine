@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 import os
 
-#API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
 
 def get_data(endpoint, params=None):
     response = requests.get(f"{API_URL}/{endpoint}", params=params)
