@@ -17,6 +17,7 @@ jobs:
       SERVICE_NAME: streamlit-app
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      API_URL: ${{ vars.API_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -51,4 +52,5 @@ jobs:
             --region=$GCP_REGION \
             --platform=managed \
             --allow-unauthenticated \
-            --set-secrets="DATABASE_URL=DATABASE_URL:latest" 
+            --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
+            --set-env-vars=API_URL=${{ vars.API_URL }}
