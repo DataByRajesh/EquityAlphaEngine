@@ -51,4 +51,4 @@ jobs:
             --region=$GCP_REGION \
             --platform=managed \
             --allow-unauthenticated \
-            --set-secrets=DATABASE_URL=DATABASE_URL,GCP_SA_KEY=GCP_SA_KEY
+            --set-secrets="DATABASE_URL=DATABASE_URL:latest" 
