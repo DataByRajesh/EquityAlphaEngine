@@ -13,8 +13,9 @@ if __name__ == "__main__":
     root = os.path.dirname(os.path.abspath(__file__))
     py_files = find_python_files(root)
     print(f"Checking {len(py_files)} Python files with flake8...\n")
-    result = subprocess.run(['flake8'] + py_files)
+    with open("flake8_report.txt", "w") as report:
+        result = subprocess.run(['flake8'] + py_files, stdout=report, stderr=report)
     if result.returncode == 0:
-        print("No issues found.")
+        print("No issues found. See flake8_report.txt for details.")
     else:
-        print("Issues detected. See above for details.")
+        print("Issues detected. See flake8_report.txt for details.")
