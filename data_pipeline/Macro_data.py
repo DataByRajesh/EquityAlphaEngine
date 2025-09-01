@@ -57,17 +57,17 @@ class FiveYearMacroDataLoader:
         else:
             return None
 
-if __name__ == "__main__":
 
-# --- Integration Example: Store Macro Data in Database ---
-def store_macro_data_to_db(macro_df: pd.DataFrame):
-    """
-    Store macroeconomic data in the GCP/Postgres database using DBHelper.
-    """
-    try:
-        from data_pipeline.db_utils import DBHelper
-        db = DBHelper()
-        db.create_table("macro_data", macro_df, primary_keys=["Date"])
+if __name__ == "__main__":
+    # --- Integration Example: Store Macro Data in Database ---
+    def store_macro_data_to_db(macro_df: pd.DataFrame):
+        """
+        Store macroeconomic data in the GCP/Postgres database using DBHelper.
+        """
+        try:
+            from data_pipeline.db_utils import DBHelper
+            db = DBHelper()
+            db.create_table("macro_data", macro_df, primary_keys=["Date"])
         db.insert_dataframe("macro_data", macro_df, unique_cols=["Date"])
         db.close()
         logger.info("✅ Macro data stored in database table 'macro_data'.")
