@@ -84,3 +84,30 @@ if __name__ == "__main__":
         store_macro_data_to_db(macro)
     else:
         logger.error("❌ Failed to fetch macro data.")
+    """
+    if __name__ == "__main__":
+        # Main block bypassed for now
+        # def store_macro_data_to_db(macro_df: pd.DataFrame):
+        #     """
+        #     Store macroeconomic data in the DB using DBHelper (expects DATABASE_URL).
+        #     """
+        #     try:
+        #         macro_df = macro_df.copy()
+        #         macro_df["Date"] = pd.to_datetime(macro_df["Date"])
+        #         from data_pipeline.db_utils import DBHelper
+        #         db = DBHelper()
+        #         db.create_table("macro_data", macro_df, primary_keys=["Date"])
+        #         db.insert_dataframe("macro_data", macro_df, unique_cols=["Date"])
+        #         db.close()
+        #         logger.info("✅ Macro data stored in 'macro_data'.")
+        #     except Exception as e:
+        #         logger.error("❌ Failed to store macro data in DB: %s", e)
+        # loader = FiveYearMacroDataLoader()
+        # macro = loader.get_combined_macro_data()
+        # if macro is not None:
+        #     logger.info("✅ Combined UK Macro Data (tail):\n%s", macro.tail())
+        #     macro.to_csv("UK_5Year_Macro_Data.csv", index=False)
+        #     store_macro_data_to_db(macro)
+        # else:
+        #     logger.error("❌ Failed to fetch macro data.")
+    """
