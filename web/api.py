@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
 import pandas as pd
-from data_pipeline.compute_factors import compute_factors
-from data_pipeline.db_utils import DBHelper
-from data_pipeline.config import DATABASE_URL
+from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+
+from data_pipeline.compute_factors import compute_factors
+from data_pipeline.config import DATABASE_URL
+from data_pipeline.db_utils import DBHelper
 
 app = FastAPI()
 
@@ -33,10 +34,10 @@ def compute_factors_endpoint(payload: FactorsRequest) -> list[dict]:
     result_df = compute_factors(df)
     return result_df.to_dict(orient="records")
 
-
     @app.get("/", response_class=HTMLResponse)
     async def root():
         return "<h2>Welcome to Equity Alpha Engine API!</h2><p>Visit <a href='/docs'>/docs</a> for the interactive API documentation.</p>"
+
 
 def get_db():
     return DBHelper(DATABASE_URL)

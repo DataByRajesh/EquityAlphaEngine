@@ -1,13 +1,14 @@
 import logging
 import os
 
-import quandl
 import pandas as pd
+import quandl
 
 DEFAULT_API_KEY = os.environ.get("QUANDL_API_KEY")
 
 
 logger = logging.getLogger(__name__)
+
 
 class FiveYearMacroDataLoader:
     def __init__(self, api_key: str | None = None,
@@ -28,7 +29,8 @@ class FiveYearMacroDataLoader:
         Fetch 5-Year UK GDP Growth (YoY %) from IMF via Quandl
         """
         try:
-            data = quandl.get("ODA/GBR_NGDP_RPCH", start_date=self.start_date, end_date=self.end_date)
+            data = quandl.get(
+                "ODA/GBR_NGDP_RPCH", start_date=self.start_date, end_date=self.end_date)
             data.reset_index(inplace=True)
             data.rename(columns={"Value": "GDP_Growth_YoY"}, inplace=True)
             return data
@@ -41,10 +43,12 @@ class FiveYearMacroDataLoader:
         Placeholder for Inflation Data.
         Replace this with a real data fetch once available.
         """
-        dates = pd.date_range(start=self.start_date, end=self.end_date, freq='Q')
+        dates = pd.date_range(start=self.start_date,
+                              end=self.end_date, freq='Q')
         inflation_data = pd.DataFrame({
             'Date': dates,
-            'Inflation_YoY': [2.5 for _ in range(len(dates))]  # Placeholder: 2.5%
+            # Placeholder: 2.5%
+            'Inflation_YoY': [2.5 for _ in range(len(dates))]
         })
         return inflation_data
 
@@ -52,7 +56,8 @@ class FiveYearMacroDataLoader:
         gdp_data = self.fetch_gdp_growth()
         inflation_data = self.fetch_inflation_rate()
         if gdp_data is not None:
-            combined_data = pd.merge(gdp_data, inflation_data, on='Date', how='outer').sort_values('Date')
+            combined_data = pd.merge(
+                gdp_data, inflation_data, on='Date', how='outer').sort_values('Date')
             return combined_data
         else:
             return None
@@ -72,7 +77,8 @@ if __name__ == "__main__":
         db.close()
         logger.info("✅ Macro data stored in database table 'macro_data'.")
     except Exception as e:
-        logger.error("❌ Failed to store macro data in DB: %s", e, exc_info=True)
+        logger.error("❌ Failed to store macro data in DB: %s",
+                     e, exc_info=True)
 
 if __name__ == "__main__":
     loader = FiveYearMacroDataLoader()

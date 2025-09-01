@@ -1,12 +1,13 @@
 import base64  # Gmail API requires base64 encoding for messages
-from email.mime.text import MIMEText
+import logging
 import os
+from email.mime.text import MIMEText
+from typing import Optional
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-import logging
-from typing import Optional
 
 try:
     from . import config
@@ -16,7 +17,7 @@ except ImportError:  # pragma: no cover - fallback when running as script
 logger = logging.getLogger(__name__)
 
 # If modifying these SCOPES, delete token.json.
-SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
 
 def get_gmail_service(
@@ -63,29 +64,29 @@ def get_gmail_service(
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                credentials_path, SCOPES
-            )
-            headless = os.environ.get("HEADLESS", "").lower() in {"1", "true", "yes"}
+                credentials_path, SCOPES)
+            headless = os.environ.get("HEADLESS", "").lower() in {
+                "1", "true", "yes"}
             if headless or not os.environ.get("DISPLAY"):
                 creds = flow.run_console()
             else:
                 creds = flow.run_local_server(port=0)
         # Save credentials for next run
-        with open(token_path, 'w') as token:
+        with open(token_path, "w") as token:
             token.write(creds.to_json())
 
-    service = build('gmail', 'v1', credentials=creds)
+    service = build("gmail", "v1", credentials=creds)
     return service
 
 
 def create_message(sender, to, subject, message_text):
     """Create a base64-encoded email ready for the Gmail API."""
     message = MIMEText(message_text)
-    message['to'] = to
-    message['from'] = sender
-    message['subject'] = subject
+    message["to"] = to
+    message["from"] = sender
+    message["subject"] = subject
     raw = base64.urlsafe_b64encode(message.as_bytes())
-    return {'raw': raw.decode()}
+    return {"raw": raw.decode()}
 
 
 def send_message(service, user_id, message):
@@ -110,5 +111,3 @@ if __name__ == "__main__":
 
     msg = create_message(sender, to, subject, message_text)
     send_message(service, "me", msg)
-
-
