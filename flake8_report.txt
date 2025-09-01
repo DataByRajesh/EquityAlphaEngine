@@ -1,5 +1,5 @@
 [Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\check_all_python_files.py:42:80: E501 line too long (87 > 79 characters)
-[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\Macro_data.py:76:10: E999 SyntaxError: expected 'except' or 'finally' block
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\Macro_data.py:81:32: E999 SyntaxError: unmatched ')'
 [Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:11:1: F401 'typing.Any' imported but unused
 [Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:36:80: E501 line too long (82 > 79 characters)
 [Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:12:1: F401 'logging' imported but unused
