@@ -77,7 +77,6 @@ if __name__ == "__main__":
         """
         try:
             from data_pipeline.db_utils import DBHelper
-
             db = DBHelper()
             db.create_table("macro_data", macro_df, primary_keys=["Date"])
             db.insert_dataframe("macro_data", macro_df, unique_cols=["Date"])
