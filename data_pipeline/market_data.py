@@ -26,8 +26,8 @@ try:  # Prefer package-relative imports
         DBHelper  # Importing the DBHelper class for database operations
     from .financial_utils import \
         round_financial_columns  # For financial rounding utilities
-    from .gmail_utils import (create_message,  # For Gmail API operations
-                              get_gmail_service, send_message)
+    from .gmail_utils import create_message  # For Gmail API operations
+    from .gmail_utils import get_gmail_service, send_message
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
 except ImportError:  # Fallback for running as a script without package context
     import config  # type: ignore  # pragma: no cover
