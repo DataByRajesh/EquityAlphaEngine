@@ -21,6 +21,8 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 from sqlalchemy import create_engine, inspect
+from google.cloud.sql.connector import Connector
+import pg8000
 
 try:  # Prefer package-relative imports
     from . import config, market_data
@@ -36,6 +38,7 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
     """Return ``True`` if the database lacks ``financial_tbl`` data for range."""
     inspector = inspect(engine)
     if not inspector.has_table("financial_tbl"):
+        logger.warning("Table 'financial_tbl' does not exist in the database.")
         return True
 
     date_range = pd.read_sql(
@@ -43,11 +46,13 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
         engine,
     )
     if date_range.empty:
+        logger.warning("Table 'financial_tbl' exists but contains no data.")
         return True
 
     min_date = pd.to_datetime(date_range["min_date"].iloc[0])
     max_date = pd.to_datetime(date_range["max_date"].iloc[0])
     if pd.isna(min_date) or pd.isna(max_date):
+        logger.warning("Table 'financial_tbl' contains invalid date range.")
         return True
 
     return not (
@@ -58,8 +63,18 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
 
 def main(start_date: str, end_date: str) -> None:
     """Run ``market_data.main`` if the database is missing requested data."""
-    engine = create_engine(config.DATABASE_URL)
+    connector = Connector()
     try:
+        def getconn():
+            return connector.connect(
+                config.DATABASE_URL,  # Replace with your Cloud SQL instance connection name
+                "pg8000",
+                user=config.DB_USER,
+                password=config.DB_PASSWORD,
+                db=config.DB_NAME,
+            )
+
+        engine = create_engine("postgresql+pg8000://", creator=getconn)
         if _needs_fetch(engine, start_date, end_date):
             market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
         else:
@@ -67,6 +82,7 @@ def main(start_date: str, end_date: str) -> None:
                 "financial_tbl already contains requested data; skipping fetch."
             )
     finally:
+        connector.close()
         engine.dispose()
 
 
