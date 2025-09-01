@@ -1,271 +1,268 @@
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\check_all_python_files.py:4:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\check_all_python_files.py:12:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\check_all_python_files.py:17:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\Macro_data.py:71:10: E999 SyntaxError: expected 'except' or 'finally' block
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:11:1: F401 'typing.Any' imported but unused
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:21:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:29:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:33:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:34:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\analyse_db.py:19:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\analyse_db.py:35:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\analyse_db.py:47:1: W391 blank line at end of file
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:13:1: F401 'logging' imported but unused
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:14:1: F401 'os' imported but unused
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:35:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:38:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:44:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:50:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:53:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:56:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:69:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:75:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:82:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:95:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:97:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:118:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:124:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:137:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:143:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:147:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:10:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:18:80: E501 line too long (94 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:24:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:52:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:66:80: E501 line too long (107 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:69:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:77:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:80:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:94:5: E306 expected 1 blank line before a nested definition, found 0
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:101:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:108:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:122:5: E306 expected 1 blank line before a nested definition, found 0
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:134:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:135:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:140:15: E131 continuation line unaligned for hanging indent
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:141:15: E131 continuation line unaligned for hanging indent
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:145:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:154:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:159:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:162:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:163:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:165:80: E501 line too long (99 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:166:80: E501 line too long (105 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:171:80: E501 line too long (91 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:173:80: E501 line too long (90 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:179:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:200:5: E306 expected 1 blank line before a nested definition, found 0
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:223:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:236:80: E501 line too long (98 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:238:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:244:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:7:80: E501 line too long (102 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:16:80: E501 line too long (94 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:18:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:39:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:53:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:92:80: E501 line too long (101 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:93:80: E501 line too long (109 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:100:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:102:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:121:80: E501 line too long (88 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:122:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:149:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:159:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:175:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:179:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:188:80: E501 line too long (142 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:193:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:194:80: E501 line too long (95 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:195:80: E501 line too long (94 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:196:80: E501 line too long (98 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:197:80: E501 line too long (97 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:198:80: E501 line too long (96 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:199:80: E501 line too long (97 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:200:80: E501 line too long (95 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:201:80: E501 line too long (93 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:202:80: E501 line too long (96 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:203:80: E501 line too long (93 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:20:25: E261 at least two spaces before inline comment
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:26:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:38:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:45:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:56:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:60:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:63:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:63:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:72:80: E501 line too long (143 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:75:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:84:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:96:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:100:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:106:80: E501 line too long (92 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:114:80: E501 line too long (118 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:117:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:124:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:134:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:142:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:143:80: E501 line too long (88 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:155:80: E501 line too long (96 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:165:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:169:80: E501 line too long (87 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:174:80: E501 line too long (124 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:176:80: E501 line too long (110 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:177:80: E501 line too long (100 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:181:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:191:1: W391 blank line at end of file
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:4:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:6:80: E501 line too long (96 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:12:80: E501 line too long (102 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:16:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:28:80: E501 line too long (90 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:29:80: E501 line too long (93 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:53:80: E501 line too long (101 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:68:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:95:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:109:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:114:1: W391 blank line at end of file
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:24:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:25:80: E501 line too long (90 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:26:80: E501 line too long (104 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:28:80: E501 line too long (92 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:31:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:33:80: E501 line too long (111 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:35:80: E501 line too long (91 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:36:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:54:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:76:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:100:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:111:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:118:80: E501 line too long (115 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:123:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:127:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:131:80: E501 line too long (87 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:142:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:156:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:156:80: E501 line too long (142 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:167:80: E501 line too long (110 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:169:80: E501 line too long (91 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:192:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:203:80: E501 line too long (90 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:219:80: E501 line too long (99 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:228:80: E501 line too long (88 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:234:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:241:80: E501 line too long (99 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:253:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:269:9: F841 local variable 'loop' is assigned to but never used
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:275:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:275:80: E501 line too long (106 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:277:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:298:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:309:1: W293 blank line contains whitespace
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:310:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:311:1: W293 blank line contains whitespace
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:312:1: W293 blank line contains whitespace
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:313:5: E303 too many blank lines (2)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:321:1: W293 blank line contains whitespace
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:325:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:355:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:361:80: E501 line too long (100 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:363:1: W293 blank line contains whitespace
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:376:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:382:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:387:80: E501 line too long (104 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:392:80: E501 line too long (88 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:398:80: E501 line too long (94 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:415:80: E501 line too long (91 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:416:80: E501 line too long (93 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:419:1: W391 blank line at end of file
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:5:80: E501 line too long (91 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:7:80: E501 line too long (87 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:36:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:42:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:66:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:73:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:78:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:89:80: E501 line too long (94 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:7:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:9:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:17:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:22:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:45:80: E501 line too long (106 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:50:80: E501 line too long (104 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:55:80: E501 line too long (103 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:60:80: E501 line too long (105 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:65:80: E501 line too long (104 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:70:80: E501 line too long (99 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:75:80: E501 line too long (106 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:80:80: E501 line too long (100 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:85:80: E501 line too long (104 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:90:80: E501 line too long (112 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:95:80: E501 line too long (117 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:100:80: E501 line too long (110 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:105:80: E501 line too long (97 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:109:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:110:80: E501 line too long (112 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:120:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:124:80: E501 line too long (119 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:3:80: E501 line too long (80 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:5:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:11:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:18:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:37:47: E231 missing whitespace after ':'
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:37:58: E231 missing whitespace after ':'
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:15:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:42:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:44:80: E501 line too long (88 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:52:80: E501 line too long (88 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:58:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:68:80: E501 line too long (100 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:70:80: E501 line too long (92 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:76:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:87:80: E501 line too long (97 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:88:80: E501 line too long (112 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:89:80: E501 line too long (97 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:110:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:128:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:133:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:145:80: E501 line too long (86 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:150:80: E501 line too long (94 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:152:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:155:1: W293 blank line contains whitespace
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:156:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:190:80: E501 line too long (95 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:200:80: E501 line too long (83 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:201:80: E501 line too long (104 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:207:80: E501 line too long (99 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:212:80: E501 line too long (115 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:214:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:239:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:242:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:245:80: E501 line too long (81 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:246:1: W293 blank line contains whitespace
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:247:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_db_utils.py:5:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_db_utils.py:33:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:6:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:15:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:30:80: E501 line too long (85 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:32:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:34:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:15:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:36:80: E501 line too long (90 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:37:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:42:80: E501 line too long (95 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:60:80: E501 line too long (95 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:66:80: E501 line too long (113 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:68:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:2:1: F401 'unittest.mock.patch' imported but unused
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:5:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:8:80: E501 line too long (104 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:13:1: E305 expected 2 blank lines after class or function definition, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_data_loader.py:8:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_data_loader.py:13:1: W391 blank line at end of file
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_integration.py:47:80: E501 line too long (89 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_integration.py:62:80: E501 line too long (84 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_integration.py:63:80: E501 line too long (82 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:1:1: F401 'fastapi.Query' imported but unused
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:37:5: E303 too many blank lines (2)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:39:80: E501 line too long (138 > 79 characters)
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:41:1: E302 expected 2 blank lines, found 1
-C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:236:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\Macro_data.py:71:10: E999 SyntaxError: expected 'except' or 'finally' block
+[Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:11:1: F401 'typing.Any' imported but unused
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:21:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:29:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:33:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\__init__.py:34:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\analyse_db.py:19:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\analyse_db.py:35:80: E501 line too long (80 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\analyse_db.py:47:1: W391 blank line at end of file
+[Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:13:1: F401 'logging' imported but unused
+[Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:14:1: F401 'os' imported but unused
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:35:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:38:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:44:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:50:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:53:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:56:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:69:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:75:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:82:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:95:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:97:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:118:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:124:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:137:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:143:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\cache_utils.py:147:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:10:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:18:80: E501 line too long (94 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:24:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:52:80: E501 line too long (85 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:66:80: E501 line too long (107 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:69:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:77:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:80:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:94:5: E306 expected 1 blank line before a nested definition, found 0
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:101:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:108:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:122:5: E306 expected 1 blank line before a nested definition, found 0
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:134:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:135:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:140:15: E131 continuation line unaligned for hanging indent
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:141:15: E131 continuation line unaligned for hanging indent
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:145:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:154:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:159:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:162:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:163:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:165:80: E501 line too long (99 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:166:80: E501 line too long (105 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:171:80: E501 line too long (91 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:173:80: E501 line too long (90 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:179:80: E501 line too long (85 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:200:5: E306 expected 1 blank line before a nested definition, found 0
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:223:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:236:80: E501 line too long (98 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:238:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\compute_factors.py:244:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:7:80: E501 line too long (102 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:16:80: E501 line too long (94 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:18:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:39:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:53:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:92:80: E501 line too long (101 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:93:80: E501 line too long (109 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:100:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:102:80: E501 line too long (85 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:121:80: E501 line too long (88 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:122:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:149:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:159:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:175:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:179:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:188:80: E501 line too long (142 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:193:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:194:80: E501 line too long (95 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:195:80: E501 line too long (94 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:196:80: E501 line too long (98 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:197:80: E501 line too long (97 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:198:80: E501 line too long (96 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:199:80: E501 line too long (97 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:200:80: E501 line too long (95 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:201:80: E501 line too long (93 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:202:80: E501 line too long (96 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\config.py:203:80: E501 line too long (93 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:20:25: E261 at least two spaces before inline comment
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:26:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:38:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:45:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:56:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:60:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:63:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:63:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:72:80: E501 line too long (143 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:75:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:84:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:96:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:100:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:106:80: E501 line too long (92 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:114:80: E501 line too long (118 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:117:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:124:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:134:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:142:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:143:80: E501 line too long (88 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:155:80: E501 line too long (96 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:165:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:169:80: E501 line too long (87 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:174:80: E501 line too long (124 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:176:80: E501 line too long (110 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:177:80: E501 line too long (100 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:181:80: E501 line too long (85 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\db_utils.py:191:1: W391 blank line at end of file
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:4:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:6:80: E501 line too long (96 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:12:80: E501 line too long (102 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:16:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:28:80: E501 line too long (90 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\financial_utils.py:29:80: E501 line too long (93 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:53:80: E501 line too long (101 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:68:80: E501 line too long (85 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:95:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:109:80: E501 line too long (80 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\gmail_utils.py:114:1: W391 blank line at end of file
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:24:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:25:80: E501 line too long (90 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:26:80: E501 line too long (104 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:28:80: E501 line too long (92 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:31:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:33:80: E501 line too long (111 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:35:80: E501 line too long (91 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:36:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:54:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:76:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:100:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:111:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:118:80: E501 line too long (115 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:123:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:127:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:131:80: E501 line too long (87 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:142:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:156:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:156:80: E501 line too long (142 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:167:80: E501 line too long (110 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:169:80: E501 line too long (91 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:192:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:203:80: E501 line too long (90 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:219:80: E501 line too long (99 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:228:80: E501 line too long (88 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:234:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:241:80: E501 line too long (99 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:253:80: E501 line too long (89 > 79 characters)
+[Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:269:9: F841 local variable 'loop' is assigned to but never used
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:275:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:275:80: E501 line too long (106 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:277:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:298:1: E302 expected 2 blank lines, found 1
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:309:1: W293 blank line contains whitespace
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:310:80: E501 line too long (86 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:311:1: W293 blank line contains whitespace
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:312:1: W293 blank line contains whitespace
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:313:5: E303 too many blank lines (2)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:321:1: W293 blank line contains whitespace
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:325:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:355:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:361:80: E501 line too long (100 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:363:1: W293 blank line contains whitespace
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:376:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:382:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:387:80: E501 line too long (104 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:392:80: E501 line too long (88 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:398:80: E501 line too long (94 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:415:80: E501 line too long (91 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:416:80: E501 line too long (93 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\market_data.py:419:1: W391 blank line at end of file
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:5:80: E501 line too long (91 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:7:80: E501 line too long (87 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:36:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:42:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:66:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:73:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:78:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\data_pipeline\update_financial_data.py:89:80: E501 line too long (94 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:7:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:9:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:17:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:22:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:45:80: E501 line too long (106 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:50:80: E501 line too long (104 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:55:80: E501 line too long (103 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:60:80: E501 line too long (105 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:65:80: E501 line too long (104 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:70:80: E501 line too long (99 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:75:80: E501 line too long (106 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:80:80: E501 line too long (100 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:85:80: E501 line too long (104 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:90:80: E501 line too long (112 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:95:80: E501 line too long (117 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:100:80: E501 line too long (110 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:105:80: E501 line too long (97 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:109:80: E501 line too long (85 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:110:80: E501 line too long (112 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:120:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\streamlit_app.py:124:80: E501 line too long (119 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:3:80: E501 line too long (80 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:5:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:11:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:18:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:37:47: E231 missing whitespace after ':'
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\test_api_endpoints.py:37:58: E231 missing whitespace after ':'
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:15:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:42:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:44:80: E501 line too long (88 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:52:80: E501 line too long (88 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:58:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:68:80: E501 line too long (100 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:70:80: E501 line too long (92 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:76:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:87:80: E501 line too long (97 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:88:80: E501 line too long (112 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:89:80: E501 line too long (97 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:110:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:128:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:133:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:145:80: E501 line too long (86 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:150:80: E501 line too long (94 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:152:80: E501 line too long (85 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:155:1: W293 blank line contains whitespace
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:156:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:190:80: E501 line too long (95 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:200:80: E501 line too long (83 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:201:80: E501 line too long (104 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:207:80: E501 line too long (99 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:212:80: E501 line too long (115 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:214:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:239:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:242:80: E501 line too long (81 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:245:80: E501 line too long (81 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:246:1: W293 blank line contains whitespace
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_data.py:247:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_db_utils.py:5:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_db_utils.py:33:80: E501 line too long (82 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:6:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:15:80: E501 line too long (85 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:30:80: E501 line too long (85 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:32:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_err_handling.py:34:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:15:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:36:80: E501 line too long (90 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:37:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:42:80: E501 line too long (95 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:60:80: E501 line too long (95 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:66:80: E501 line too long (113 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_full_pipeline.py:68:1: E305 expected 2 blank lines after class or function definition, found 1
+[Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:2:1: F401 'unittest.mock.patch' imported but unused
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:5:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:8:80: E501 line too long (104 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_gmail_failure.py:13:1: E305 expected 2 blank lines after class or function definition, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_data_loader.py:8:80: E501 line too long (82 > 79 characters)
+[Warning] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_data_loader.py:13:1: W391 blank line at end of file
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_integration.py:47:80: E501 line too long (89 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_integration.py:62:80: E501 line too long (84 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\tests\test_macro_integration.py:63:80: E501 line too long (82 > 79 characters)
+[Fatal] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:1:1: F401 'fastapi.Query' imported but unused
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:37:5: E303 too many blank lines (2)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:39:80: E501 line too long (138 > 79 characters)
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:41:1: E302 expected 2 blank lines, found 1
+[Error] C:\Users\rajan\OneDrive\Desktop\Equity\EquityAlphaEngine\web\api.py:236:80: E501 line too long (80 > 79 characters)
