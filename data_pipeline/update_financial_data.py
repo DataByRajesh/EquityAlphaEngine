@@ -16,8 +16,8 @@ database.
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 
 import pandas as pd
 from sqlalchemy import create_engine, inspect
@@ -51,8 +51,8 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
         return True
 
     return not (
-        min_date <= pd.to_datetime(start_date)
-        and max_date >= pd.to_datetime(end_date)
+        min_date <= pd.to_datetime(
+            start_date) and max_date >= pd.to_datetime(end_date)
     )
 
 
@@ -63,7 +63,9 @@ def main(start_date: str, end_date: str) -> None:
         if _needs_fetch(engine, start_date, end_date):
             market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
         else:
-            logger.info("financial_tbl already contains requested data; skipping fetch.")
+            logger.info(
+                "financial_tbl already contains requested data; skipping fetch."
+            )
     finally:
         engine.dispose()
 

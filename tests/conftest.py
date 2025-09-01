@@ -1,4 +1,5 @@
 """Test configuration for the data_pipeline package."""
+
 import sys
 from pathlib import Path
 

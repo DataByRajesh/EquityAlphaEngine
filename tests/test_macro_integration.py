@@ -44,7 +44,9 @@ def test_main_stores_macro_data(monkeypatch):
     monkeypatch.setattr(
         market_data,
         "compute_factors",
-        lambda df: pd.DataFrame({"Date": [pd.Timestamp("2020-01-01")], "Ticker": ["A"]}),
+        lambda df: pd.DataFrame(
+            {"Date": [pd.Timestamp("2020-01-01")], "Ticker": ["A"]}
+        ),
     )
     monkeypatch.setattr(market_data, "round_financial_columns", lambda df: df)
     monkeypatch.setattr(
@@ -59,8 +61,10 @@ def test_main_stores_macro_data(monkeypatch):
         ),
     )
     monkeypatch.setattr(market_data, "get_gmail_service", lambda: object())
-    monkeypatch.setattr(market_data, "create_message", lambda *args, **kwargs: None)
-    monkeypatch.setattr(market_data, "send_message", lambda *args, **kwargs: None)
+    monkeypatch.setattr(market_data, "create_message",
+                        lambda *args, **kwargs: None)
+    monkeypatch.setattr(market_data, "send_message",
+                        lambda *args, **kwargs: None)
 
     market_data.main(["A"], "2020-01-01", "2020-12-31")
 

@@ -1,4 +1,3 @@
-
 """Cache fundamentals with in-memory + GCS backing.
 
 Requires:
@@ -12,13 +11,12 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from threading import Lock
-from typing import Dict, Optional, Any
-from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
-from google.cloud import storage
 from google.api_core.exceptions import NotFound
+from google.cloud import storage
 
 from . import config
 
@@ -32,14 +30,17 @@ _CACHE_LOCK = Lock()
 _client: Optional[storage.Client] = None
 _bucket = None
 
+
 def _ensure_gcs():
     global _client, _bucket
     if not getattr(config, "CACHE_GCS_BUCKET", None):
-        raise RuntimeError("CACHE_GCS_BUCKET is required for GCS cache backend.")
+        raise RuntimeError(
+            "CACHE_GCS_BUCKET is required for GCS cache backend.")
     if _client is None:
         _client = storage.Client()
     if _bucket is None:
         _bucket = _client.bucket(config.CACHE_GCS_BUCKET)
+
 
 def _prefix() -> str:
     base = getattr(config, "CACHE_GCS_PREFIX", "") or ""
@@ -47,11 +48,14 @@ def _prefix() -> str:
 
     return f"{base}/fundamentals_cache" if base else "fundamentals_cache"
 
+
 def _blob_name(ticker: str) -> str:
     return f"{_prefix()}/{ticker}.json"
 
+
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
 
 def _load_entry(ticker: str) -> Optional[Dict[str, Any]]:
     """Load ticker from GCS into memory (if present)."""
@@ -66,18 +70,21 @@ def _load_entry(ticker: str) -> Optional[Dict[str, Any]]:
     except NotFound:
         return None
     except Exception as e:  # network/permission/transient
-        logger.warning("Load from GCS failed for %s: %s", ticker, e, exc_info=True)
+        logger.warning("Load from GCS failed for %s: %s",
+                       ticker, e, exc_info=True)
         return None
 
     try:
         value = json.loads(data)
     except Exception as e:
-        logger.warning("Invalid JSON for %s in GCS: %s", ticker, e, exc_info=True)
+        logger.warning("Invalid JSON for %s in GCS: %s",
+                       ticker, e, exc_info=True)
         return None
 
     with _CACHE_LOCK:
         _CACHE[ticker] = value
         return value
+
 
 def _persist_entry(ticker: str) -> None:
     """Persist a single ticker entry from memory to GCS."""
@@ -92,7 +99,9 @@ def _persist_entry(ticker: str) -> None:
         payload = json.dumps(entry, separators=(",", ":"), ensure_ascii=False)
         blob.upload_from_string(payload, content_type="application/json")
     except Exception as e:
-        logger.warning("Persist to GCS failed for %s: %s", ticker, e, exc_info=True)
+        logger.warning("Persist to GCS failed for %s: %s",
+                       ticker, e, exc_info=True)
+
 
 def load_cached_fundamentals(
     ticker: str,
@@ -115,11 +124,13 @@ def load_cached_fundamentals(
         return entry.get("data")
     return None
 
+
 def save_fundamentals_cache(ticker: str, data: Any) -> None:
     """Store data for ticker and persist it."""
     with _CACHE_LOCK:
         _CACHE[ticker] = {"data": data, "timestamp": _now_utc().isoformat()}
     _persist_entry(ticker)
+
 
 def clear_cached_fundamentals(ticker: str) -> None:
     """Remove ticker from cache and GCS if present."""
@@ -134,6 +145,7 @@ def clear_cached_fundamentals(ticker: str) -> None:
     except Exception:
         logger.warning("Failed to delete %s from GCS", ticker, exc_info=True)
 
+
 def clear_all_cache() -> None:
     """Clear entire fundamentals cache."""
     with _CACHE_LOCK:
@@ -144,6 +156,7 @@ def clear_all_cache() -> None:
             try:
                 blob.delete()
             except Exception:
-                logger.warning("Failed deleting blob %s", blob.name, exc_info=True)
+                logger.warning("Failed deleting blob %s",
+                               blob.name, exc_info=True)
     except Exception:
         logger.warning("Failed to clear GCS cache listing", exc_info=True)

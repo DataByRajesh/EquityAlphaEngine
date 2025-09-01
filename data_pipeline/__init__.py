@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from importlib import import_module
 from types import ModuleType
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 # Public API surface
 __all__: tuple[str, ...] = (
@@ -18,6 +18,7 @@ __all__: tuple[str, ...] = (
     "config",
 )
 
+
 def __getattr__(name: str) -> ModuleType:
     """Lazily import known submodules on first attribute access."""
     if name in __all__:
@@ -26,10 +27,12 @@ def __getattr__(name: str) -> ModuleType:
         return mod
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
+
 def __dir__() -> list[str]:
     """Improve IDE/tab completion by listing public attributes."""
     return sorted(list(globals().keys()) + list(__all__))
 
+
 # Make static analyzers aware of the submodules without changing runtime behavior.
 if TYPE_CHECKING:
-    from . import market_data, compute_factors, db_utils, config  # noqa: F401
+    from . import compute_factors, config, db_utils, market_data  # noqa: F401

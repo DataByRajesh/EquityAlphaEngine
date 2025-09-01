@@ -1,4 +1,3 @@
-
 # Configuration for the data pipeline
 # This file contains constants and settings used throughout the data pipeline.
 #
@@ -18,10 +17,10 @@
 # If an environment variable is not set, a safe default is used for local development.
 
 
+import logging
 # Standard library imports
 import os
 import tempfile
-import logging
 
 # Third-party imports
 from sqlalchemy import create_engine
@@ -36,6 +35,7 @@ from sqlalchemy import create_engine
 # memory.
 # ---------------------------------------------------------------------------
 
+
 def _ensure_dir(env_var: str, default: str) -> str:
     """Return a directory path ensuring it exists.
 
@@ -49,6 +49,7 @@ def _ensure_dir(env_var: str, default: str) -> str:
     except OSError:
         path = tempfile.mkdtemp()
     return path
+
 
 DATA_DIR = _ensure_dir("DATA_DIR", os.path.join("data_pipeline", "data"))
 CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join("data_pipeline", "cache"))
@@ -99,7 +100,8 @@ Example (GitHub Actions):
 
 Default path is used for local development if the environment variable is not set.
 """
-GMAIL_CREDENTIALS_FILE = os.environ.get("GMAIL_CREDENTIALS_FILE", "credentials.json")
+GMAIL_CREDENTIALS_FILE = os.environ.get(
+    "GMAIL_CREDENTIALS_FILE", "credentials.json")
 GMAIL_TOKEN_FILE = os.environ.get("GMAIL_TOKEN_FILE", "token.json")
 
 
@@ -116,16 +118,15 @@ CACHE_GCS_PREFIX = os.environ.get("CACHE_GCS_PREFIX", "")
 # ---------------------------------------------------------------------------
 # Configuration settings
 # ---------------------------------------------------------------------------
-MAX_RETRIES = 5               # Maximum retry attempts for fetching data
-BACKOFF_FACTOR = 2            # Exponential backoff multiplier
-INITIAL_DELAY = 1             # Initial delay (seconds) before retrying a failed request
-RATE_LIMIT_DELAY = 1.5        # Delay (seconds) between API calls to avoid rate limits
+MAX_RETRIES = 5  # Maximum retry attempts for fetching data
+BACKOFF_FACTOR = 2  # Exponential backoff multiplier
+INITIAL_DELAY = 1  # Initial delay (seconds) before retrying a failed request
+# Delay (seconds) between API calls to avoid rate limits
+RATE_LIMIT_DELAY = 1.5
 # Concurrency for parallel API calls. Default scales with CPU cores but can be
 # overridden via the ``MAX_THREADS`` environment variable.
-MAX_THREADS = int(
-    os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5)
-)
-CACHE_EXPIRY_MINUTES = 1440   # Cache expiry time in minutes (24 hours)
+MAX_THREADS = int(os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5))
+CACHE_EXPIRY_MINUTES = 1440  # Cache expiry time in minutes (24 hours)
 
 
 # Logging configuration
@@ -146,6 +147,7 @@ If not set, defaults to INFO.
 # --- Logging helpers (formerly in logging_config.py) ---
 VALID_LEVELS = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"}
 
+
 def level_from_env(default: str = "INFO") -> int:
     """
     Get logging level from LOG_LEVEL environment variable, fallback to default.
@@ -155,6 +157,7 @@ def level_from_env(default: str = "INFO") -> int:
     if raw not in VALID_LEVELS:
         raw = default
     return getattr(logging, raw, logging.INFO)
+
 
 def configure_logging(level: int = None) -> None:
     """
@@ -172,9 +175,11 @@ def configure_logging(level: int = None) -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
+
 LOG_LEVEL = level_from_env()
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 configure_logging(LOG_LEVEL)
+
 
 def get_file_logger(name: str, filename: str = None):
     """Create and return a logger that writes to a file in LOG_DIR."""
@@ -185,20 +190,115 @@ def get_file_logger(name: str, filename: str = None):
     formatter = logging.Formatter(LOG_FORMAT)
     file_handler.setFormatter(formatter)
     # Avoid duplicate handlers
-    if not any(isinstance(h, logging.FileHandler) and getattr(h, "baseFilename", None) == file_handler.baseFilename for h in logger.handlers):
+    if not any(
+        isinstance(h, logging.FileHandler)
+        and getattr(h, "baseFilename", None) == file_handler.baseFilename
+        for h in logger.handlers
+    ):
         logger.addHandler(file_handler)
     return logger
 
+
 # FTSE 100 Tickers List (as config)
 FTSE_100_TICKERS = [
-    "III.L", "ADM.L", "AAF.L", "ALW.L", "AAL.L", "ANTO.L", "AHT.L", "ABF.L", "AZN.L", "AUTO.L",
-    "AV.L", "BAB.L", "BA.L", "BARC.L", "BTRW.L", "BEZ.L", "BKG.L", "BP.L", "BATS.L", "BT-A.L",
-    "BNZL.L", "CNA.L", "CCEP.L", "CCH.L", "CPG.L", "CTEC.L", "CRDA.L", "DCC.L", "DGE.L", "DPLM.L",
-    "EDV.L", "ENT.L", "EZJ.L", "EXPN.L", "FCIT.L", "FRES.L", "GAW.L", "GLEN.L", "GSK.L", "HLN.L",
-    "HLMA.L", "HIK.L", "HSX.L", "HWDN.L", "HSBA.L", "IHG.L", "IMI.L", "IMB.L", "INF.L", "ICG.L",
-    "IAG.L", "ITRK.L", "JD.L", "KGF.L", "LAND.L", "LGEN.L", "LLOY.L", "LMP.L", "LSEG.L", "MNG.L",
-    "MKS.L", "MRO.L", "MNDI.L", "NG.L", "NWG.L", "NXT.L", "PSON.L", "PSH.L", "PSN.L", "PHNX.L",
-    "PCT.L", "PRU.L", "RKT.L", "REL.L", "RTO.L", "RMV.L", "RIO.L", "RR.L", "SGE.L", "SBRY.L",
-    "SDR.L", "SMT.L", "SGRO.L", "SVT.L", "SHEL.L", "SMIN.L", "SN.L", "SPX.L", "SSE.L", "STAN.L",
-    "STJ.L", "TW.L", "TSCO.L", "ULVR.L", "UU.L", "UTG.L", "VOD.L", "WEIR.L", "WTB.L", "WPP.L"
+    "III.L",
+    "ADM.L",
+    "AAF.L",
+    "ALW.L",
+    "AAL.L",
+    "ANTO.L",
+    "AHT.L",
+    "ABF.L",
+    "AZN.L",
+    "AUTO.L",
+    "AV.L",
+    "BAB.L",
+    "BA.L",
+    "BARC.L",
+    "BTRW.L",
+    "BEZ.L",
+    "BKG.L",
+    "BP.L",
+    "BATS.L",
+    "BT-A.L",
+    "BNZL.L",
+    "CNA.L",
+    "CCEP.L",
+    "CCH.L",
+    "CPG.L",
+    "CTEC.L",
+    "CRDA.L",
+    "DCC.L",
+    "DGE.L",
+    "DPLM.L",
+    "EDV.L",
+    "ENT.L",
+    "EZJ.L",
+    "EXPN.L",
+    "FCIT.L",
+    "FRES.L",
+    "GAW.L",
+    "GLEN.L",
+    "GSK.L",
+    "HLN.L",
+    "HLMA.L",
+    "HIK.L",
+    "HSX.L",
+    "HWDN.L",
+    "HSBA.L",
+    "IHG.L",
+    "IMI.L",
+    "IMB.L",
+    "INF.L",
+    "ICG.L",
+    "IAG.L",
+    "ITRK.L",
+    "JD.L",
+    "KGF.L",
+    "LAND.L",
+    "LGEN.L",
+    "LLOY.L",
+    "LMP.L",
+    "LSEG.L",
+    "MNG.L",
+    "MKS.L",
+    "MRO.L",
+    "MNDI.L",
+    "NG.L",
+    "NWG.L",
+    "NXT.L",
+    "PSON.L",
+    "PSH.L",
+    "PSN.L",
+    "PHNX.L",
+    "PCT.L",
+    "PRU.L",
+    "RKT.L",
+    "REL.L",
+    "RTO.L",
+    "RMV.L",
+    "RIO.L",
+    "RR.L",
+    "SGE.L",
+    "SBRY.L",
+    "SDR.L",
+    "SMT.L",
+    "SGRO.L",
+    "SVT.L",
+    "SHEL.L",
+    "SMIN.L",
+    "SN.L",
+    "SPX.L",
+    "SSE.L",
+    "STAN.L",
+    "STJ.L",
+    "TW.L",
+    "TSCO.L",
+    "ULVR.L",
+    "UU.L",
+    "UTG.L",
+    "VOD.L",
+    "WEIR.L",
+    "WTB.L",
+    "WPP.L",
 ]

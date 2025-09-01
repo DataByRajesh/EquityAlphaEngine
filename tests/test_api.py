@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from web.api import app
 
 client = TestClient(app)
@@ -35,7 +36,7 @@ def test_compute_factors_endpoint():
                 "quickRatio": 1.1,
                 "dividendYield": 0.03,
                 "beta": 1.05,
-                "averageVolume": 1000
+                "averageVolume": 1000,
             },
             {
                 "Date": "2023-07-02",
@@ -59,8 +60,8 @@ def test_compute_factors_endpoint():
                 "quickRatio": 1.1,
                 "dividendYield": 0.03,
                 "beta": 1.05,
-                "averageVolume": 1000
-            }
+                "averageVolume": 1000,
+            },
         ]
     }
     response = client.post("/compute-factors", json=payload)

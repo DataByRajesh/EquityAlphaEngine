@@ -1,7 +1,5 @@
-
 # Standard library imports
 from io import StringIO
-
 
 # Third-party imports
 import pandas as pd
@@ -10,11 +8,11 @@ from sqlalchemy import create_engine
 # Local imports
 from . import config
 
-
 # Use the config helper to create a file logger
 logger = config.get_file_logger(__name__)
 
 DB_PATH = config.DATABASE_URL
+
 
 def main() -> None:
     """Load stock data from the DB and log summary information."""
@@ -32,7 +30,8 @@ def main() -> None:
             "duplicates data count %d",
             df.duplicated(subset=["Date", "Ticker"]).sum(),
         )
-        logger.info("data coverage per ticker\n%s", df["Ticker"].value_counts())
+        logger.info("data coverage per ticker\n%s",
+                    df["Ticker"].value_counts())
         logger.info(
             "Selected columns description\n%s",
             df[["Close", "Volume", "marketCap"]].describe(),
@@ -44,4 +43,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

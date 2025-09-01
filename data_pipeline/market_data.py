@@ -11,29 +11,35 @@ import logging
 import os  # For file and directory operations
 from typing import Optional, Union  # For type hinting
 
-
 # Third-party imports
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
 import yfinance as yf  # For fetching financial data
 
-
 # Local imports
 
 try:  # Prefer package-relative imports
-    from .compute_factors import compute_factors  # Function to compute financial factors
-    from .db_utils import DBHelper  # Importing the DBHelper class for database operations
-    from .gmail_utils import get_gmail_service, create_message, send_message  # For Gmail API operations
     from . import config  # Importing configuration file
-    from .financial_utils import round_financial_columns  # For financial rounding utilities
+    from .compute_factors import \
+        compute_factors  # Function to compute financial factors
+    from .db_utils import \
+        DBHelper  # Importing the DBHelper class for database operations
+    from .financial_utils import \
+        round_financial_columns  # For financial rounding utilities
+    from .gmail_utils import (create_message,  # For Gmail API operations
+                              get_gmail_service, send_message)
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
 except ImportError:  # Fallback for running as a script without package context
-    from compute_factors import compute_factors  # type: ignore  # pragma: no cover
-    from db_utils import DBHelper  # type: ignore  # pragma: no cover
-    from gmail_utils import get_gmail_service, create_message, send_message  # type: ignore  # pragma: no cover
     import config  # type: ignore  # pragma: no cover
-    from financial_utils import round_financial_columns  # type: ignore  # pragma: no cover
-    from Macro_data import FiveYearMacroDataLoader  # type: ignore  # pragma: no cover
+    from compute_factors import \
+        compute_factors  # type: ignore  # pragma: no cover
+    from db_utils import DBHelper  # type: ignore  # pragma: no cover
+    from financial_utils import \
+        round_financial_columns  # type: ignore  # pragma: no cover
+    from gmail_utils import (  # type: ignore  # pragma: no cover
+        create_message, get_gmail_service, send_message)
+    from Macro_data import \
+        FiveYearMacroDataLoader  # type: ignore  # pragma: no cover
 
 # Module-level logger
 logger = logging.getLogger(__name__)
@@ -50,6 +56,7 @@ def ensure_directories(dirs=None):
         os.makedirs(d, exist_ok=True)
         logger.info(f"Ensured directory exists: {d}")
 
+
 # Ensure cache and data directories exist at module import
 ensure_directories()
 
@@ -63,15 +70,15 @@ ensure_directories()
 
 
 try:
-    from .cache_utils import (
-        load_cached_fundamentals as _load_cached_fundamentals,
-        save_fundamentals_cache as _save_fundamentals_cache,
-    )
+    from .cache_utils import \
+        load_cached_fundamentals as _load_cached_fundamentals
+    from .cache_utils import \
+        save_fundamentals_cache as _save_fundamentals_cache
 except ImportError:  # pragma: no cover - fallback for script execution
-    from cache_utils import (  # type: ignore
-        load_cached_fundamentals as _load_cached_fundamentals,
-        save_fundamentals_cache as _save_fundamentals_cache,
-    )
+    from cache_utils import \
+        load_cached_fundamentals as _load_cached_fundamentals  # type: ignore
+    from cache_utils import save_fundamentals_cache as _save_fundamentals_cache
+
 
 def load_cached_fundamentals(
     ticker: str,
@@ -97,7 +104,8 @@ def fetch_macro_data(start_date: str, end_date: str) -> Optional[pd.DataFrame]:
     Returns a DataFrame or ``None`` if the loader fails or returns no data.
     """
     try:
-        loader = FiveYearMacroDataLoader(start_date=start_date, end_date=end_date)
+        loader = FiveYearMacroDataLoader(
+            start_date=start_date, end_date=end_date)
         macro_df = loader.get_combined_macro_data()
         if macro_df is None or macro_df.empty:
             logger.error("No macroeconomic data fetched.")
@@ -108,6 +116,7 @@ def fetch_macro_data(start_date: str, end_date: str) -> Optional[pd.DataFrame]:
         logger.error(f"Error fetching macroeconomic data: {exc}")
         return None
 
+
 def fetch_historical_data(
     tickers: list[str], start_date: str, end_date: str
 ) -> pd.DataFrame:
@@ -115,12 +124,15 @@ def fetch_historical_data(
     Downloads historical price data for tickers, cleans and rounds it.
     Returns a DataFrame or empty DataFrame on failure.
     """
-    logger.info(f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}...")
+    logger.info(
+        f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}..."
+    )
     if not tickers:
         logger.error("No tickers provided.")
         return pd.DataFrame()
     try:
-        data = yf.download(tickers, start=start_date, end=end_date, progress=False)
+        data = yf.download(tickers, start=start_date,
+                           end=end_date, progress=False)
 
         # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
         # If only a single ticker is returned, the columns are a simple
@@ -128,24 +140,31 @@ def fetch_historical_data(
         # ticker symbol manually without calling ``stack``.
         if isinstance(data.columns, pd.MultiIndex):
             data = data.stack(level=1).reset_index()
-            data.rename(columns={'level_0': 'Date', 'level_1': 'Ticker'}, inplace=True)
+            data.rename(columns={"level_0": "Date",
+                        "level_1": "Ticker"}, inplace=True)
         else:
-            data = data.reset_index().rename(columns={'index': 'Date'})
+            data = data.reset_index().rename(columns={"index": "Date"})
             # In single-ticker responses the symbol isn't part of the columns,
             # so assume the first requested ticker corresponds to the data
             # returned.
-            data['Ticker'] = tickers[0]
+            data["Ticker"] = tickers[0]
 
-        if 'Volume' in data.columns:
-            data['Volume'] = data['Volume'].fillna(0).astype(int)
+        if "Volume" in data.columns:
+            data["Volume"] = data["Volume"].fillna(0).astype(int)
         required_cols = {
-            'Date', 'Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Ticker'
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Adj Close",
+            "Volume",
+            "Ticker",
         }
         missing_cols = required_cols - set(data.columns)
         if missing_cols:
             logger.error(
-                f"Historical data missing required columns: {missing_cols}"
-            )
+                f"Historical data missing required columns: {missing_cols}")
             return pd.DataFrame()
         logger.info("Historical data fetched successfully.")
         return data
@@ -153,7 +172,14 @@ def fetch_historical_data(
         logger.error(f"Error downloading historical data: {e}")
         return pd.DataFrame()
 
-async def _fetch_single_info(ticker_obj: yf.Ticker, ticker: str, retries: int, backoff_factor: int, request_timeout: int) -> tuple[str, dict]:
+
+async def _fetch_single_info(
+    ticker_obj: yf.Ticker,
+    ticker: str,
+    retries: int,
+    backoff_factor: int,
+    request_timeout: int,
+) -> tuple[str, dict]:
     """Asynchronously fetch ``info`` for a single ticker with retries.
 
     This helper runs the blocking ``ticker_obj.info`` call in a thread and
@@ -164,9 +190,13 @@ async def _fetch_single_info(ticker_obj: yf.Ticker, ticker: str, retries: int, b
     delay = config.INITIAL_DELAY
     for attempt in range(retries):
         try:
-            info = await asyncio.wait_for(asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout)
+            info = await asyncio.wait_for(
+                asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout
+            )
             return ticker, info
-        except Exception as exc:  # pragma: no cover - network errors are non-deterministic
+        except (
+            Exception
+        ) as exc:  # pragma: no cover - network errors are non-deterministic
             logger.warning(f"Attempt {attempt+1} failed for {ticker}: {exc}")
             if attempt < retries - 1:
                 await asyncio.sleep(delay)
@@ -200,7 +230,9 @@ def fetch_fundamental_data(
     remaining: list[str] = []
     if use_cache:
         for symbol in ticker_symbols:
-            cached = load_cached_fundamentals(symbol, expiry_minutes=cache_expiry_minutes)
+            cached = load_cached_fundamentals(
+                symbol, expiry_minutes=cache_expiry_minutes
+            )
             if cached is not None:
                 logger.info(f"Loaded cached fundamentals for {symbol}")
                 results.append(cached)
@@ -216,7 +248,9 @@ def fetch_fundamental_data(
         """Fetch fundamentals for the remaining tickers asynchronously."""
         tickers_obj = yf.Tickers(" ".join(remaining))
         tasks = [
-            _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout)
+            _fetch_single_info(
+                tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout
+            )
             for t in remaining
         ]
 
@@ -238,26 +272,30 @@ def fetch_fundamental_data(
 
         for symbol, info in fetched:
             if not info:
-                logger.error(f"Failed to fetch fundamentals for {symbol} after {retries} attempts")
+                logger.error(
+                    f"Failed to fetch fundamentals for {symbol} after {retries} attempts"
+                )
                 continue
             key_ratios = {
-                'Ticker': symbol,
-                'CompanyName': info.get('longName'),
-                'returnOnEquity': info.get('returnOnEquity'),
-                'grossMargins': info.get('grossMargins'),
-                'operatingMargins': info.get('operatingMargins'),
-                'profitMargins': info.get('profitMargins'),
-                'priceToBook': info.get('priceToBook'),
-                'trailingPE': info.get('trailingPE'),
-                'forwardPE': info.get('forwardPE'),
-                'priceToSalesTrailing12Months': info.get('priceToSalesTrailing12Months'),
-                'debtToEquity': info.get('debtToEquity'),
-                'currentRatio': info.get('currentRatio'),
-                'quickRatio': info.get('quickRatio'),
-                'dividendYield': info.get('dividendYield'),
-                'marketCap': info.get('marketCap'),
-                'beta': info.get('beta'),
-                'averageVolume': info.get('averageVolume'),
+                "Ticker": symbol,
+                "CompanyName": info.get("longName"),
+                "returnOnEquity": info.get("returnOnEquity"),
+                "grossMargins": info.get("grossMargins"),
+                "operatingMargins": info.get("operatingMargins"),
+                "profitMargins": info.get("profitMargins"),
+                "priceToBook": info.get("priceToBook"),
+                "trailingPE": info.get("trailingPE"),
+                "forwardPE": info.get("forwardPE"),
+                "priceToSalesTrailing12Months": info.get(
+                    "priceToSalesTrailing12Months"
+                ),
+                "debtToEquity": info.get("debtToEquity"),
+                "currentRatio": info.get("currentRatio"),
+                "quickRatio": info.get("quickRatio"),
+                "dividendYield": info.get("dividendYield"),
+                "marketCap": info.get("marketCap"),
+                "beta": info.get("beta"),
+                "averageVolume": info.get("averageVolume"),
             }
             results.append(key_ratios)
             if use_cache:
@@ -272,7 +310,10 @@ def fetch_fundamental_data(
     else:
         return asyncio.create_task(_fetch_all())
 
-def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: list[dict]) -> pd.DataFrame:
+
+def combine_price_and_fundamentals(
+    price_df: pd.DataFrame, fundamentals_list: list[dict]
+) -> pd.DataFrame:
     """
     Merges price data DataFrame with a list of fundamental dicts (as DataFrame).
     Returns a combined DataFrame.
@@ -283,17 +324,29 @@ def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: li
     # data.  This prevents downstream operations from failing when a field is
     # absent in the source response.
     required_cols = [
-        'returnOnEquity', 'grossMargins', 'operatingMargins', 'profitMargins',
-        'priceToBook', 'trailingPE', 'forwardPE',
-        'priceToSalesTrailing12Months', 'debtToEquity', 'currentRatio',
-        'quickRatio', 'dividendYield', 'marketCap', 'beta', 'averageVolume',
+        "returnOnEquity",
+        "grossMargins",
+        "operatingMargins",
+        "profitMargins",
+        "priceToBook",
+        "trailingPE",
+        "forwardPE",
+        "priceToSalesTrailing12Months",
+        "debtToEquity",
+        "currentRatio",
+        "quickRatio",
+        "dividendYield",
+        "marketCap",
+        "beta",
+        "averageVolume",
     ]
     for col in required_cols:
         if col not in fundamentals_df.columns:
             fundamentals_df[col] = np.nan
 
-    combined_df = pd.merge(price_df, fundamentals_df, on='Ticker', how='left')
+    combined_df = pd.merge(price_df, fundamentals_df, on="Ticker", how="left")
     return combined_df
+
 
 def main(tickers, start_date, end_date, use_cache=True):
 
@@ -306,10 +359,10 @@ def main(tickers, start_date, end_date, use_cache=True):
     if not fundamentals_list:
         logger.error("No fundamentals data fetched. Exiting.")
         return
-    
-    price_fundamentals_df = combine_price_and_fundamentals(hist_df, fundamentals_list)
-    
-    
+
+    price_fundamentals_df = combine_price_and_fundamentals(
+        hist_df, fundamentals_list)
+
     # Compute factors
     logger.info("Computing factors...")
     financial_df = compute_factors(price_fundamentals_df)
@@ -318,11 +371,12 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.error("Failed to compute financial factors. Exiting.")
         return
     financial_df = round_financial_columns(financial_df)
-    
+
     # Save computed factors to DB
     if financial_df is not None:
         financial_tbl = "financial_tbl"
-        Dbhelper = DBHelper(config.DATABASE_URL)  # Create a new DBHelper instance
+        # Create a new DBHelper instance
+        Dbhelper = DBHelper(config.DATABASE_URL)
         Dbhelper.create_table(
             financial_tbl,
             financial_df,
@@ -358,9 +412,11 @@ def main(tickers, start_date, end_date, use_cache=True):
             gmail_service = None
 
         if gmail_service is None:
-            logger.error("Failed to initialize Gmail service. Email notification will not be sent.")
+            logger.error(
+                "Failed to initialize Gmail service. Email notification will not be sent."
+            )
             return
-    
+
         sender = "raj.analystdata@gmail.com"
         recipient = "raj.analystdata@gmail.com"
         subject = "Data Fetch Success"
@@ -372,6 +428,7 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.info("Financial data computed and saved to DB.")
     else:
         logger.error("Failed to compute and not saved to DB. Exiting.")
+
 
 if __name__ == "__main__":
     import argparse
@@ -412,8 +469,11 @@ if __name__ == "__main__":
         start_date = start_dt.strftime("%Y-%m-%d")
 
     # Basic validation
-    if datetime.strptime(start_date, "%Y-%m-%d") > datetime.strptime(end_date, "%Y-%m-%d"):
-        raise SystemExit(f"start_date ({start_date}) cannot be after end_date ({end_date}).")
+    if datetime.strptime(start_date, "%Y-%m-%d") > datetime.strptime(
+        end_date, "%Y-%m-%d"
+    ):
+        raise SystemExit(
+            f"start_date ({start_date}) cannot be after end_date ({end_date})."
+        )
 
     main(config.FTSE_100_TICKERS, start_date, end_date)
-
