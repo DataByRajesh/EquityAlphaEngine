@@ -70,7 +70,6 @@ class FiveYearMacroDataLoader:
 
 
 if __name__ == "__main__":
-    # --- Integration Example: Store Macro Data in Database ---
     def store_macro_data_to_db(macro_df: pd.DataFrame):
         """
         Store macroeconomic data in the GCP/Postgres database using DBHelper.
