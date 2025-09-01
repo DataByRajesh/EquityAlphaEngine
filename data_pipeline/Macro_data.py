@@ -11,14 +11,16 @@ logger = logging.getLogger(__name__)
 
 
 class FiveYearMacroDataLoader:
-    def __init__(self, api_key: str | None = None,
-                 start_date: str = "2020-01-01",
-                 end_date: str = "2025-01-01"):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        start_date: str = "2020-01-01",
+        end_date: str = "2025-01-01",
+    ):
         self.api_key = api_key or DEFAULT_API_KEY
         if self.api_key is None:
             raise ValueError(
                 "QUANDL_API_KEY is not configured. Set the env var or pass api_key."
-
             )
         quandl.ApiConfig.api_key = self.api_key
         self.start_date = start_date
@@ -30,7 +32,8 @@ class FiveYearMacroDataLoader:
         """
         try:
             data = quandl.get(
-                "ODA/GBR_NGDP_RPCH", start_date=self.start_date, end_date=self.end_date)
+                "ODA/GBR_NGDP_RPCH", start_date=self.start_date, end_date=self.end_date
+            )
             data.reset_index(inplace=True)
             data.rename(columns={"Value": "GDP_Growth_YoY"}, inplace=True)
             return data
@@ -44,12 +47,14 @@ class FiveYearMacroDataLoader:
         Replace this with a real data fetch once available.
         """
         dates = pd.date_range(start=self.start_date,
-                              end=self.end_date, freq='Q')
-        inflation_data = pd.DataFrame({
-            'Date': dates,
-            # Placeholder: 2.5%
-            'Inflation_YoY': [2.5 for _ in range(len(dates))]
-        })
+                              end=self.end_date, freq="Q")
+        inflation_data = pd.DataFrame(
+            {
+                "Date": dates,
+                # Placeholder: 2.5%
+                "Inflation_YoY": [2.5 for _ in range(len(dates))],
+            }
+        )
         return inflation_data
 
     def get_combined_macro_data(self):
@@ -57,7 +62,8 @@ class FiveYearMacroDataLoader:
         inflation_data = self.fetch_inflation_rate()
         if gdp_data is not None:
             combined_data = pd.merge(
-                gdp_data, inflation_data, on='Date', how='outer').sort_values('Date')
+                gdp_data, inflation_data, on="Date", how="outer"
+            ).sort_values("Date")
             return combined_data
         else:
             return None
@@ -71,6 +77,7 @@ if __name__ == "__main__":
         """
         try:
             from data_pipeline.db_utils import DBHelper
+
             db = DBHelper()
             db.create_table("macro_data", macro_df, primary_keys=["Date"])
             db.insert_dataframe("macro_data", macro_df, unique_cols=["Date"])
