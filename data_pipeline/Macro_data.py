@@ -83,7 +83,6 @@ if __name__ == "__main__":
             logger.info("✅ Macro data stored in database table 'macro_data'.")
         except Exception as e:
             logger.error("❌ Failed to store macro data in DB: %s", e)
-
     loader = FiveYearMacroDataLoader()
     macro_data = loader.get_combined_macro_data()
     if macro_data is not None:
