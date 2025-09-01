@@ -3,7 +3,7 @@ name: Update Equity Data
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '37 10 * * *'
   workflow_dispatch:
 
 jobs:
