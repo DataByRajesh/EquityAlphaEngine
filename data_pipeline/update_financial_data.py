@@ -27,9 +27,8 @@ from google.cloud import secretmanager
 import pg8000
 
 try:  # Prefer package-relative imports
-    from . import config, market_data
+    from . import market_data
 except ImportError:  # pragma: no cover - fallback when run as script
-    import config  # type: ignore
     import market_data  # type: ignore
 
 
