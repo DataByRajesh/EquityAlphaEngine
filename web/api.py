@@ -4,8 +4,8 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from data_pipeline.compute_factors import compute_factors
-from data_pipeline.config import DATABASE_URL
 from data_pipeline.db_utils import DBHelper
+from data_pipeline.update_financial_data import get_secret
 
 app = FastAPI()
 
@@ -40,7 +40,7 @@ def compute_factors_endpoint(payload: FactorsRequest) -> list[dict]:
 
 
 def get_db():
-    return DBHelper(DATABASE_URL)
+    return DBHelper(get_secret("DATABASE_URL"))
 
 
 @app.get("/get_undervalued_stocks")
