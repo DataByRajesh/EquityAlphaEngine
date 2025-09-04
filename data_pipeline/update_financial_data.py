@@ -19,6 +19,7 @@ import argparse
 import logging
 from datetime import datetime, timedelta
 import os
+import urllib.parse
 
 import pandas as pd
 from sqlalchemy import create_engine, inspect
@@ -101,8 +102,18 @@ def main(start_date: str, end_date: str) -> None:
 
         logger.info("Creating SQLAlchemy engine.")
         url = get_secret("DATABASE_URL")
+
+        # URL encode the username and password dynamically
+        parsed_url = urllib.parse.urlparse(url)
+        encoded_username = urllib.parse.quote(parsed_url.username)
+        encoded_password = urllib.parse.quote(parsed_url.password)
+
+        # Reconstruct the URL with encoded credentials
+        url = f"{parsed_url.scheme}://{encoded_username}:{encoded_password}@{parsed_url.hostname}:{parsed_url.port}{parsed_url.path}"
+
         if not url.startswith("postgresql+pg8000://"):
             url = f"postgresql+pg8000://{url}"
+
         logger.debug(f"Final database URL: {url}")
         engine = create_engine(url, creator=getconn)
         try:
