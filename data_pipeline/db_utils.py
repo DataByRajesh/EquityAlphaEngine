@@ -12,11 +12,6 @@ try:
 except ImportError:
     import data_pipeline.config as config
 
-try:
-    from .update_financial_data import get_secret
-except ImportError:
-    from data_pipeline.update_financial_data import get_secret
-
 # Config-driven logger
 logger = config.get_file_logger(__name__)
 
@@ -99,7 +94,7 @@ class DBHelper:
     """
 
     def __init__(self, db_url: Optional[str] = None):
-        self.database_url = db_url or get_secret("DATABASE_URL")
+        self.database_url = db_url or self.get_secret_lazy()("DATABASE_URL")
         self.engine = create_engine(self.database_url, future=True)
         self.inspector = inspect(self.engine)
         logger.info("DBHelper initialized with database URL: %s",
@@ -245,6 +240,10 @@ class DBHelper:
         """
         logger.info("Disposing database engine.")
         self.engine.dispose()
+
+    def get_secret_lazy():
+        from data_pipeline.update_financial_data import get_secret
+        return get_secret
 
 # Updated import for market_data to use fallback mechanism
 try:
