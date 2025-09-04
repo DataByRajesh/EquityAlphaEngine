@@ -26,6 +26,8 @@ from google.cloud.sql.connector import Connector
 from google.cloud import secretmanager
 import pg8000
 
+import data_pipeline.config as config
+
 logger = logging.getLogger(__name__)
 
 
