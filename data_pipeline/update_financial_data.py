@@ -26,10 +26,11 @@ from google.cloud.sql.connector import Connector
 from google.cloud import secretmanager
 import pg8000
 
-try:  # Prefer package-relative imports
+# Updated import to use absolute path as a fallback
+try:
     from . import market_data
-except ImportError:  # pragma: no cover - fallback when run as script
-    import market_data  # type: ignore
+except ImportError:
+    import data_pipeline.market_data as market_data
 
 
 logger = logging.getLogger(__name__)
