@@ -100,8 +100,14 @@ def main(start_date: str, end_date: str) -> None:
                 raise
 
         logger.info("Creating SQLAlchemy engine.")
-        engine = create_engine("postgresql+pg8000://", creator=getconn)
+        url = get_secret("DATABASE_URL")
+        if not url.startswith("postgresql+pg8000://"):
+            url = f"postgresql+pg8000://{url}"
+        logger.debug(f"Final database URL: {url}")
+        engine = create_engine(url, creator=getconn)
         try:
+            if not get_secret('DATABASE_URL'):
+                raise RuntimeError("DATABASE_URL is not set or invalid.")
             logger.info("Checking if data fetch is needed.")
             market_data = get_market_data_lazy()
             if _needs_fetch(engine, start_date, end_date):
