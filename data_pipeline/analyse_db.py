@@ -28,9 +28,17 @@ logger = config.get_file_logger(__name__)
 DB_PATH = get_secret("DATABASE_URL")
 
 
+# Lazy import for DBHelper to resolve circular dependency
+# Replace the direct import with a function-level import
+def get_db_helper():
+    from data_pipeline.db_utils import DBHelper
+
+    return DBHelper
+
+
 def main() -> None:
     """Load stock data from the DB and log summary information."""
-    engine = create_engine(DB_PATH)
+    engine = get_db_helper()(DB_PATH).engine
     try:
         df = pd.read_sql("SELECT * FROM stock_data", engine)
 
