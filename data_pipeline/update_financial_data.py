@@ -98,7 +98,7 @@ def main(start_date: str, end_date: str) -> None:
                 raise
 
         logger.info("Creating SQLAlchemy engine.")
-        engine = create_engine("postgresql+pg8000://", creator=getconn)
+        engine = create_engine("", creator=getconn)
         try:
             logger.info("Checking if data fetch is needed.")
             market_data = get_market_data_lazy()
