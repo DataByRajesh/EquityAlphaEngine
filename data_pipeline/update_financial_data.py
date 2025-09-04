@@ -100,8 +100,11 @@ def main(start_date: str, end_date: str) -> None:
                 logger.error(f"Failed to establish database connection: {e}")
                 raise
 
-        logger.info("Creating SQLAlchemy engine.")
+        # Add timeout configuration to SQLAlchemy engine
+        logger.info("Creating SQLAlchemy engine with timeout.")
         url = get_secret("DATABASE_URL")
+        connect_args = {"timeout": 30}  # Set timeout to 30 seconds
+        engine = create_engine(url, connect_args=connect_args)
 
         # Log the raw DATABASE_URL for debugging
         logger.debug(f"Raw DATABASE_URL: {url}")
@@ -124,7 +127,7 @@ def main(start_date: str, end_date: str) -> None:
             url = f"postgresql+pg8000://{url}"
 
         logger.debug(f"Final database URL: {url}")
-        engine = create_engine(url, creator=getconn)
+        engine = create_engine(url, connect_args=connect_args)
         try:
             if not get_secret('DATABASE_URL'):
                 raise RuntimeError("DATABASE_URL is not set or invalid.")
