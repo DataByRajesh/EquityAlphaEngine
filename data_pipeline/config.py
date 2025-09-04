@@ -79,10 +79,18 @@ If DATABASE_URL is not set, the application will raise an error and stop.
 def get_secret(secret_name: str) -> str:
     """Fetch a secret value from Google Cloud Secret Manager."""
     client = secretmanager.SecretManagerServiceClient()
-    project_id = os.environ.get("GCP_PROJECT_ID")  # Ensure this is set
+    project_id = os.environ.get("GCP_PROJECT_ID")
+
+    if not project_id:
+        raise RuntimeError("GCP_PROJECT_ID environment variable is not set.")
+
     name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data.decode("UTF-8")
+
+    try:
+        response = client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch secret '{secret_name}': {e}")
 
 
 DATABASE_URL = os.environ.get("DATABASE_URL") or get_secret("DATABASE_URL")
