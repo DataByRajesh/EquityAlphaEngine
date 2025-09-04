@@ -105,8 +105,11 @@ def main(start_date: str, end_date: str) -> None:
 
         # URL encode the username and password dynamically
         parsed_url = urllib.parse.urlparse(url)
-        encoded_username = urllib.parse.quote(parsed_url.username)
-        encoded_password = urllib.parse.quote(parsed_url.password)
+        if parsed_url.username and parsed_url.password:
+            encoded_username = urllib.parse.quote(parsed_url.username)
+            encoded_password = urllib.parse.quote(parsed_url.password)
+        else:
+            raise ValueError("DATABASE_URL is missing username or password.")
 
         # Reconstruct the URL with encoded credentials
         url = f"{parsed_url.scheme}://{encoded_username}:{encoded_password}@{parsed_url.hostname}:{parsed_url.port}{parsed_url.path}"
