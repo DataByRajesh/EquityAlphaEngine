@@ -78,6 +78,11 @@ def get_secret(secret_name: str) -> str:
         raise
 
 
+def get_db_helper():
+    from data_pipeline.db_utils import DBHelper
+    return DBHelper
+
+
 def main(start_date: str, end_date: str) -> None:
     """Run ``market_data.main`` if the database is missing requested data."""
     logger.info("Starting update_financial_data script.")
@@ -87,13 +92,7 @@ def main(start_date: str, end_date: str) -> None:
             """Fetch connection using secrets from Google Cloud Secret Manager."""
             try:
                 logger.info("Fetching database connection details from secrets.")
-                connection = connector.connect(
-                    get_secret("DATABASE_URL"),
-                    "pg8000",
-                    user=get_secret("DB_USER"),
-                    password=get_secret("DB_PASSWORD"),
-                    db=get_secret("DB_NAME"),
-                )
+                connection = get_db_helper()(get_secret("DATABASE_URL"))
                 logger.info("Database connection established successfully.")
                 return connection
             except Exception as e:

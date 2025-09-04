@@ -21,8 +21,6 @@ try:
     from . import config  # Importing configuration file
     from .compute_factors import \
         compute_factors  # Function to compute financial factors
-    from .db_utils import \
-        DBHelper  # Importing the DBHelper class for database operations
     from .financial_utils import \
         round_financial_columns  # For financial rounding utilities
     from .gmail_utils import create_message  # For Gmail API operations
@@ -32,7 +30,6 @@ try:
 except ImportError:
     import data_pipeline.config as config
     from data_pipeline.compute_factors import compute_factors
-    from data_pipeline.db_utils import DBHelper
     from data_pipeline.financial_utils import round_financial_columns
     from data_pipeline.gmail_utils import create_message, get_gmail_service, send_message
     from data_pipeline.Macro_data import FiveYearMacroDataLoader
@@ -379,7 +376,7 @@ def main(tickers, start_date, end_date, use_cache=True):
     if financial_df is not None:
         financial_tbl = "financial_tbl"
         # Create a new DBHelper instance
-        Dbhelper = DBHelper(get_secret("DATABASE_URL"))
+        Dbhelper = get_db_helper()(get_secret("DATABASE_URL"))
         Dbhelper.create_table(
             financial_tbl,
             financial_df,
