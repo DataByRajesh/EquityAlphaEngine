@@ -18,7 +18,11 @@ from typing import Any, Dict, Optional
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
 
-from . import config
+# Updated local imports to use fallback mechanism
+try:
+    from . import config
+except ImportError:
+    import data_pipeline.config as config
 
 logger = config.get_file_logger(__name__)
 

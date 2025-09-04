@@ -2,7 +2,11 @@ import numpy as np
 import pandas as pd
 import ta
 
-from . import config
+# Updated local imports to use fallback mechanism
+try:
+    from . import config
+except ImportError:
+    import data_pipeline.config as config
 
 # Config-driven logger
 logger = config.get_file_logger(__name__)

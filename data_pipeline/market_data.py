@@ -17,8 +17,7 @@ import pandas as pd  # For data manipulation
 import yfinance as yf  # For fetching financial data
 
 # Local imports
-
-try:  # Prefer package-relative imports
+try:
     from . import config  # Importing configuration file
     from .compute_factors import \
         compute_factors  # Function to compute financial factors
@@ -30,18 +29,20 @@ try:  # Prefer package-relative imports
     from .gmail_utils import get_gmail_service, send_message
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
     from .update_financial_data import get_secret
-except ImportError:  # Fallback for running as a script without package context
-    import config  # type: ignore  # pragma: no cover
-    from compute_factors import \
-        compute_factors  # type: ignore  # pragma: no cover
-    from db_utils import DBHelper  # type: ignore  # pragma: no cover
-    from financial_utils import \
-        round_financial_columns  # type: ignore  # pragma: no cover
-    from gmail_utils import (  # type: ignore  # pragma: no cover
-        create_message, get_gmail_service, send_message)
-    from Macro_data import \
-        FiveYearMacroDataLoader  # type: ignore  # pragma: no cover
-    from update_financial_data import get_secret  # type: ignore  # pragma: no cover
+except ImportError:
+    import data_pipeline.config as config
+    from data_pipeline.compute_factors import compute_factors
+    from data_pipeline.db_utils import DBHelper
+    from data_pipeline.financial_utils import round_financial_columns
+    from data_pipeline.gmail_utils import create_message, get_gmail_service, send_message
+    from data_pipeline.Macro_data import FiveYearMacroDataLoader
+    from data_pipeline.update_financial_data import get_secret
+
+# Updated import for market_data to use fallback mechanism
+try:
+    from . import market_data
+except ImportError:
+    import data_pipeline.market_data as market_data
 
 # Module-level logger
 logger = logging.getLogger(__name__)

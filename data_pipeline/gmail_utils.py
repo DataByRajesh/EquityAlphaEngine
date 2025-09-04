@@ -9,10 +9,11 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+# Updated local imports to use fallback mechanism
 try:
     from . import config
-except ImportError:  # pragma: no cover - fallback when running as script
-    import config  # type: ignore
+except ImportError:
+    import data_pipeline.config as config
 
 logger = logging.getLogger(__name__)
 

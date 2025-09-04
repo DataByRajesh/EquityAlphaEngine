@@ -6,8 +6,16 @@ from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         create_engine, inspect)
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from . import config
-from .update_financial_data import get_secret
+# Updated local imports to use fallback mechanism
+try:
+    from . import config
+except ImportError:
+    import data_pipeline.config as config
+
+try:
+    from .update_financial_data import get_secret
+except ImportError:
+    from data_pipeline.update_financial_data import get_secret
 
 # Config-driven logger
 logger = config.get_file_logger(__name__)
@@ -237,3 +245,9 @@ class DBHelper:
         """
         logger.info("Disposing database engine.")
         self.engine.dispose()
+
+# Updated import for market_data to use fallback mechanism
+try:
+    from . import market_data
+except ImportError:
+    import data_pipeline.market_data as market_data

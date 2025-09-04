@@ -6,8 +6,21 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 # Local imports
-from . import config
-from .update_financial_data import get_secret
+try:
+    from . import config
+except ImportError:
+    import data_pipeline.config as config
+
+try:
+    from .update_financial_data import get_secret
+except ImportError:
+    from data_pipeline.update_financial_data import get_secret
+
+# Updated import for market_data to use fallback mechanism
+try:
+    from . import market_data
+except ImportError:
+    import data_pipeline.market_data as market_data
 
 # Use the config helper to create a file logger
 logger = config.get_file_logger(__name__)
