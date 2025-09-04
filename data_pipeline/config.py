@@ -58,7 +58,7 @@ LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
 
 
 #PROJECT_ID = "your-gcp-project-id"
-PROJECT_ID = "equity-alpha-engine-alerts"
+GCP_PROJECT_ID = "equity-alpha-engine-alerts"
 
 
 # ---------------------------------------------------------------------------
