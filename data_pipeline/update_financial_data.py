@@ -68,20 +68,11 @@ def get_secret(secret_name: str) -> str:
     """Fetch a secret value from Google Cloud Secret Manager."""
     client = secretmanager.SecretManagerServiceClient()
     try:
-        logger.debug("Attempting to fetch project_id from config.")
         project_id = config.GCP_PROJECT_ID  # Fetch project_id from config
-        if not project_id:
-            logger.error("project_id is not set in config.")
-            raise ValueError("GCP_PROJECT_ID is missing in config.")
-        logger.debug(f"Using project_id: {project_id}")
-
+        logger.debug(f"Using project_id: {project_id}")  # Debug log for project_id
         name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
-        logger.debug(f"Constructed secret name: {name}")
-
         response = client.access_secret_version(request={"name": name})
-        secret_value = response.payload.data.decode("UTF-8")
-        logger.debug(f"Successfully fetched secret: {secret_name}")
-        return secret_value
+        return response.payload.data.decode("UTF-8")
     except Exception as e:
         logger.error(f"Failed to fetch secret {secret_name}: {e}")
         raise
