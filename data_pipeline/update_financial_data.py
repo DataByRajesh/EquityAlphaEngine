@@ -63,41 +63,60 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
     )
 
 
-def get_secret(secret_name: str) -> str:
-    """Fetch a secret value from Google Cloud Secret Manager."""
-    client = secretmanager.SecretManagerServiceClient()
-    project_id = os.environ.get("GCP_PROJECT_ID")  # Ensure this is set
-    name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data.decode("UTF-8")
-
 
 def main(start_date: str, end_date: str) -> None:
     """Run ``market_data.main`` if the database is missing requested data."""
+    logger.info("Starting update_financial_data script.")
     connector = Connector()
     try:
-        def getconn():
-            """Fetch connection using secrets or environment variables."""
-            connector = Connector()
+        def get_secret(secret_name: str) -> str:
+            """Fetch a secret value from Google Cloud Secret Manager."""
             try:
-                return connector.connect(
-                    get_secret("DATABASE_URL"),  # Fetched from GCP Secret Manager
+                client = secretmanager.SecretManagerServiceClient()
+                project_id = os.environ.get("GCP_PROJECT_ID")
+                if not project_id:
+                    raise RuntimeError("GCP_PROJECT_ID environment variable is not set.")
+
+                name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+                response = client.access_secret_version(request={"name": name})
+                secret_value = response.payload.data.decode("UTF-8")
+                logger.info(f"Successfully fetched secret: {secret_name}")
+                return secret_value
+            except Exception as e:
+                logger.error(f"Failed to fetch secret {secret_name}: {e}")
+                raise
+
+        def getconn():
+            """Fetch connection using secrets from Google Cloud Secret Manager."""
+            try:
+                logger.info("Attempting to establish database connection.")
+                connection = connector.connect(
+                    get_secret("INSTANCE_CONNECTION_NAME"),
                     "pg8000",
                     user=get_secret("DB_USER"),
                     password=get_secret("DB_PASSWORD"),
                     db=get_secret("DB_NAME"),
                 )
-            finally:
-                connector.close()
+                logger.info("Database connection established successfully.")
+                return connection
+            except Exception as e:
+                logger.error(f"Failed to establish database connection: {e}")
+                raise
 
         engine = create_engine("postgresql+pg8000://", creator=getconn)
+        logger.info("Checking if data fetch is needed.")
         if _needs_fetch(engine, start_date, end_date):
+            logger.info("Data fetch required. Running market_data.main.")
             market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
         else:
             logger.info(
                 "financial_tbl already contains requested data; skipping fetch."
             )
+    except Exception as e:
+        logger.error(f"An error occurred in update_financial_data: {e}")
+        raise
     finally:
+        logger.info("Closing database connector.")
         connector.close()
         engine.dispose()
 
