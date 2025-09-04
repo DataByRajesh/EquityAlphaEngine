@@ -376,7 +376,7 @@ def main(tickers, start_date, end_date, use_cache=True):
     if financial_df is not None:
         financial_tbl = "financial_tbl"
         # Create a new DBHelper instance
-        Dbhelper = get_db_helper()(get_secret("DATABASE_URL"))
+        Dbhelper = get_db_helper()(get_secret_lazy()("DATABASE_URL"))
         Dbhelper.create_table(
             financial_tbl,
             financial_df,

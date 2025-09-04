@@ -26,13 +26,6 @@ from google.cloud.sql.connector import Connector
 from google.cloud import secretmanager
 import pg8000
 
-# Updated import to use absolute path as a fallback
-try:
-    from . import market_data
-except ImportError:
-    import data_pipeline.market_data as market_data
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -83,6 +76,11 @@ def get_db_helper():
     return DBHelper
 
 
+def get_market_data_lazy():
+    import data_pipeline.market_data as market_data
+    return market_data
+
+
 def main(start_date: str, end_date: str) -> None:
     """Run ``market_data.main`` if the database is missing requested data."""
     logger.info("Starting update_financial_data script.")
@@ -103,6 +101,7 @@ def main(start_date: str, end_date: str) -> None:
         engine = create_engine("postgresql+pg8000://", creator=getconn)
         try:
             logger.info("Checking if data fetch is needed.")
+            market_data = get_market_data_lazy()
             if _needs_fetch(engine, start_date, end_date):
                 logger.info("Data fetch required. Running market_data.main.")
                 market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
