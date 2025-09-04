@@ -103,7 +103,7 @@ def main(start_date: str, end_date: str) -> None:
         # Add timeout configuration to SQLAlchemy engine
         logger.info("Creating SQLAlchemy engine with timeout.")
         url = get_secret("DATABASE_URL")
-        connect_args = {"timeout": 30}  # Set timeout to 30 seconds
+        connect_args = {"timeout": 120}  # Set timeout to 90 seconds
         engine = create_engine(url, connect_args=connect_args)
 
         # Log the raw DATABASE_URL for debugging
