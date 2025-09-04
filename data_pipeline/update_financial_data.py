@@ -103,8 +103,14 @@ def main(start_date: str, end_date: str) -> None:
         logger.info("Creating SQLAlchemy engine.")
         url = get_secret("DATABASE_URL")
 
-        # URL encode the username and password dynamically
+        # Log the raw DATABASE_URL for debugging
+        logger.debug(f"Raw DATABASE_URL: {url}")
+
+        # Parse the URL
         parsed_url = urllib.parse.urlparse(url)
+        logger.debug(f"Parsed URL: {parsed_url}")
+
+        # URL encode the username and password dynamically
         if parsed_url.username and parsed_url.password:
             encoded_username = urllib.parse.quote(parsed_url.username)
             encoded_password = urllib.parse.quote(parsed_url.password)
