@@ -21,6 +21,9 @@ google-cloud-secret-manager==2.16.1
 fastapi==0.111.0
 uvicorn==0.30.1
 
+# Add urllib3 for URL encoding support
+urllib3==2.0.4
+
 # Optional extras (uncomment if needed)
 # investpy==1.0.8        # alternative data source
 # selenium==4.34.0       # web scraping utilities
