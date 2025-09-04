@@ -76,38 +76,6 @@ If DATABASE_URL is not set, the application will raise an error and stop.
 # ---------------------------------------------------------------------------
 
 
-def get_secret(secret_name: str) -> str:
-    """Fetch a secret value from Google Cloud Secret Manager."""
-    client = secretmanager.SecretManagerServiceClient()
-    project_id = os.environ.get("GCP_PROJECT_ID")
-
-    if not project_id:
-        raise RuntimeError("GCP_PROJECT_ID environment variable is not set.")
-
-    name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
-
-    try:
-        response = client.access_secret_version(request={"name": name})
-        return response.payload.data.decode("UTF-8")
-    except Exception as e:
-        raise RuntimeError(f"Failed to fetch secret '{secret_name}': {e}")
-
-
-DATABASE_URL = os.environ.get("DATABASE_URL") or get_secret("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError(
-        "DATABASE_URL environment variable or secret is required for GCP deployments. "
-        "Set it to your PostgreSQL Cloud SQL connection string."
-    )
-
-# ENGINE = create_engine(DATABASE_URL)
-# Database credentials
-#DB_USER = "postgres"  # Default database user
-#DB_PASSWORD = "Smart!98"  # Database password
-#DB_NAME = "equity_db"  # Database name
-#DB_HOST = "34.39.5.6"  # Public IP address of the database
-
-
 # ---------------------------------------------------------------------------
 # Gmail API configuration
 #
