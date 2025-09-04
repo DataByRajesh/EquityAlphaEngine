@@ -56,6 +56,11 @@ DATA_DIR = _ensure_dir("DATA_DIR", os.path.join("data_pipeline", "data"))
 CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join("data_pipeline", "cache"))
 LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
 
+
+#PROJECT_ID = "your-gcp-project-id"
+PROJECT_ID = "equity-alpha-engine-alerts"
+
+
 # ---------------------------------------------------------------------------
 # Database configuration
 #
