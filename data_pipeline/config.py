@@ -84,6 +84,13 @@ if not DATABASE_URL:
 
 ENGINE = create_engine(DATABASE_URL)
 
+# Database credentials
+DB_USER = "postgres"  # Default database user
+DB_PASSWORD = "Smart!98"  # Database password
+DB_NAME = "equity_db"  # Database name
+DB_HOST = "34.39.5.6"  # Public IP address of the database
+
+
 # ---------------------------------------------------------------------------
 # Gmail API configuration
 #
