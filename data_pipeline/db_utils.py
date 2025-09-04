@@ -7,6 +7,7 @@ from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from . import config
+from .update_financial_data import get_secret
 
 # Config-driven logger
 logger = config.get_file_logger(__name__)
@@ -90,7 +91,7 @@ class DBHelper:
     """
 
     def __init__(self, db_url: Optional[str] = None):
-        self.database_url = db_url or config.DATABASE_URL
+        self.database_url = db_url or get_secret("DATABASE_URL")
         self.engine = create_engine(self.database_url, future=True)
         self.inspector = inspect(self.engine)
         logger.info("DBHelper initialized with database URL: %s",

@@ -7,11 +7,12 @@ from sqlalchemy import create_engine
 
 # Local imports
 from . import config
+from .update_financial_data import get_secret
 
 # Use the config helper to create a file logger
 logger = config.get_file_logger(__name__)
 
-DB_PATH = config.DATABASE_URL
+DB_PATH = get_secret("DATABASE_URL")
 
 
 def main() -> None:

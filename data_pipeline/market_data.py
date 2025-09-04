@@ -29,6 +29,7 @@ try:  # Prefer package-relative imports
     from .gmail_utils import create_message  # For Gmail API operations
     from .gmail_utils import get_gmail_service, send_message
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
+    from .update_financial_data import get_secret
 except ImportError:  # Fallback for running as a script without package context
     import config  # type: ignore  # pragma: no cover
     from compute_factors import \
@@ -40,6 +41,7 @@ except ImportError:  # Fallback for running as a script without package context
         create_message, get_gmail_service, send_message)
     from Macro_data import \
         FiveYearMacroDataLoader  # type: ignore  # pragma: no cover
+    from update_financial_data import get_secret  # type: ignore  # pragma: no cover
 
 # Module-level logger
 logger = logging.getLogger(__name__)
@@ -376,7 +378,7 @@ def main(tickers, start_date, end_date, use_cache=True):
     if financial_df is not None:
         financial_tbl = "financial_tbl"
         # Create a new DBHelper instance
-        Dbhelper = DBHelper(config.DATABASE_URL)
+        Dbhelper = DBHelper(get_secret("DATABASE_URL"))
         Dbhelper.create_table(
             financial_tbl,
             financial_df,
