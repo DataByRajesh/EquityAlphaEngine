@@ -18,10 +18,12 @@ from __future__ import annotations
 import argparse
 import logging
 from datetime import datetime, timedelta
+import os
 
 import pandas as pd
 from sqlalchemy import create_engine, inspect
 from google.cloud.sql.connector import Connector
+from google.cloud import secretmanager
 import pg8000
 
 try:  # Prefer package-relative imports
@@ -61,18 +63,32 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
     )
 
 
+def get_secret(secret_name: str) -> str:
+    """Fetch a secret value from Google Cloud Secret Manager."""
+    client = secretmanager.SecretManagerServiceClient()
+    project_id = os.environ.get("GCP_PROJECT_ID")  # Ensure this is set
+    name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode("UTF-8")
+
+
 def main(start_date: str, end_date: str) -> None:
     """Run ``market_data.main`` if the database is missing requested data."""
     connector = Connector()
     try:
         def getconn():
-            return connector.connect(
-                config.DATABASE_URL,  # Replace with your Cloud SQL instance connection name
-                "pg8000",
-                user=config.DB_USER,
-                password=config.DB_PASSWORD,
-                db=config.DB_NAME,
-            )
+            """Fetch connection using secrets or environment variables."""
+            connector = Connector()
+            try:
+                return connector.connect(
+                    get_secret("DATABASE_URL"),  # Fetched from GCP Secret Manager
+                    "pg8000",
+                    user=get_secret("DB_USER"),
+                    password=get_secret("DB_PASSWORD"),
+                    db=get_secret("DB_NAME"),
+                )
+            finally:
+                connector.close()
 
         engine = create_engine("postgresql+pg8000://", creator=getconn)
         if _needs_fetch(engine, start_date, end_date):
