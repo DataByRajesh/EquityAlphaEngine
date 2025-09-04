@@ -31,6 +31,14 @@ import data_pipeline.config as config
 
 logger = logging.getLogger(__name__)
 
+# Configure logger to print to console
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
 
 def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
     """Return ``True`` if the database lacks ``financial_tbl`` data for range."""
