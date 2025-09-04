@@ -14,6 +14,7 @@ google-auth-oauthlib==1.2.2
 google-api-python-client==2.175.0
 google-cloud-storage==2.14.0      # GCS cache backend
 cloud-sql-python-connector
+pg8000
 
 # API and web server (Cloud Run)
 fastapi==0.111.0
