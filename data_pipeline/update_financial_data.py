@@ -53,9 +53,13 @@ DEFAULT_TIMEOUT = 60  # seconds
 def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
     """Return ``True`` if the database lacks ``financial_tbl`` data for range."""
     inspector = inspect(engine)
-    if not inspector.has_table("financial_tbl"):
-        logger.warning("Table 'financial_tbl' does not exist in the database.")
-        return True
+    try:
+        if not inspector.has_table("financial_tbl"):
+            logger.error("Table 'financial_tbl' does not exist in the database.")
+            return True
+    except Exception as e:
+        logger.error(f"Error inspecting the database for 'financial_tbl': {e}", exc_info=True)
+        raise RuntimeError("Failed to inspect the database for 'financial_tbl'")
 
     date_range = pd.read_sql(
         "SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM financial_tbl",
@@ -124,12 +128,19 @@ def initialize_engine(database_url):
 
 def fetch_data_if_needed(engine, start_date, end_date):
     """Check if data fetch is needed and perform the fetch."""
-    logger.info("Checking if data fetch is needed.")
-    if _needs_fetch(engine, start_date, end_date):
+    #logger.info("Checking if data fetch is needed.")
+    '''if _needs_fetch(engine, start_date, end_date):
         logger.info("Data fetch required. Running market_data.main.")
         market_data_main()
     else:
-        logger.info("financial_tbl already contains requested data; skipping fetch.")
+        logger.info("financial_tbl already contains requested data; skipping fetch.")'''
+    try:
+        logger.info("Starting market data processing.")
+        market_data_main(engine, start_date, end_date)
+        logger.info("Market data processing completed successfully.")
+    except Exception as e:
+        logger.error(f"Error during market data processing: {e}", exc_info=True)
+        raise RuntimeError("Market data processing failed due to an unexpected error.")
 
 
 def main(start_date: str, end_date: str) -> None:
