@@ -13,7 +13,7 @@ scheduled job so that dashboards can simply read from an already populated
 database.
 """
 
-
+from __future__ import annotations
 
 # Standard library imports
 import argparse
@@ -22,7 +22,6 @@ from datetime import datetime, timedelta
 import os
 import urllib.parse
 
-from __future__ import annotations
 
 # Third-party library imports
 import pandas as pd
