@@ -26,14 +26,14 @@ try:
     from .gmail_utils import create_message  # For Gmail API operations
     from .gmail_utils import get_gmail_service, send_message
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
-    from .update_financial_data import get_secret
+    from data_pipeline.utils import get_secret
 except ImportError:
     import data_pipeline.config as config
     from data_pipeline.compute_factors import compute_factors
     from data_pipeline.financial_utils import round_financial_columns
     from data_pipeline.gmail_utils import create_message, get_gmail_service, send_message
     from data_pipeline.Macro_data import FiveYearMacroDataLoader
-    from data_pipeline.update_financial_data import get_secret
+    from data_pipeline.utils import get_secret
 
 # Updated import for market_data to use fallback mechanism
 try:
