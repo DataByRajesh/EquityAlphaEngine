@@ -368,8 +368,11 @@ def main(engine,start_date,end_date):
     tickers = config.FTSE_100_TICKERS
 
     # Example usage of the engine
-    with engine.connect() as connection:
-        logger.info("Connected to the database successfully.")
+    try:
+        with engine.connect() as connection:
+            logger.info("Connected to the database successfully.")
+    except Exception as e:
+        logger.error(f"Failed to connect to the database: {e}")
 
     hist_df = fetch_historical_data(tickers, start_date, end_date)
     if hist_df.empty:
