@@ -362,19 +362,21 @@ def combine_price_and_fundamentals(
     return combined_df
 
 
-def main():
-    logger.debug("Starting main function in market_data.py.")
+def main(engine,start_date,end_date):
+    """Process market data using the provided database engine."""
+    logger.info("Fetching market data...")
     tickers = config.FTSE_100_TICKERS
-    start_date = config.START_DATE
-    end_date = config.END_DATE
-    use_cache = True
+
+    # Example usage of the engine
+    with engine.connect() as connection:
+        logger.info("Connected to the database successfully.")
 
     hist_df = fetch_historical_data(tickers, start_date, end_date)
     if hist_df.empty:
         logger.error("No historical data fetched. Exiting.")
         return
 
-    fundamentals_list = fetch_fundamental_data(tickers, use_cache=use_cache)
+    fundamentals_list = fetch_fundamental_data(tickers, use_cache=True)
     if not fundamentals_list:
         logger.error("No fundamentals data fetched. Exiting.")
         return
@@ -427,8 +429,5 @@ def main():
         logger.info("Financial data computed and saved to DB.")
     else:
         logger.error("Failed to compute and not saved to DB. Exiting.")
-    logger.debug("Main function in market_data.py completed.")
+    logger.info("Market data processing completed.")
 
-
-if __name__ == "__main__":
-    main()
