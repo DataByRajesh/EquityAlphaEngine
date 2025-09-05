@@ -41,8 +41,17 @@ try:
 except ImportError:
     import data_pipeline.market_data as market_data
 
-# Module-level logger
+# Set up logging for debugging
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+# Module-level logger
+# logger = logging.getLogger(__name__)
 
 
 def ensure_directories(dirs=None):
@@ -124,6 +133,7 @@ def fetch_historical_data(
     Downloads historical price data for tickers, cleans and rounds it.
     Returns a DataFrame or empty DataFrame on failure.
     """
+    logger.debug(f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}")
     logger.info(
         f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}..."
     )
@@ -167,6 +177,7 @@ def fetch_historical_data(
                 f"Historical data missing required columns: {missing_cols}")
             return pd.DataFrame()
         logger.info("Historical data fetched successfully.")
+        logger.debug("Historical data fetch completed.")
         return data
     except Exception as e:
         logger.error(f"Error downloading historical data: {e}")
@@ -301,6 +312,7 @@ def fetch_fundamental_data(
             if use_cache:
                 save_fundamentals_cache(symbol, key_ratios)
 
+        logger.debug("Fundamental data fetch completed.")
         return results
 
     try:
@@ -318,6 +330,7 @@ def combine_price_and_fundamentals(
     Merges price data DataFrame with a list of fundamental dicts (as DataFrame).
     Returns a combined DataFrame.
     """
+    logger.debug("Combining price data and fundamental data.")
     fundamentals_df = pd.DataFrame(fundamentals_list)
 
     # Ensure expected fundamental columns exist even if missing from the raw
@@ -345,10 +358,16 @@ def combine_price_and_fundamentals(
             fundamentals_df[col] = np.nan
 
     combined_df = pd.merge(price_df, fundamentals_df, on="Ticker", how="left")
+    logger.debug("Combination of price and fundamental data completed.")
     return combined_df
 
 
-def main(tickers, start_date, end_date, use_cache=True):
+def main():
+    logger.debug("Starting main function in market_data.py.")
+    tickers = config.FTSE_100_TICKERS
+    start_date = config.START_DATE
+    end_date = config.END_DATE
+    use_cache = True
 
     hist_df = fetch_historical_data(tickers, start_date, end_date)
     if hist_df.empty:
@@ -360,8 +379,7 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.error("No fundamentals data fetched. Exiting.")
         return
 
-    price_fundamentals_df = combine_price_and_fundamentals(
-        hist_df, fundamentals_list)
+    price_fundamentals_df = combine_price_and_fundamentals(hist_df, fundamentals_list)
 
     # Compute factors
     logger.info("Computing factors...")
@@ -375,46 +393,27 @@ def main(tickers, start_date, end_date, use_cache=True):
     # Save computed factors to DB
     if financial_df is not None:
         financial_tbl = "financial_tbl"
-        # Create a new DBHelper instance
         Dbhelper = get_db_helper()(get_secret_lazy()("DATABASE_URL"))
-        Dbhelper.create_table(
-            financial_tbl,
-            financial_df,
-            primary_keys=["Date", "Ticker"],
-        )  # Create table if not exists
-        Dbhelper.insert_dataframe(
-            financial_tbl,
-            financial_df,
-            unique_cols=["Date", "Ticker"],
-        )  # Upsert computed factors
+        Dbhelper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
+        Dbhelper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
 
         macro_df = fetch_macro_data(start_date, end_date)
         if macro_df is not None:
             macro_tbl = "macro_data_tbl"
-            Dbhelper.create_table(
-                macro_tbl,
-                macro_df,
-                primary_keys=["Date"],
-            )  # Create table if not exists
-            Dbhelper.insert_dataframe(
-                macro_tbl,
-                macro_df,
-                unique_cols=["Date"],
-            )  # Upsert macro data
+            Dbhelper.create_table(macro_tbl, macro_df, primary_keys=["Date"])
+            Dbhelper.insert_dataframe(macro_tbl, macro_df, unique_cols=["Date"])
 
         Dbhelper.close()
 
         # Prepare and send email notification
         try:
-            gmail_service = get_gmail_service()  # Initialize Gmail API service once
+            gmail_service = get_gmail_service()
         except FileNotFoundError as e:
             logger.error(e)
             gmail_service = None
 
         if gmail_service is None:
-            logger.error(
-                "Failed to initialize Gmail service. Email notification will not be sent."
-            )
+            logger.error("Failed to initialize Gmail service. Email notification will not be sent.")
             return
 
         sender = "raj.analystdata@gmail.com"
@@ -428,52 +427,8 @@ def main(tickers, start_date, end_date, use_cache=True):
         logger.info("Financial data computed and saved to DB.")
     else:
         logger.error("Failed to compute and not saved to DB. Exiting.")
+    logger.debug("Main function in market_data.py completed.")
 
 
 if __name__ == "__main__":
-    import argparse
-    from datetime import datetime, timedelta
-
-    # CLI
-    parser = argparse.ArgumentParser(
-        description="Fetch historical and fundamental data for FTSE 100 stocks."
-    )
-    parser.add_argument(
-        "--start_date",
-        type=str,
-        help="Start date for historical data (YYYY-MM-DD). If provided, takes precedence over --years.",
-    )
-    parser.add_argument(
-        "--end_date",
-        type=str,
-        help="End date for historical data (YYYY-MM-DD). Defaults to today if omitted.",
-    )
-    parser.add_argument(
-        "--years",
-        type=int,
-        default=10,
-        help="Number of years back to fetch when --start_date is not provided (default: 10).",
-    )
-
-    args = parser.parse_args()
-
-    # Resolve dates
-    end_date = args.end_date or datetime.today().strftime("%Y-%m-%d")
-
-    if args.start_date:
-        start_date = args.start_date
-    else:
-        years = args.years if (args.years and args.years > 0) else 10
-        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
-        start_dt = end_dt - timedelta(days=years * 365)
-        start_date = start_dt.strftime("%Y-%m-%d")
-
-    # Basic validation
-    if datetime.strptime(start_date, "%Y-%m-%d") > datetime.strptime(
-        end_date, "%Y-%m-%d"
-    ):
-        raise SystemExit(
-            f"start_date ({start_date}) cannot be after end_date ({end_date})."
-        )
-
-    main(config.FTSE_100_TICKERS, start_date, end_date)
+    main()

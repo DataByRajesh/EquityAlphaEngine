@@ -32,6 +32,7 @@ import pg8000
 
 # Local application imports
 import data_pipeline.config as config
+from data_pipeline.market_data import main as market_data_main
 
 # Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
@@ -95,11 +96,6 @@ def get_db_helper():
     return DBHelper
 
 
-def get_market_data_lazy():
-    import data_pipeline.market_data as market_data
-    return market_data
-
-
 def get_database_url():
     """Fetch and validate the DATABASE_URL."""
     url = get_secret("DATABASE_URL")
@@ -142,10 +138,9 @@ def initialize_engine(database_url):
 def fetch_data_if_needed(engine, start_date, end_date):
     """Check if data fetch is needed and perform the fetch."""
     logger.info("Checking if data fetch is needed.")
-    market_data = get_market_data_lazy()
     if _needs_fetch(engine, start_date, end_date):
         logger.info("Data fetch required. Running market_data.main.")
-        market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
+        market_data_main()
     else:
         logger.info("financial_tbl already contains requested data; skipping fetch.")
 
