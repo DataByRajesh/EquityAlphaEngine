@@ -157,12 +157,18 @@ def main(start_date: str, end_date: str) -> None:
 
     with Connector() as connector:
         try:
+            logger.debug("Initializing SQLAlchemy engine with the provided database URL.")
             engine = initialize_engine(database_url)
-            try:
-                fetch_data_if_needed(engine, start_date, end_date)
-            finally:
-                logger.info("Disposing SQLAlchemy engine.")
-                engine.dispose()
+            logger.info("SQLAlchemy engine initialized successfully.")
+        except Exception as e:
+            logger.error(f"Failed to initialize SQLAlchemy engine: {e}")
+            raise RuntimeError("Engine initialization failed")
+
+        try:
+            fetch_data_if_needed(engine, start_date, end_date)
+        finally:
+            logger.info("Disposing SQLAlchemy engine.")
+            engine.dispose()
         except Exception as e:
             logger.critical(f"Critical error in update_financial_data script: {e}")
             raise
