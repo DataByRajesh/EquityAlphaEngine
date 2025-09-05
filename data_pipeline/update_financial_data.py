@@ -13,22 +13,28 @@ scheduled job so that dashboards can simply read from an already populated
 database.
 """
 
-from __future__ import annotations
 
+
+# Standard library imports
 import argparse
 import logging
 from datetime import datetime, timedelta
 import os
 import urllib.parse
 
+from __future__ import annotations
+
+# Third-party library imports
 import pandas as pd
 from sqlalchemy import create_engine, inspect
 from google.cloud.sql.connector import Connector
 from google.cloud import secretmanager
 import pg8000
 
+# Local application imports
 import data_pipeline.config as config
 
+# Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
 
 # Configure logger to print to console
@@ -38,6 +44,9 @@ console_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+
+# Define constants for configurations
+DEFAULT_TIMEOUT = 60  # seconds
 
 
 def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
@@ -92,79 +101,72 @@ def get_market_data_lazy():
     return market_data
 
 
-def main(start_date: str, end_date: str) -> None:
-    """Run ``market_data.main`` if the database is missing requested data."""
-    logger.info("Starting update_financial_data script.")
-    connector = Connector()
+def get_database_url():
+    """Fetch and validate the DATABASE_URL."""
+    url = get_secret("DATABASE_URL")
+    if not url:
+        raise RuntimeError("DATABASE_URL is not set or invalid.")
+    return url
+
+
+def initialize_engine(database_url):
+    """Initialize the SQLAlchemy engine."""
+    logger.info("Creating SQLAlchemy engine with timeout.")
+    connect_args = {"timeout": DEFAULT_TIMEOUT}
+
+    # Parse and encode the URL
+    parsed_url = urllib.parse.urlparse(database_url)
+    logger.debug(f"Parsed URL: {parsed_url}")
+
+    if parsed_url.username and parsed_url.password:
+        encoded_username = urllib.parse.quote(parsed_url.username)
+        encoded_password = urllib.parse.quote(parsed_url.password)
+    else:
+        raise ValueError("DATABASE_URL is missing username or password.")
+
+    # Reconstruct the URL with encoded credentials
+    url = f"{parsed_url.scheme}://{encoded_username}:{encoded_password}@{parsed_url.hostname}:{parsed_url.port}{parsed_url.path}"
+
+    if not url.startswith("postgresql+pg8000://"):
+        url = f"postgresql+pg8000://{url}"
+
+    logger.debug(f"Final database URL: {url}")
     try:
-        def getconn():
-            """Fetch connection using secrets from Google Cloud Secret Manager."""
-            try:
-                logger.info("Fetching database connection details from secrets.")
-                connection = get_db_helper()(get_secret("DATABASE_URL"))
-                logger.info("Database connection established successfully.")
-                return connection
-            except Exception as e:
-                logger.error(f"Failed to establish database connection: {e}")
-                raise
-
-        # Add timeout configuration to SQLAlchemy engine
-        logger.info("Creating SQLAlchemy engine with timeout.")
-        url = get_secret("DATABASE_URL")
-        connect_args = {"timeout": 120}  # Set timeout to 90 seconds
-        #engine = create_engine(url, connect_args=connect_args)
-
-        # Log the raw DATABASE_URL for debugging
-        logger.debug(f"Raw DATABASE_URL: {url}")
-
-        # Parse the URL
-        parsed_url = urllib.parse.urlparse(url)
-        logger.debug(f"Parsed URL: {parsed_url}")
-
-        # URL encode the username and password dynamically
-        if parsed_url.username and parsed_url.password:
-            encoded_username = urllib.parse.quote(parsed_url.username)
-            encoded_password = urllib.parse.quote(parsed_url.password)
-        else:
-            raise ValueError("DATABASE_URL is missing username or password.")
-
-        # Reconstruct the URL with encoded credentials
-        url = f"{parsed_url.scheme}://{encoded_username}:{encoded_password}@{parsed_url.hostname}:{parsed_url.port}{parsed_url.path}"
-
-        if not url.startswith("postgresql+pg8000://"):
-            url = f"postgresql+pg8000://{url}"
-
-        logger.debug(f"Final database URL: {url}")
-        try:
-            engine = create_engine(url, connect_args=connect_args)
-            logger.info("SQLAlchemy engine created successfully.")
-        except Exception as e:
-            logger.error(f"Failed to create SQLAlchemy engine: {e}")
-            raise RuntimeError("SQLAlchemy engine creation failed")
-        try:
-            if not get_secret('DATABASE_URL'):
-                raise RuntimeError("DATABASE_URL is not set or invalid.")
-            logger.info("Checking if data fetch is needed.")
-            market_data = get_market_data_lazy()
-            if _needs_fetch(engine, start_date, end_date):
-                logger.info("Data fetch required. Running market_data.main.")
-                market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
-            else:
-                logger.info(
-                    "financial_tbl already contains requested data; skipping fetch."
-                )
-        except Exception as e:
-            logger.error(f"Error during data fetch process: {e}")
-            raise
-        finally:
-            logger.info("Disposing SQLAlchemy engine.")
-            engine.dispose()
+        engine = create_engine(url, connect_args=connect_args)
+        logger.info("SQLAlchemy engine created successfully.")
+        return engine
     except Exception as e:
-        logger.critical(f"Critical error in update_financial_data script: {e}")
-        raise
-    finally:
-        logger.info("Closing database connector.")
-        connector.close()
+        logger.error(f"Failed to create SQLAlchemy engine: {e}")
+        raise RuntimeError("SQLAlchemy engine creation failed")
+
+
+def fetch_data_if_needed(engine, start_date, end_date):
+    """Check if data fetch is needed and perform the fetch."""
+    logger.info("Checking if data fetch is needed.")
+    market_data = get_market_data_lazy()
+    if _needs_fetch(engine, start_date, end_date):
+        logger.info("Data fetch required. Running market_data.main.")
+        market_data.main(config.FTSE_100_TICKERS, start_date, end_date)
+    else:
+        logger.info("financial_tbl already contains requested data; skipping fetch.")
+
+
+def main(start_date: str, end_date: str) -> None:
+    """Run the update financial data script."""
+    logger.info("Starting update_financial_data script.")
+    database_url = get_database_url()
+
+    with Connector() as connector:
+        try:
+            engine = initialize_engine(database_url)
+            try:
+                fetch_data_if_needed(engine, start_date, end_date)
+            finally:
+                logger.info("Disposing SQLAlchemy engine.")
+                engine.dispose()
+        except Exception as e:
+            logger.critical(f"Critical error in update_financial_data script: {e}")
+            raise
 
 
 if __name__ == "__main__":
