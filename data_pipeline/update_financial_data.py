@@ -161,12 +161,12 @@ def main(start_date: str, end_date: str) -> None:
 
         try:
             fetch_data_if_needed(engine, start_date, end_date)
-        finally:
-            logger.info("Disposing SQLAlchemy engine.")
-            engine.dispose()
         except Exception as e:
             logger.error(f"Critical error in update_financial_data script during engine disposal: {e}", exc_info=True)
             raise RuntimeError("Critical error in update_financial_data script, Engine disposal failed")
+        finally:
+            logger.info("Disposing SQLAlchemy engine.")
+            engine.dispose()
 
 
 if __name__ == "__main__":
