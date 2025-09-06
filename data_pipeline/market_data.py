@@ -66,10 +66,6 @@ def ensure_directories(dirs=None):
         logger.info(f"Ensured directory exists: {d}")
 
 
-# Ensure cache and data directories exist at module import
-ensure_directories()
-
-
 # --- Caching functions ---
 
 # The public functions ``load_cached_fundamentals`` and
@@ -274,7 +270,7 @@ def fetch_fundamental_data(
                 exc_info=True,
             )
             for t in remaining:
-                try:
+                try:debug the connection
                     info = tickers_obj.tickers[t].info
                 except Exception as exc:  # pragma: no cover - best effort fallback
                     logger.error(f"Synchronous fetch failed for {t}: {exc}")
@@ -364,6 +360,10 @@ def combine_price_and_fundamentals(
 
 def main(engine,start_date,end_date):
     """Process market data using the provided database engine."""
+    
+    # Ensure cache and data directories exist at module import
+    ensure_directories()
+    
     logger.info("Fetching market data...")
     tickers = config.FTSE_100_TICKERS
 
