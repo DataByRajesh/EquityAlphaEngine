@@ -25,7 +25,7 @@ import urllib.parse
 
 # Third-party library imports
 import pandas as pd
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import inspect
 from google.cloud.sql.connector import Connector
 from google.cloud import secretmanager
 import pg8000
@@ -34,6 +34,7 @@ import pg8000
 import data_pipeline.config as config
 from data_pipeline.market_data import main as market_data_main
 from data_pipeline.utils import get_secret
+from data_pipeline.db_connection import get_db
 
 # Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
@@ -95,37 +96,6 @@ def get_database_url():
     return url
 
 
-def initialize_engine(database_url):
-    """Initialize the SQLAlchemy engine."""
-    logger.info("Creating SQLAlchemy engine with timeout.")
-    connect_args = {"timeout": DEFAULT_TIMEOUT}
-
-    # Parse and encode the URL
-    parsed_url = urllib.parse.urlparse(database_url)
-    logger.debug(f"Parsed URL: {parsed_url}")
-
-    if parsed_url.username and parsed_url.password:
-        encoded_username = urllib.parse.quote(parsed_url.username)
-        encoded_password = urllib.parse.quote(parsed_url.password)
-    else:
-        raise ValueError("DATABASE_URL is missing username or password.")
-
-    # Reconstruct the URL with encoded credentials
-    url = f"{parsed_url.scheme}://{encoded_username}:{encoded_password}@{parsed_url.hostname}:{parsed_url.port}{parsed_url.path}"
-
-    if not url.startswith("postgresql+pg8000://"):
-        url = f"postgresql+pg8000://{url}"
-
-    logger.debug(f"Final database URL: {url}")
-    try:
-        engine = create_engine(url, connect_args=connect_args)
-        logger.info("SQLAlchemy engine created successfully.")
-        return engine
-    except Exception as e:
-        logger.error(f"Failed to create SQLAlchemy engine: {e}")
-        raise RuntimeError("SQLAlchemy engine creation failed")
-
-
 def fetch_data_if_needed(engine, start_date, end_date):
     """Check if data fetch is needed and perform the fetch."""
     #logger.info("Checking if data fetch is needed.")
@@ -150,15 +120,14 @@ def main(start_date: str, end_date: str) -> None:
 
     with Connector() as connector:
         try:
-            logger.debug("Initializing SQLAlchemy engine with the provided database URL.")
-            engine = initialize_engine(database_url)
             logger.info("SQLAlchemy engine initialized successfully.")
         except Exception as e:
             logger.error(f"Failed to initialize SQLAlchemy engine: {e}")
             raise RuntimeError("Engine initialization failed")
 
         try:
-            fetch_data_if_needed(engine, start_date, end_date)
+            with get_db() as session:
+                fetch_data_if_needed(session, start_date, end_date)
         except Exception as e:
             logger.error(f"Critical error in update_financial_data script during engine disposal: {e}", exc_info=True)
             raise RuntimeError("Critical error in update_financial_data script, Engine disposal failed")

@@ -27,6 +27,7 @@ try:
     from .gmail_utils import get_gmail_service, send_message
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
     from data_pipeline.utils import get_secret
+    from data_pipeline.db_connection import get_db
 except ImportError:
     import data_pipeline.config as config
     from data_pipeline.compute_factors import compute_factors
@@ -34,6 +35,7 @@ except ImportError:
     from data_pipeline.gmail_utils import create_message, get_gmail_service, send_message
     from data_pipeline.Macro_data import FiveYearMacroDataLoader
     from data_pipeline.utils import get_secret
+    from data_pipeline.db_connection import get_db
 
 # Updated import for market_data to use fallback mechanism
 try:
@@ -398,7 +400,7 @@ def main(engine,start_date,end_date):
     # Save computed factors to DB
     if financial_df is not None:
         financial_tbl = "financial_tbl"
-        Dbhelper = get_db_helper()(get_secret_lazy()("DATABASE_URL"))
+        Dbhelper = get_db()(get_secret_lazy()("DATABASE_URL"))
         Dbhelper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
         Dbhelper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
 
