@@ -125,15 +125,14 @@ def main(start_date: str, end_date: str) -> None:
             logger.error(f"Failed to initialize SQLAlchemy engine: {e}")
             raise RuntimeError("Engine initialization failed")
 
+        session = next(get_db())
         try:
-            with get_db() as session:
-                fetch_data_if_needed(session, start_date, end_date)
+            fetch_data_if_needed(session, start_date, end_date)
         except Exception as e:
-            logger.error(f"Critical error in update_financial_data script during engine disposal: {e}", exc_info=True)
-            raise RuntimeError("Critical error in update_financial_data script, Engine disposal failed")
+            logger.error(f"Critical error in update_financial_data script: {e}", exc_info=True)
+            raise RuntimeError("Critical error in update_financial_data script")
         finally:
-            logger.info("Disposing SQLAlchemy engine.")
-            engine.dispose()
+            session.close()
 
 
 if __name__ == "__main__":
