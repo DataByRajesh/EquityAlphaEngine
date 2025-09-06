@@ -272,7 +272,7 @@ def fetch_fundamental_data(
                 exc_info=True,
             )
             for t in remaining:
-                try:debug the connection
+                try:
                     info = tickers_obj.tickers[t].info
                 except Exception as exc:  # pragma: no cover - best effort fallback
                     logger.error(f"Synchronous fetch failed for {t}: {exc}")
