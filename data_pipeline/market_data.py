@@ -27,7 +27,7 @@ try:
     from .gmail_utils import get_gmail_service, send_message
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
     from data_pipeline.utils import get_secret
-    from data_pipeline.db_connection import get_db
+    from data_pipeline.db_connection import engine, reinitialize_engine
 except ImportError:
     import data_pipeline.config as config
     from data_pipeline.compute_factors import compute_factors
@@ -35,7 +35,7 @@ except ImportError:
     from data_pipeline.gmail_utils import create_message, get_gmail_service, send_message
     from data_pipeline.Macro_data import FiveYearMacroDataLoader
     from data_pipeline.utils import get_secret
-    from data_pipeline.db_connection import get_db
+    from data_pipeline.db_connection import engine, reinitialize_engine
 
 # Updated import for market_data to use fallback mechanism
 try:
