@@ -34,7 +34,7 @@ import pg8000
 import data_pipeline.config as config
 from data_pipeline.market_data import main as market_data_main
 from data_pipeline.utils import get_secret
-from data_pipeline.db_connection import get_db
+from data_pipeline.db_connection import get_db, engine, reinitialize_engine
 
 # Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ def main(start_date: str, end_date: str) -> None:
 
         session = next(get_db())
         try:
-            fetch_data_if_needed(session, start_date, end_date)
+            fetch_data_if_needed(engine, start_date, end_date)
         except Exception as e:
             logger.error(f"Critical error in update_financial_data script: {e}", exc_info=True)
             raise RuntimeError("Critical error in update_financial_data script")
@@ -165,5 +165,15 @@ if __name__ == "__main__":
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         start_dt = end_dt - timedelta(days=years * 365)
         start_date = start_dt.strftime("%Y-%m-%d")
+
+    # Example usage of reinitialize_engine if needed
+    # reinitialize_engine("postgresql+pg8000://new_user:new_password@new_host:5432/new_db")
+
+    # Use the engine directly for database operations
+    try:
+        with engine.connect() as connection:
+            logger.info("Connected to the database successfully.")
+    except Exception as e:
+        logger.error(f"Failed to connect to the database: {e}")
 
     main(start_date, end_date)
