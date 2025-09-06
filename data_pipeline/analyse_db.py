@@ -3,7 +3,6 @@ from io import StringIO
 
 # Third-party imports
 import pandas as pd
-from sqlalchemy import create_engine
 
 # Local imports
 try:
@@ -22,6 +21,9 @@ try:
 except ImportError:
     import data_pipeline.market_data as market_data
 
+# Refactored to use the centralized engine from db_connection.py
+from data_pipeline.db_connection import engine
+
 # Use the config helper to create a file logger
 logger = config.get_file_logger(__name__)
 
@@ -38,7 +40,6 @@ def get_db_helper():
 
 def main() -> None:
     """Load stock data from the DB and log summary information."""
-    engine = get_db_helper()(DB_PATH).engine
     try:
         df = pd.read_sql("SELECT * FROM stock_data", engine)
 
@@ -58,9 +59,9 @@ def main() -> None:
             "Selected columns description\n%s",
             df[["Close", "Volume", "marketCap"]].describe(),
         )
-
-    finally:
-        engine.dispose()
+    except Exception as e:
+        logger.error(f"Error during database operation: {e}", exc_info=True)
+        raise RuntimeError("Database operation failed")
 
 
 if __name__ == "__main__":
