@@ -360,12 +360,12 @@ def combine_price_and_fundamentals(
     return combined_df
 
 
-def main(engine,start_date,end_date):
+def main(start_date, end_date):
     """Process market data using the provided database engine."""
-    
+
     # Ensure cache and data directories exist at module import
     ensure_directories()
-    
+
     logger.info("Fetching market data...")
     tickers = config.FTSE_100_TICKERS
 
@@ -378,7 +378,7 @@ def main(engine,start_date,end_date):
 
     hist_df = fetch_historical_data(tickers, start_date, end_date)
     if hist_df.empty:
-        logger.error("No historical data fetched. Exiting.")
+        logger.warning("No historical data fetched.")
         return
 
     fundamentals_list = fetch_fundamental_data(tickers, use_cache=True)

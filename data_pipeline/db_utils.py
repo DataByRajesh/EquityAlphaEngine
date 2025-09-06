@@ -87,6 +87,9 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 5000) -> None
 
 
 # --- Main DBHelper ---
+from data_pipeline.db_connection import SessionLocal
+
+
 class DBHelper:
     """
     Helper for GCP Cloud SQL (PostgreSQL) operations.
@@ -95,10 +98,8 @@ class DBHelper:
 
     def __init__(self, db_url: Optional[str] = None):
         self.database_url = db_url or self.get_secret_lazy()("DATABASE_URL")
-        self.engine = create_engine(self.database_url, future=True)
-        self.inspector = inspect(self.engine)
-        logger.info("DBHelper initialized with database URL: %s",
-                    self.database_url)
+        self.session = SessionLocal()
+        logger.info("DBHelper initialized with database URL: %s", self.database_url)
 
     def create_table(
         self,
@@ -110,61 +111,62 @@ class DBHelper:
         """
         Create table if missing; add missing columns if present.
         """
-        logger.info(
-            "Creating table '%s' with columns: %s", table_name, list(
-                df.columns)
-        )
-        md = MetaData()
-        if self.inspector.has_table(table_name):
-            # add only missing columns
-            existing = {c["name"]
-                        for c in self.inspector.get_columns(table_name)}
-            with self.engine.begin() as conn:
-                for col in df.columns:
-                    if col in existing:
-                        continue
-                    col_type = _sa_type_for_series(df[col])
-                    logger.info(
-                        "Adding missing column '%s' to table '%s'", col, table_name
-                    )
-                    try:
-                        conn.execute(
-                            Table(table_name, md, autoload_with=self.engine)
-                            .append_column(Column(col, col_type))
-                            .to_metadata(md)
+        try:
+            # Use session for ORM-based operations
+            with self.session.begin():
+                logger.info("Creating table '%s' if not exists.", table_name)
+                if self.inspector.has_table(table_name):
+                    # add only missing columns
+                    existing = {c["name"]
+                                for c in self.inspector.get_columns(table_name)}
+                    for col in df.columns:
+                        if col in existing:
+                            continue
+                        col_type = _sa_type_for_series(df[col])
+                        logger.info(
+                            "Adding missing column '%s' to table '%s'", col, table_name
                         )
-                    except Exception as e:
-                        logger.error(
-                            "Failed to add column '%s' to table '%s': %s",
-                            col,
-                            table_name,
-                            e,
-                            exc_info=True,
+                        try:
+                            self.session.execute(
+                                Table(table_name, MetaData(), autoload_with=self.engine)
+                                .append_column(Column(col, col_type))
+                                .to_metadata(MetaData())
+                            )
+                        except Exception as e:
+                            logger.error(
+                                "Failed to add column '%s' to table '%s': %s",
+                                col,
+                                table_name,
+                                e,
+                                exc_info=True,
+                            )
+                    # ensure UNIQUE index for upsert if requested
+                    if unique_cols:
+                        self._ensure_unique_index(
+                            self.session, table_name, tuple(unique_cols))
+                else:
+                    # create new table
+                    cols = []
+                    for col in df.columns:
+                        cols.append(
+                            Column(
+                                col,
+                                _sa_type_for_series(df[col]),
+                                primary_key=(primary_keys and col in primary_keys),
+                            )
                         )
-                # ensure UNIQUE index for upsert if requested
-                if unique_cols:
-                    self._ensure_unique_index(
-                        conn, table_name, tuple(unique_cols))
-            return
+                    table = Table(table_name, MetaData(), *cols)
+                    MetaData().create_all(self.engine, tables=[table])
+                    logger.info("Table '%s' created.", table_name)
 
-        # create new table
-        cols = []
-        for col in df.columns:
-            cols.append(
-                Column(
-                    col,
-                    _sa_type_for_series(df[col]),
-                    primary_key=(primary_keys and col in primary_keys),
-                )
-            )
-        table = Table(table_name, md, *cols)
-        md.create_all(self.engine, tables=[table])
-        logger.info("Table '%s' created.", table_name)
-
-        # add unique index if needed (for upsert)
-        if unique_cols:
-            with self.engine.begin() as conn:
-                self._ensure_unique_index(conn, table_name, tuple(unique_cols))
+                    # add unique index if needed (for upsert)
+                    if unique_cols:
+                        self._ensure_unique_index(self.session, table_name, tuple(unique_cols))
+        except Exception as e:
+            logger.error("Failed to create table '%s': %s", table_name, e, exc_info=True)
+            self.session.rollback()
+        finally:
+            self.session.close()
 
     def _ensure_unique_index(self, conn, table_name: str, cols: tuple[str, ...]):
         """
@@ -175,7 +177,7 @@ class DBHelper:
         if idx_name not in existing:
             tbl = Table(table_name, MetaData(), autoload_with=self.engine)
             Index(idx_name, *[tbl.c[c]
-                  for c in cols], unique=True).create(conn)
+                              for c in cols], unique=True).create(conn)
             logger.info("Created unique index '%s' on table '%s'",
                         idx_name, table_name)
 
@@ -236,10 +238,10 @@ class DBHelper:
 
     def close(self) -> None:
         """
-        Dispose the SQLAlchemy engine.
+        Dispose the session.
         """
-        logger.info("Disposing database engine.")
-        self.engine.dispose()
+        logger.info("Closing database session.")
+        self.session.close()
 
     def get_secret_lazy():
         from data_pipeline.update_financial_data import get_secret

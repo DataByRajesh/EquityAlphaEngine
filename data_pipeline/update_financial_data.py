@@ -35,6 +35,7 @@ import data_pipeline.config as config
 from data_pipeline.market_data import main as market_data_main
 from data_pipeline.utils import get_secret
 from data_pipeline.db_connection import get_db, engine, reinitialize_engine
+from data_pipeline.db_utils import DBHelper
 
 # Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
@@ -83,30 +84,11 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
 
 
 
-def get_db_helper():
-    from data_pipeline.db_utils import DBHelper
-    return DBHelper
-
-
-def get_database_url():
-    """Fetch and validate the DATABASE_URL."""
-    url = get_secret("DATABASE_URL")
-    if not url:
-        raise RuntimeError("DATABASE_URL is not set or invalid.")
-    return url
-
-
-def fetch_data_if_needed(engine, start_date, end_date):
+def fetch_data_if_needed(db_helper: DBHelper, start_date, end_date):
     """Check if data fetch is needed and perform the fetch."""
-    #logger.info("Checking if data fetch is needed.")
-    '''if _needs_fetch(engine, start_date, end_date):
-        logger.info("Data fetch required. Running market_data.main.")
-        market_data_main()
-    else:
-        logger.info("financial_tbl already contains requested data; skipping fetch.")'''
     try:
         logger.info("Starting market data processing.")
-        market_data_main(engine, start_date, end_date)
+        market_data_main(db_helper.engine, start_date, end_date)
         logger.info("Market data processing completed successfully.")
     except Exception as e:
         logger.error(f"Error during market data processing: {e}", exc_info=True)
@@ -116,23 +98,15 @@ def fetch_data_if_needed(engine, start_date, end_date):
 def main(start_date: str, end_date: str) -> None:
     """Run the update financial data script."""
     logger.info("Starting update_financial_data script.")
-    database_url = get_database_url()
 
-    with Connector() as connector:
-        try:
-            logger.info("SQLAlchemy engine initialized successfully.")
-        except Exception as e:
-            logger.error(f"Failed to initialize SQLAlchemy engine: {e}")
-            raise RuntimeError("Engine initialization failed")
-
-        session = next(get_db())
-        try:
-            fetch_data_if_needed(engine, start_date, end_date)
-        except Exception as e:
-            logger.error(f"Critical error in update_financial_data script: {e}", exc_info=True)
-            raise RuntimeError("Critical error in update_financial_data script")
-        finally:
-            session.close()
+    db_helper = DBHelper()
+    try:
+        fetch_data_if_needed(db_helper, start_date, end_date)
+    except Exception as e:
+        logger.error(f"Critical error in update_financial_data script: {e}", exc_info=True)
+        raise RuntimeError("Critical error in update_financial_data script")
+    finally:
+        db_helper.engine.dispose()
 
 
 if __name__ == "__main__":
