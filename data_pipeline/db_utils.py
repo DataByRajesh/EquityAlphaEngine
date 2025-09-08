@@ -97,8 +97,14 @@ class DBHelper:
     Only PostgreSQL is supported.
     """
 
-    def __init__(self, db_url: Optional[str] = None):
-        if db_url:
+    def __init__(self, db_url: Optional[str] = None, engine=None):
+        if engine:
+            # Use provided engine
+            self.database_url = "using_provided_engine"
+            self.engine = engine
+            self._own_engine = False  # We don't own the provided engine
+            session_factory = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        elif db_url:
             # Create dedicated engine for custom URL (used by API endpoints and tests)
             self.database_url = db_url
             self.engine = create_engine(db_url, pool_pre_ping=True)
@@ -111,7 +117,7 @@ class DBHelper:
             self.engine = engine
             self._own_engine = False  # We don't own the global engine
             session_factory = SessionLocal
-        
+
         self.inspector = inspect(self.engine)
         self.session = session_factory()
         logger.info("DBHelper initialized with database URL: %s", self.database_url)
@@ -219,7 +225,7 @@ class DBHelper:
                        start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
             
             # Call the market data pipeline
-            market_data_main(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+            market_data_main(self.engine, start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
             
             logger.info("Automatic data population completed successfully.")
             

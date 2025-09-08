@@ -24,7 +24,10 @@ import tempfile
 
 # Third-party imports
 from sqlalchemy import create_engine
-from google.cloud import secretmanager
+try:
+    from google.cloud import secretmanager
+except ImportError:
+    secretmanager = None
 
 # ---------------------------------------------------------------------------
 # Directory structure
