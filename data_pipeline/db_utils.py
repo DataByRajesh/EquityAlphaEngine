@@ -1,11 +1,13 @@
 from typing import Dict, Optional, Sequence
 
 import pandas as pd
+import time
 from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         Index, Integer, MetaData, String, Table, Text,
                         create_engine, inspect)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import OperationalError
 
 # Updated local imports to use fallback mechanism
 try:
@@ -73,18 +75,40 @@ def _records(df: pd.DataFrame):
 def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 5000) -> None:
     """
     Helper to insert DataFrame in chunks using the given statement.
+    Includes retry logic for database lock errors.
     """
+    max_retries = 3
+    retry_delay = 1.0  # seconds
+
     for _, chunk in df.groupby(df.index // chunksize):
         data = _records(chunk)
-        try:
-            conn.execute(stmt, data)
-        except Exception as e:
-            logger.error(
-                "Failed to insert chunk into '%s': %s",
-                getattr(stmt, "table", None) or getattr(stmt, "name", None),
-                e,
-                exc_info=True,
-            )
+        for attempt in range(max_retries):
+            try:
+                conn.execute(stmt, data)
+                break  # Success, exit retry loop
+            except OperationalError as e:
+                if "database is locked" in str(e).lower() and attempt < max_retries - 1:
+                    logger.warning(
+                        "Database locked, retrying insert in %s seconds (attempt %d/%d): %s",
+                        retry_delay, attempt + 1, max_retries, e
+                    )
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    logger.error(
+                        "Failed to insert chunk into '%s' after %d attempts: %s",
+                        getattr(stmt, "table", None) or getattr(stmt, "name", None),
+                        max_retries, e, exc_info=True
+                    )
+                    raise
+            except Exception as e:
+                logger.error(
+                    "Failed to insert chunk into '%s': %s",
+                    getattr(stmt, "table", None) or getattr(stmt, "name", None),
+                    e,
+                    exc_info=True,
+                )
+                raise
 
 
 # --- Main DBHelper ---
@@ -96,6 +120,7 @@ class DBHelper:
     Helper for GCP Cloud SQL (PostgreSQL) operations.
     Only PostgreSQL is supported.
     """
+    _population_running = False  # Class variable to prevent multiple population triggers
 
     def __init__(self, db_url: Optional[str] = None, engine=None):
         if engine:
@@ -213,25 +238,32 @@ class DBHelper:
 
     def _trigger_data_population(self):
         """Trigger the data population pipeline for financial data using default 10 years."""
+        if DBHelper._population_running:
+            logger.info("Data population already running, skipping duplicate trigger.")
+            return
+
+        DBHelper._population_running = True
         try:
             from datetime import datetime, timedelta
             from data_pipeline.market_data import main as market_data_main
-            
+
             # Use same default as update_financial_data.py: 10 years
             end_date = datetime.today()
             start_date = end_date - timedelta(days=10 * 365)  # 10 years of data (default)
-            
-            logger.info("Starting automatic data population from %s to %s (10 years default)", 
+
+            logger.info("Starting automatic data population from %s to %s (10 years default)",
                        start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
-            
+
             # Call the market data pipeline
             market_data_main(self.engine, start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
-            
+
             logger.info("Automatic data population completed successfully.")
-            
+
         except Exception as e:
             logger.error("Failed to trigger automatic data population: %s", e, exc_info=True)
             # Don't raise - this is a convenience feature, not critical
+        finally:
+            DBHelper._population_running = False
 
     def _ensure_unique_index(self, conn, table_name: str, cols: tuple[str, ...]):
         """
