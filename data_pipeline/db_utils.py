@@ -72,7 +72,7 @@ def _records(df: pd.DataFrame):
     return df.where(pd.notna(df), None).to_dict(orient="records")
 
 
-def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 50000) -> None:
+def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
     """
     Helper to insert DataFrame in chunks using the given statement.
     Includes retry logic for database lock errors and performance tracking.
@@ -314,7 +314,7 @@ class DBHelper:
         table_name: str,
         df: pd.DataFrame,
         unique_cols: Optional[Sequence[str]] = None,
-        chunksize: int = 50000,  # Increased from 15000 to 50000 for better performance
+        chunksize: int = 900,  # Reduced to 900 to stay within pg8000 parameter limits
     ) -> None:
         """
         Insert a DataFrame into a table, using upsert if unique_cols are provided.
