@@ -72,7 +72,7 @@ def _records(df: pd.DataFrame):
     return df.where(pd.notna(df), None).to_dict(orient="records")
 
 
-def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 15000) -> None:
+def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 50000) -> None:
     """
     Helper to insert DataFrame in chunks using the given statement.
     Includes retry logic for database lock errors and performance tracking.
@@ -85,12 +85,16 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 15000) -> Non
 
     chunk_start_time = time.time()
     for chunk_idx, (_, chunk) in enumerate(df.groupby(df.index // chunksize)):
+        chunk_time = time.time()
         data = _records(chunk)
         logger.debug("Processing chunk %d/%d with %d records", chunk_idx + 1, total_chunks, len(data))
 
         for attempt in range(max_retries):
             try:
                 conn.execute(stmt, data)
+                chunk_elapsed = time.time() - chunk_time
+                logger.info("Chunk %d/%d inserted in %.2f seconds (%.1f rows/sec)",
+                          chunk_idx + 1, total_chunks, chunk_elapsed, len(data) / chunk_elapsed if chunk_elapsed > 0 else 0)
                 # Log progress every 5 chunks or for the last chunk
                 if chunk_idx % 5 == 0 or chunk_idx == total_chunks - 1:
                     elapsed = time.time() - chunk_start_time
@@ -310,7 +314,7 @@ class DBHelper:
         table_name: str,
         df: pd.DataFrame,
         unique_cols: Optional[Sequence[str]] = None,
-        chunksize: int = 15000,  # Increased from 5000 to 15000 for better performance
+        chunksize: int = 50000,  # Increased from 15000 to 50000 for better performance
     ) -> None:
         """
         Insert a DataFrame into a table, using upsert if unique_cols are provided.
@@ -349,8 +353,8 @@ class DBHelper:
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
-            with self.engine.begin() as conn:
-                _chunked_insert(conn, tbl.insert(), df, chunksize)
+            # Use pandas to_sql for faster non-upsert inserts
+            df.to_sql(table_name, con=self.engine, if_exists='append', index=False, chunksize=chunksize, method='multi')
 
         end_time = time.time()
         logger.info("Bulk insert completed in %.2f seconds (%.1f rows/sec)",
