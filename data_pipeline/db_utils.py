@@ -72,19 +72,32 @@ def _records(df: pd.DataFrame):
     return df.where(pd.notna(df), None).to_dict(orient="records")
 
 
-def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 5000) -> None:
+def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 15000) -> None:
     """
     Helper to insert DataFrame in chunks using the given statement.
-    Includes retry logic for database lock errors.
+    Includes retry logic for database lock errors and performance tracking.
     """
-    max_retries = 3
-    retry_delay = 1.0  # seconds
+    max_retries = 5  # Increased retries for better reliability
+    retry_delay = 0.5  # Reduced initial delay for faster retries
 
-    for _, chunk in df.groupby(df.index // chunksize):
+    total_chunks = (len(df) + chunksize - 1) // chunksize
+    logger.info("Processing %d chunks of size %d (%d total rows)", total_chunks, chunksize, len(df))
+
+    chunk_start_time = time.time()
+    for chunk_idx, (_, chunk) in enumerate(df.groupby(df.index // chunksize)):
         data = _records(chunk)
+        logger.debug("Processing chunk %d/%d with %d records", chunk_idx + 1, total_chunks, len(data))
+
         for attempt in range(max_retries):
             try:
                 conn.execute(stmt, data)
+                # Log progress every 5 chunks or for the last chunk
+                if chunk_idx % 5 == 0 or chunk_idx == total_chunks - 1:
+                    elapsed = time.time() - chunk_start_time
+                    rows_processed = (chunk_idx + 1) * chunksize
+                    rate = rows_processed / elapsed if elapsed > 0 else 0
+                    logger.info("Inserted chunk %d/%d (%d/%d rows, %.1f rows/sec)",
+                              chunk_idx + 1, total_chunks, min(rows_processed, len(df)), len(df), rate)
                 break  # Success, exit retry loop
             except OperationalError as e:
                 if "database is locked" in str(e).lower() and attempt < max_retries - 1:
@@ -93,7 +106,7 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 5000) -> None
                         retry_delay, attempt + 1, max_retries, e
                     )
                     time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
+                    retry_delay = min(retry_delay * 1.5, 5.0)  # Capped exponential backoff
                 else:
                     logger.error(
                         "Failed to insert chunk into '%s' after %d attempts: %s",
@@ -297,16 +310,22 @@ class DBHelper:
         table_name: str,
         df: pd.DataFrame,
         unique_cols: Optional[Sequence[str]] = None,
-        chunksize: int = 5000,
+        chunksize: int = 15000,  # Increased from 5000 to 15000 for better performance
     ) -> None:
         """
         Insert a DataFrame into a table, using upsert if unique_cols are provided.
         Only PostgreSQL (GCP Cloud SQL) is supported.
+        Optimized for large datasets with larger chunks and better connection handling.
         """
         if df.empty:
             logger.info(
                 "DataFrame is empty; nothing to insert into '%s'.", table_name)
             return
+
+        start_time = time.time()
+        logger.info("Starting bulk insert of %d rows into '%s' with chunksize %d",
+                   len(df), table_name, chunksize)
+
         tbl = Table(table_name, MetaData(), autoload_with=self.engine)
 
         if unique_cols:
@@ -332,6 +351,10 @@ class DBHelper:
                         table_name, len(df))
             with self.engine.begin() as conn:
                 _chunked_insert(conn, tbl.insert(), df, chunksize)
+
+        end_time = time.time()
+        logger.info("Bulk insert completed in %.2f seconds (%.1f rows/sec)",
+                   end_time - start_time, len(df) / (end_time - start_time))
 
     def close(self) -> None:
         """
