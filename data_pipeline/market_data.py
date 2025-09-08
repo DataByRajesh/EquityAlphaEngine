@@ -139,15 +139,16 @@ def fetch_historical_data(
         logger.error("No tickers provided.")
         return pd.DataFrame()
     try:
+        # Explicitly set auto_adjust=False to ensure we get Adj Close column
         data = yf.download(tickers, start=start_date,
-                           end=end_date, progress=False)
+                           end=end_date, progress=False, auto_adjust=False)
 
         # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
         # If only a single ticker is returned, the columns are a simple
         # ``Index`` which cannot be stacked. Detect this scenario and insert the
         # ticker symbol manually without calling ``stack``.
         if isinstance(data.columns, pd.MultiIndex):
-            data = data.stack(level=1).reset_index()
+            data = data.stack(level=1, future_stack=True).reset_index()
             data.rename(columns={"level_0": "Date",
                         "level_1": "Ticker"}, inplace=True)
         else:
@@ -159,6 +160,12 @@ def fetch_historical_data(
 
         if "Volume" in data.columns:
             data["Volume"] = data["Volume"].fillna(0).astype(int)
+
+        # Ensure Adj Close column exists - if not, use Close as fallback
+        if "Adj Close" not in data.columns and "Close" in data.columns:
+            data["Adj Close"] = data["Close"]
+            logger.warning("Adj Close column missing, using Close as fallback")
+
         required_cols = {
             "Date",
             "Open",
