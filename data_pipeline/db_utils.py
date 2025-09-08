@@ -4,6 +4,7 @@ import pandas as pd
 from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         Index, Integer, MetaData, String, Table, Text,
                         create_engine, inspect)
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 # Updated local imports to use fallback mechanism
@@ -97,8 +98,22 @@ class DBHelper:
     """
 
     def __init__(self, db_url: Optional[str] = None):
-        self.database_url = db_url or self.get_secret_lazy()("DATABASE_URL")
-        self.session = SessionLocal()
+        if db_url:
+            # Create dedicated engine for custom URL (used by API endpoints and tests)
+            self.database_url = db_url
+            self.engine = create_engine(db_url, pool_pre_ping=True)
+            self._own_engine = True  # Track that we own this engine
+            session_factory = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        else:
+            # Use global engine (used by data pipeline)
+            from data_pipeline.db_connection import engine, SessionLocal
+            self.database_url = "using_global_engine"
+            self.engine = engine
+            self._own_engine = False  # We don't own the global engine
+            session_factory = SessionLocal
+        
+        self.inspector = inspect(self.engine)
+        self.session = session_factory()
         logger.info("DBHelper initialized with database URL: %s", self.database_url)
 
     def create_table(
@@ -107,15 +122,30 @@ class DBHelper:
         df: pd.DataFrame,
         primary_keys: Optional[Sequence[str]] = None,
         unique_cols: Optional[Sequence[str]] = None,
+        auto_populate: bool = True,
     ) -> None:
         """
         Create table if missing; add missing columns if present.
+        If table is created or empty, optionally trigger data population.
         """
+        table_created = False
+        table_empty = False
+        
         try:
             # Use session for ORM-based operations
             with self.session.begin():
                 logger.info("Creating table '%s' if not exists.", table_name)
                 if self.inspector.has_table(table_name):
+                    # Check if table is empty
+                    try:
+                        count_result = pd.read_sql(f"SELECT COUNT(*) as count FROM {table_name}", self.engine)
+                        row_count = count_result['count'].iloc[0]
+                        if row_count == 0:
+                            table_empty = True
+                            logger.info("Table '%s' exists but is empty (%d rows).", table_name, row_count)
+                    except Exception as e:
+                        logger.warning("Could not check if table '%s' is empty: %s", table_name, e)
+                    
                     # add only missing columns
                     existing = {c["name"]
                                 for c in self.inspector.get_columns(table_name)}
@@ -146,6 +176,7 @@ class DBHelper:
                             self.session, table_name, tuple(unique_cols))
                 else:
                     # create new table
+                    table_created = True
                     cols = []
                     for col in df.columns:
                         cols.append(
@@ -167,6 +198,34 @@ class DBHelper:
             self.session.rollback()
         finally:
             self.session.close()
+        
+        # Trigger data population if table was created or is empty
+        if auto_populate and (table_created or table_empty) and table_name == "financial_tbl":
+            logger.info("Table '%s' is %s. Triggering data population...", 
+                       table_name, "newly created" if table_created else "empty")
+            self._trigger_data_population()
+
+    def _trigger_data_population(self):
+        """Trigger the data population pipeline for financial data using default 10 years."""
+        try:
+            from datetime import datetime, timedelta
+            from data_pipeline.market_data import main as market_data_main
+            
+            # Use same default as update_financial_data.py: 10 years
+            end_date = datetime.today()
+            start_date = end_date - timedelta(days=10 * 365)  # 10 years of data (default)
+            
+            logger.info("Starting automatic data population from %s to %s (10 years default)", 
+                       start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+            
+            # Call the market data pipeline
+            market_data_main(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+            
+            logger.info("Automatic data population completed successfully.")
+            
+        except Exception as e:
+            logger.error("Failed to trigger automatic data population: %s", e, exc_info=True)
+            # Don't raise - this is a convenience feature, not critical
 
     def _ensure_unique_index(self, conn, table_name: str, cols: tuple[str, ...]):
         """
@@ -238,10 +297,16 @@ class DBHelper:
 
     def close(self) -> None:
         """
-        Dispose the session.
+        Dispose the session and optionally the engine if we own it.
         """
         logger.info("Closing database session.")
-        self.session.close()
+        if hasattr(self, 'session') and self.session:
+            self.session.close()
+        
+        # Only dispose engine if we created it (custom URL case)
+        if hasattr(self, '_own_engine') and self._own_engine and hasattr(self, 'engine'):
+            logger.info("Disposing custom database engine.")
+            self.engine.dispose()
 
     def get_secret_lazy():
         from data_pipeline.update_financial_data import get_secret
