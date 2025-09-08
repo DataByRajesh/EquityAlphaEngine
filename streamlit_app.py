@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-from db import get_db
+from data_pipeline.db_connection import get_db
 
 API_URL = os.getenv(
     "API_URL", "https://equity-api-248891289968.europe-west2.run.app")

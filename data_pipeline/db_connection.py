@@ -18,19 +18,33 @@ DEFAULT_TIMEOUT = 60  # seconds
 
 # Initialize the SQLAlchemy engine
 def initialize_engine():
-    """Initialize and return the SQLAlchemy engine."""
-    logger.info("Creating SQLAlchemy engine with timeout.")
-    connect_args = {"timeout": DEFAULT_TIMEOUT}
+    """Initialize and return the SQLAlchemy engine with connection pooling."""
+    logger.info("Creating SQLAlchemy engine with connection pooling and timeout.")
+    
+    # Connection arguments for PostgreSQL
+    connect_args = {
+        "timeout": DEFAULT_TIMEOUT,
+        "connect_timeout": 10,
+    }
 
     # Fetch and validate the DATABASE_URL
     database_url = get_secret("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL is not set or invalid.")
 
-    # Create the engine
+    # Create the engine with connection pooling
     try:
-        engine = create_engine(database_url, connect_args=connect_args, pool_pre_ping=True)
-        logger.info("SQLAlchemy engine created successfully.")
+        engine = create_engine(
+            database_url, 
+            connect_args=connect_args,
+            pool_pre_ping=True,
+            pool_size=10,           # Number of connections to maintain in pool
+            max_overflow=20,        # Additional connections beyond pool_size
+            pool_timeout=30,        # Timeout when getting connection from pool
+            pool_recycle=3600,      # Recycle connections after 1 hour
+            echo=False              # Set to True for SQL query logging in development
+        )
+        logger.info("SQLAlchemy engine created successfully with connection pooling.")
         return engine
     except Exception as e:
         logger.error(f"Failed to create SQLAlchemy engine: {e}")

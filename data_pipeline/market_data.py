@@ -400,17 +400,19 @@ def main(start_date, end_date):
     # Save computed factors to DB
     if financial_df is not None:
         financial_tbl = "financial_tbl"
-        Dbhelper = get_db()(get_secret_lazy()("DATABASE_URL"))
-        Dbhelper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
-        Dbhelper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
+        from data_pipeline.db_utils import DBHelper
+        db_helper = DBHelper()  # Uses global engine
+        try:
+            db_helper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
+            db_helper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
 
-        macro_df = fetch_macro_data(start_date, end_date)
-        if macro_df is not None:
-            macro_tbl = "macro_data_tbl"
-            Dbhelper.create_table(macro_tbl, macro_df, primary_keys=["Date"])
-            Dbhelper.insert_dataframe(macro_tbl, macro_df, unique_cols=["Date"])
-
-        Dbhelper.close()
+            macro_df = fetch_macro_data(start_date, end_date)
+            if macro_df is not None:
+                macro_tbl = "macro_data_tbl"
+                db_helper.create_table(macro_tbl, macro_df, primary_keys=["Date"])
+                db_helper.insert_dataframe(macro_tbl, macro_df, unique_cols=["Date"])
+        finally:
+            db_helper.close()
 
         # Prepare and send email notification
         try:
