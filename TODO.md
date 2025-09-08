@@ -28,5 +28,6 @@
 - [x] Add detailed timing logs for each chunk in _chunked_insert
 - [x] Implement copy_from method for non-upsert inserts
 - [x] Fix temp table column assignment error
-- [ ] Test optimized insert with sample data
+- [x] Fix pg8000 parameter limit issue by reducing chunksize to 900
+- [x] Commit and push changes to test the pg8000 fix
 - [ ] Monitor logs for improved performance
