@@ -16,21 +16,43 @@ logger.setLevel(logging.DEBUG)
 # Constants
 DEFAULT_TIMEOUT = 60  # seconds
 
+def _get_driver_specific_connect_args(database_url: str) -> dict:
+    """
+    Get driver-specific connection arguments based on the database URL.
+    
+    Different PostgreSQL drivers support different connection parameters:
+    - psycopg2: supports both 'timeout' and 'connect_timeout'
+    - pg8000: supports 'timeout' but not 'connect_timeout'
+    """
+    connect_args = {"timeout": DEFAULT_TIMEOUT}
+    
+    # Detect driver from URL
+    if "+psycopg2" in database_url or ("+pg" not in database_url and "postgresql://" in database_url):
+        # psycopg2 driver (default for postgresql://)
+        connect_args["connect_timeout"] = 10
+        logger.debug("Using psycopg2 driver connection arguments")
+    elif "+pg8000" in database_url:
+        # pg8000 driver - doesn't support connect_timeout
+        logger.debug("Using pg8000 driver connection arguments (no connect_timeout)")
+    else:
+        # Unknown driver - use safe defaults (no connect_timeout)
+        logger.warning("Unknown PostgreSQL driver detected, using safe connection arguments")
+    
+    return connect_args
+
 # Initialize the SQLAlchemy engine
 def initialize_engine():
     """Initialize and return the SQLAlchemy engine with connection pooling."""
     logger.info("Creating SQLAlchemy engine with connection pooling and timeout.")
     
-    # Connection arguments for PostgreSQL
-    connect_args = {
-        "timeout": DEFAULT_TIMEOUT,
-        "connect_timeout": 10,
-    }
-
     # Fetch and validate the DATABASE_URL
     database_url = get_secret("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL is not set or invalid.")
+
+    # Get driver-specific connection arguments
+    connect_args = _get_driver_specific_connect_args(database_url)
+    logger.info(f"Using connection arguments: {connect_args}")
 
     # Create the engine with connection pooling
     try:
@@ -67,10 +89,27 @@ def get_db():
 def reinitialize_engine(new_database_url=None):
     """Reinitialize the engine with a new database URL."""
     global engine, SessionLocal
+    
+    # Determine which database URL to use
+    database_url = new_database_url if new_database_url else get_secret("DATABASE_URL")
+    
     if new_database_url:
         logger.info("Reinitializing engine with a new database URL.")
-        engine = create_engine(new_database_url, pool_pre_ping=True)
     else:
         logger.info("Reinitializing engine with the default database URL.")
-        engine = create_engine(get_secret("DATABASE_URL"), pool_pre_ping=True)
+    
+    # Get driver-specific connection arguments
+    connect_args = _get_driver_specific_connect_args(database_url)
+    
+    # Create new engine with proper connection arguments
+    engine = create_engine(
+        database_url, 
+        connect_args=connect_args,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=30,
+        pool_recycle=3600,
+        echo=False
+    )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
