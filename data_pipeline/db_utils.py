@@ -4,7 +4,7 @@ import pandas as pd
 import time
 from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         Index, Integer, MetaData, String, Table, Text,
-                        create_engine, inspect)
+                        create_engine, inspect, text)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import OperationalError
@@ -339,17 +339,30 @@ class DBHelper:
                 len(df),
                 unique_cols,
             )
-            insert_stmt = pg_insert(tbl)
-            up_cols = {
-                c.name: insert_stmt.excluded[c.name]
-                for c in tbl.columns
-                if c.name not in unique_cols
-            }
-            stmt = insert_stmt.on_conflict_do_update(
-                index_elements=list(unique_cols), set_=up_cols
-            )
+            # Use temp table for faster upsert
+            temp_table_name = f"temp_{table_name}_{int(time.time())}"
+            temp_tbl = Table(temp_table_name, MetaData(), *tbl.columns)
+            temp_tbl.create(self.engine, checkfirst=True)
+            logger.info("Created temp table '%s' for upsert", temp_table_name)
+
+            # Insert into temp table
+            df.to_sql(temp_table_name, con=self.engine, if_exists='append', index=False, chunksize=chunksize, method='multi')
+            logger.info("Inserted data into temp table '%s'", temp_table_name)
+
+            # Perform upsert from temp table
+            upsert_query = f"""
+            INSERT INTO {table_name} ({', '.join(df.columns)})
+            SELECT {', '.join(df.columns)} FROM {temp_table_name}
+            ON CONFLICT ({', '.join(unique_cols)}) DO UPDATE SET
+            {', '.join([f"{col} = EXCLUDED.{col}" for col in df.columns if col not in unique_cols])}
+            """
             with self.engine.begin() as conn:
-                _chunked_insert(conn, stmt, df, chunksize)
+                conn.execute(text(upsert_query))
+            logger.info("Upsert completed from temp table")
+
+            # Drop temp table
+            temp_tbl.drop(self.engine)
+            logger.info("Dropped temp table '%s'", temp_table_name)
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
