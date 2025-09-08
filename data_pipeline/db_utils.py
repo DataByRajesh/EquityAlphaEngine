@@ -342,7 +342,11 @@ class DBHelper:
             # Use temp table for faster upsert
             temp_table_name = f"temp_{table_name}_{int(time.time())}"
             logger.info("Creating temp table '%s' for upsert", temp_table_name)
-            temp_tbl = Table(temp_table_name, MetaData(), *tbl.columns)
+            # Create new column objects for temp table to avoid "already assigned" error
+            temp_columns = []
+            for col in tbl.columns:
+                temp_columns.append(Column(col.name, col.type, nullable=col.nullable))
+            temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
             temp_tbl.create(self.engine, checkfirst=True)
             logger.info("Created temp table '%s' successfully", temp_table_name)
 

@@ -27,5 +27,6 @@
 - [x] Increase default chunksize from 15000 to 50000 in insert_dataframe
 - [x] Add detailed timing logs for each chunk in _chunked_insert
 - [x] Implement copy_from method for non-upsert inserts
-- [x] Test optimized insert with sample data
-- [x] Monitor logs for improved performance
+- [x] Fix temp table column assignment error
+- [ ] Test optimized insert with sample data
+- [ ] Monitor logs for improved performance
