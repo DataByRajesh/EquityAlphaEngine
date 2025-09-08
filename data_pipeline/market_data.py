@@ -360,7 +360,7 @@ def combine_price_and_fundamentals(
     return combined_df
 
 
-def main(start_date, end_date):
+def main(engine, start_date, end_date):
     """Process market data using the provided database engine."""
 
     # Ensure cache and data directories exist at module import
@@ -401,7 +401,7 @@ def main(start_date, end_date):
     if financial_df is not None:
         financial_tbl = "financial_tbl"
         from data_pipeline.db_utils import DBHelper
-        db_helper = DBHelper()  # Uses global engine
+        db_helper = DBHelper(engine=engine)  # Use provided engine
         try:
             db_helper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
             db_helper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
