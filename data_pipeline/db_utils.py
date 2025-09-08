@@ -341,33 +341,48 @@ class DBHelper:
             )
             # Use temp table for faster upsert
             temp_table_name = f"temp_{table_name}_{int(time.time())}"
+            logger.info("Creating temp table '%s' for upsert", temp_table_name)
             temp_tbl = Table(temp_table_name, MetaData(), *tbl.columns)
             temp_tbl.create(self.engine, checkfirst=True)
-            logger.info("Created temp table '%s' for upsert", temp_table_name)
+            logger.info("Created temp table '%s' successfully", temp_table_name)
 
             # Insert into temp table
+            logger.info("Starting bulk insert into temp table '%s' with %d rows, chunksize %d", temp_table_name, len(df), chunksize)
+            insert_start = time.time()
             df.to_sql(temp_table_name, con=self.engine, if_exists='append', index=False, chunksize=chunksize, method='multi')
-            logger.info("Inserted data into temp table '%s'", temp_table_name)
+            insert_elapsed = time.time() - insert_start
+            logger.info("Inserted %d rows into temp table '%s' in %.2f seconds (%.1f rows/sec)", len(df), temp_table_name, insert_elapsed, len(df) / insert_elapsed if insert_elapsed > 0 else 0)
 
             # Perform upsert from temp table
+            logger.info("Starting upsert from temp table '%s' to '%s'", temp_table_name, table_name)
             upsert_query = f"""
             INSERT INTO {table_name} ({', '.join(df.columns)})
             SELECT {', '.join(df.columns)} FROM {temp_table_name}
             ON CONFLICT ({', '.join(unique_cols)}) DO UPDATE SET
             {', '.join([f"{col} = EXCLUDED.{col}" for col in df.columns if col not in unique_cols])}
             """
+            logger.info("Upsert query: %s", upsert_query.strip())
+            upsert_start = time.time()
             with self.engine.begin() as conn:
-                conn.execute(text(upsert_query))
-            logger.info("Upsert completed from temp table")
+                logger.info("Executing upsert query...")
+                result = conn.execute(text(upsert_query))
+                upsert_elapsed = time.time() - upsert_start
+                logger.info("Upsert query executed in %.2f seconds, affected rows: %s", upsert_elapsed, getattr(result, 'rowcount', 'unknown'))
+            logger.info("Upsert completed from temp table '%s' to '%s'", temp_table_name, table_name)
 
             # Drop temp table
+            logger.info("Dropping temp table '%s'", temp_table_name)
             temp_tbl.drop(self.engine)
-            logger.info("Dropped temp table '%s'", temp_table_name)
+            logger.info("Dropped temp table '%s' successfully", temp_table_name)
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
             # Use pandas to_sql for faster non-upsert inserts
+            logger.info("Starting pandas to_sql insert into '%s' with %d rows, chunksize %d", table_name, len(df), chunksize)
+            non_upsert_start = time.time()
             df.to_sql(table_name, con=self.engine, if_exists='append', index=False, chunksize=chunksize, method='multi')
+            non_upsert_elapsed = time.time() - non_upsert_start
+            logger.info("Non-upsert insert into '%s' completed in %.2f seconds (%.1f rows/sec)", table_name, non_upsert_elapsed, len(df) / non_upsert_elapsed if non_upsert_elapsed > 0 else 0)
 
         end_time = time.time()
         logger.info("Bulk insert completed in %.2f seconds (%.1f rows/sec)",
