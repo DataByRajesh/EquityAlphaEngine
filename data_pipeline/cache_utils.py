@@ -38,12 +38,13 @@ _bucket = None
 def _ensure_gcs():
     global _client, _bucket
     if not getattr(config, "CACHE_GCS_BUCKET", None):
-        raise RuntimeError(
-            "CACHE_GCS_BUCKET is required for GCS cache backend.")
+        logger.warning("CACHE_GCS_BUCKET not set; falling back to in-memory cache only.")
+        return False
     if _client is None:
         _client = storage.Client()
     if _bucket is None:
         _bucket = _client.bucket(config.CACHE_GCS_BUCKET)
+    return True
 
 
 def _prefix() -> str:
@@ -67,7 +68,9 @@ def _load_entry(ticker: str) -> Optional[Dict[str, Any]]:
         if ticker in _CACHE:
             return _CACHE[ticker]
 
-    _ensure_gcs()
+    if not _ensure_gcs():
+        return None  # GCS not available, rely on in-memory only
+
     blob = _bucket.blob(_blob_name(ticker))
     try:
         data = blob.download_as_text()
@@ -97,7 +100,9 @@ def _persist_entry(ticker: str) -> None:
     if entry is None:
         return
 
-    _ensure_gcs()
+    if not _ensure_gcs():
+        return  # GCS not available, skip persisting
+
     blob = _bucket.blob(_blob_name(ticker))
     try:
         payload = json.dumps(entry, separators=(",", ":"), ensure_ascii=False)
@@ -141,8 +146,10 @@ def clear_cached_fundamentals(ticker: str) -> None:
     with _CACHE_LOCK:
         _CACHE.pop(ticker, None)
 
+    if not _ensure_gcs():
+        return  # GCS not available, skip
+
     try:
-        _ensure_gcs()
         _bucket.blob(_blob_name(ticker)).delete()
     except NotFound:
         pass
@@ -154,8 +161,10 @@ def clear_all_cache() -> None:
     """Clear entire fundamentals cache."""
     with _CACHE_LOCK:
         _CACHE.clear()
+    if not _ensure_gcs():
+        return  # GCS not available, skip
+
     try:
-        _ensure_gcs()
         for blob in _client.list_blobs(config.CACHE_GCS_BUCKET, prefix=_prefix()):
             try:
                 blob.delete()
