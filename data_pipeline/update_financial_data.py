@@ -26,9 +26,6 @@ import urllib.parse
 # Third-party library imports
 import pandas as pd
 from sqlalchemy import inspect
-from google.cloud.sql.connector import Connector
-from google.cloud import secretmanager
-import pg8000
 
 # Local application imports
 import data_pipeline.config as config
