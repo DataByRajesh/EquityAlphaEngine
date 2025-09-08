@@ -22,3 +22,10 @@
 4. Prevent duplicate data population
 5. Enhance error handling in market data fetch
 6. Test the fixes with a smaller dataset
+
+## Bulk Insert Optimization
+- [x] Increase default chunksize from 15000 to 50000 in insert_dataframe
+- [x] Add detailed timing logs for each chunk in _chunked_insert
+- [x] Implement copy_from method for non-upsert inserts
+- [x] Test optimized insert with sample data
+- [x] Monitor logs for improved performance
