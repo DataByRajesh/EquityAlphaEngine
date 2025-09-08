@@ -130,6 +130,7 @@ def fetch_historical_data(
     """
     Downloads historical price data for tickers, cleans and rounds it.
     Returns a DataFrame or empty DataFrame on failure.
+    Includes retry logic and timeout for robustness.
     """
     logger.debug(f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}")
     logger.info(
@@ -138,55 +139,66 @@ def fetch_historical_data(
     if not tickers:
         logger.error("No tickers provided.")
         return pd.DataFrame()
-    try:
-        # Explicitly set auto_adjust=False to ensure we get Adj Close column
-        data = yf.download(tickers, start=start_date,
-                           end=end_date, progress=False, auto_adjust=False)
 
-        # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
-        # If only a single ticker is returned, the columns are a simple
-        # ``Index`` which cannot be stacked. Detect this scenario and insert the
-        # ticker symbol manually without calling ``stack``.
-        if isinstance(data.columns, pd.MultiIndex):
-            data = data.stack(level=1, future_stack=True).reset_index()
-            data.rename(columns={"level_0": "Date",
-                        "level_1": "Ticker"}, inplace=True)
-        else:
-            data = data.reset_index().rename(columns={"index": "Date"})
-            # In single-ticker responses the symbol isn't part of the columns,
-            # so assume the first requested ticker corresponds to the data
-            # returned.
-            data["Ticker"] = tickers[0]
+    max_retries = 3
+    timeout = 300  # 5 minutes timeout per attempt
 
-        if "Volume" in data.columns:
-            data["Volume"] = data["Volume"].fillna(0).astype(int)
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Attempt {attempt + 1}/{max_retries} to download data...")
+            # Explicitly set auto_adjust=False to ensure we get Adj Close column
+            data = yf.download(tickers, start=start_date,
+                               end=end_date, progress=False, auto_adjust=False, timeout=timeout)
 
-        # Ensure Adj Close column exists - if not, use Close as fallback
-        if "Adj Close" not in data.columns and "Close" in data.columns:
-            data["Adj Close"] = data["Close"]
-            logger.warning("Adj Close column missing, using Close as fallback")
+            # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
+            # If only a single ticker is returned, the columns are a simple
+            # ``Index`` which cannot be stacked. Detect this scenario and insert the
+            # ticker symbol manually without calling ``stack``.
+            if isinstance(data.columns, pd.MultiIndex):
+                data = data.stack(level=1, future_stack=True).reset_index()
+                data.rename(columns={"level_0": "Date",
+                            "level_1": "Ticker"}, inplace=True)
+            else:
+                data = data.reset_index().rename(columns={"index": "Date"})
+                # In single-ticker responses the symbol isn't part of the columns,
+                # so assume the first requested ticker corresponds to the data
+                # returned.
+                data["Ticker"] = tickers[0]
 
-        required_cols = {
-            "Date",
-            "Open",
-            "High",
-            "Low",
-            "Close",
-            "Adj Close",
-            "Volume",
-            "Ticker",
-        }
-        missing_cols = required_cols - set(data.columns)
-        if missing_cols:
-            logger.error(
-                f"Historical data missing required columns: {missing_cols}")
-            return pd.DataFrame()
-        logger.info("Historical data fetched successfully.")
-        logger.debug("Historical data fetch completed.")
-        return data
-    except Exception as e:
-        logger.error(f"Error downloading historical data: {e}")
-        return pd.DataFrame()
+            if "Volume" in data.columns:
+                data["Volume"] = data["Volume"].fillna(0).astype(int)
+
+            # Ensure Adj Close column exists - if not, use Close as fallback
+            if "Adj Close" not in data.columns and "Close" in data.columns:
+                data["Adj Close"] = data["Close"]
+                logger.warning("Adj Close column missing, using Close as fallback")
+
+            required_cols = {
+                "Date",
+                "Open",
+                "High",
+                "Low",
+                "Close",
+                "Adj Close",
+                "Volume",
+                "Ticker",
+            }
+            missing_cols = required_cols - set(data.columns)
+            if missing_cols:
+                logger.error(
+                    f"Historical data missing required columns: {missing_cols}")
+                return pd.DataFrame()
+            logger.info("Historical data fetched successfully.")
+            logger.debug("Historical data fetch completed.")
+            return data
+        except Exception as e:
+            logger.warning(f"Attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                import time
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                logger.error(f"All {max_retries} attempts failed. Returning empty DataFrame.")
+                return pd.DataFrame()
 
 
 async def _fetch_single_info(
@@ -369,79 +381,107 @@ def combine_price_and_fundamentals(
 
 def main(engine, start_date, end_date):
     """Process market data using the provided database engine."""
+    import signal
+    import time
 
-    # Ensure cache and data directories exist at module import
-    ensure_directories()
+    # Set overall timeout (30 minutes)
+    timeout_seconds = 30 * 60
 
-    logger.info("Fetching market data...")
-    tickers = config.FTSE_100_TICKERS
+    def timeout_handler(signum, frame):
+        logger.error("Pipeline timed out after %d seconds", timeout_seconds)
+        raise TimeoutError("Pipeline execution exceeded timeout")
 
-    # Example usage of the engine
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(timeout_seconds)
+
     try:
-        with engine.connect() as connection:
-            logger.info("Connected to the database successfully.")
-    except Exception as e:
-        logger.error(f"Failed to connect to the database: {e}")
+        start_time = time.time()
+        logger.info("Starting market data pipeline at %s", time.ctime(start_time))
 
-    hist_df = fetch_historical_data(tickers, start_date, end_date)
-    if hist_df.empty:
-        logger.warning("No historical data fetched.")
-        return
+        # Ensure cache and data directories exist at module import
+        ensure_directories()
 
-    fundamentals_list = fetch_fundamental_data(tickers, use_cache=True)
-    if not fundamentals_list:
-        logger.error("No fundamentals data fetched. Exiting.")
-        return
+        logger.info("Fetching market data...")
+        tickers = config.FTSE_100_TICKERS
 
-    price_fundamentals_df = combine_price_and_fundamentals(hist_df, fundamentals_list)
-
-    # Compute factors
-    logger.info("Computing factors...")
-    financial_df = compute_factors(price_fundamentals_df)
-
-    if financial_df is None or financial_df.empty:
-        logger.error("Failed to compute financial factors. Exiting.")
-        return
-    financial_df = round_financial_columns(financial_df)
-
-    # Save computed factors to DB
-    if financial_df is not None:
-        financial_tbl = "financial_tbl"
-        from data_pipeline.db_utils import DBHelper
-        db_helper = DBHelper(engine=engine)  # Use provided engine
+        # Example usage of the engine
         try:
-            db_helper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
-            db_helper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
+            with engine.connect() as connection:
+                logger.info("Connected to the database successfully.")
+        except Exception as e:
+            logger.error(f"Failed to connect to the database: {e}")
 
-            macro_df = fetch_macro_data(start_date, end_date)
-            if macro_df is not None:
-                macro_tbl = "macro_data_tbl"
-                db_helper.create_table(macro_tbl, macro_df, primary_keys=["Date"])
-                db_helper.insert_dataframe(macro_tbl, macro_df, unique_cols=["Date"])
-        finally:
-            db_helper.close()
-
-        # Prepare and send email notification
-        try:
-            gmail_service = get_gmail_service()
-        except FileNotFoundError as e:
-            logger.error(e)
-            gmail_service = None
-
-        if gmail_service is None:
-            logger.error("Failed to initialize Gmail service. Email notification will not be sent.")
+        hist_df = fetch_historical_data(tickers, start_date, end_date)
+        if hist_df.empty:
+            logger.warning("No historical data fetched.")
             return
 
-        sender = "raj.analystdata@gmail.com"
-        recipient = "raj.analystdata@gmail.com"
-        subject = "Data Fetch Success"
-        body = "Financial data computed and saved to DB."
+        fundamentals_list = fetch_fundamental_data(tickers, use_cache=True)
+        if not fundamentals_list:
+            logger.error("No fundamentals data fetched. Exiting.")
+            return
 
-        msg = create_message(sender, recipient, subject, body)
-        send_message(gmail_service, "me", msg)
-        logger.info("Email notification sent successfully.")
-        logger.info("Financial data computed and saved to DB.")
-    else:
-        logger.error("Failed to compute and not saved to DB. Exiting.")
-    logger.info("Market data processing completed.")
+        price_fundamentals_df = combine_price_and_fundamentals(hist_df, fundamentals_list)
+
+        # Compute factors
+        logger.info("Computing factors...")
+        financial_df = compute_factors(price_fundamentals_df)
+
+        if financial_df is None or financial_df.empty:
+            logger.error("Failed to compute financial factors. Exiting.")
+            return
+        financial_df = round_financial_columns(financial_df)
+
+        # Save computed factors to DB
+        if financial_df is not None:
+            financial_tbl = "financial_tbl"
+            from data_pipeline.db_utils import DBHelper
+            db_helper = DBHelper(engine=engine)  # Use provided engine
+            try:
+                db_helper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
+                db_helper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
+
+                macro_df = fetch_macro_data(start_date, end_date)
+                if macro_df is not None:
+                    macro_tbl = "macro_data_tbl"
+                    db_helper.create_table(macro_tbl, macro_df, primary_keys=["Date"])
+                    db_helper.insert_dataframe(macro_tbl, macro_df, unique_cols=["Date"])
+            finally:
+                db_helper.close()
+
+            # Prepare and send email notification
+            try:
+                gmail_service = get_gmail_service()
+            except FileNotFoundError as e:
+                logger.error(e)
+                gmail_service = None
+
+            if gmail_service is None:
+                logger.error("Failed to initialize Gmail service. Email notification will not be sent.")
+                return
+
+            sender = "raj.analystdata@gmail.com"
+            recipient = "raj.analystdata@gmail.com"
+            subject = "Data Fetch Success"
+            body = "Financial data computed and saved to DB."
+
+            msg = create_message(sender, recipient, subject, body)
+            send_message(gmail_service, "me", msg)
+            logger.info("Email notification sent successfully.")
+            logger.info("Financial data computed and saved to DB.")
+        else:
+            logger.error("Failed to compute and not saved to DB. Exiting.")
+        logger.info("Market data processing completed.")
+
+        end_time = time.time()
+        elapsed = end_time - start_time
+        logger.info("Pipeline completed successfully in %.2f seconds", elapsed)
+    except TimeoutError:
+        logger.error("Pipeline timed out")
+        raise
+    except Exception as e:
+        logger.error("Pipeline failed with error: %s", e, exc_info=True)
+        raise
+    finally:
+        signal.alarm(0)  # Cancel the alarm
 

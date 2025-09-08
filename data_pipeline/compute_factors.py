@@ -54,14 +54,14 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         try:
             df[f"return_{label}"] = df.groupby("Ticker", group_keys=False)[
                 "Close"
-            ].pct_change(periods=period)
+            ].pct_change(periods=period, fill_method=None)
         except Exception as e:
             logger.warning(
                 f"Failed to compute return_{label}: %s", e, exc_info=True)
     # 12-1 momentum
     try:
         g = df.groupby("Ticker", group_keys=False)["Close"]
-        df["momentum_12_1"] = g.pct_change(252) - g.pct_change(21)
+        df["momentum_12_1"] = g.pct_change(252, fill_method=None) - g.pct_change(21, fill_method=None)
     except Exception as e:
         logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
 
@@ -72,7 +72,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             df[f"vol_{window}d"] = df.groupby("Ticker", group_keys=False)[
                 "Close"
             ].transform(
-                lambda x: x.pct_change()
+                lambda x: x.pct_change(fill_method=None)
                 .rolling(window, min_periods=max(2, window // 3))
                 .std()
             )
@@ -235,7 +235,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_amihud called for group of length %d", len(grp))
         try:
-            ret = grp["Close"].pct_change().abs()
+            ret = grp["Close"].pct_change(fill_method=None).abs()
             vol = grp["Volume"].replace(0, np.nan)
             amt = vol * grp["Close"]
             raw = ret / amt
