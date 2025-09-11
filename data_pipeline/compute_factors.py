@@ -61,7 +61,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # 12-1 momentum
     try:
         g = df.groupby("Ticker", group_keys=False)["Close"]
-        df["momentum_12_1"] = g.pct_change(252, fill_method=None) - g.pct_change(21, fill_method=None)
+        df["momentum_12_1"] = g.pct_change(252, fill_method=None) - g.pct_change(
+            21, fill_method=None
+        )
     except Exception as e:
         logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
 

@@ -6,7 +6,7 @@ import quandl
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,9 @@ class FiveYearMacroDataLoader:
     ):
         self.api_key = api_key or DEFAULT_API_KEY
         if not self.api_key:
-            raise ValueError("QUANDL_API_KEY is not configured. Set env or pass api_key.")
+            raise ValueError(
+                "QUANDL_API_KEY is not configured. Set env or pass api_key."
+            )
         quandl.ApiConfig.api_key = self.api_key
         self.start_date = start_date
         self.end_date = end_date
@@ -30,13 +32,18 @@ class FiveYearMacroDataLoader:
     def fetch_gdp_growth(self) -> pd.DataFrame | None:
         """IMF WEO Real GDP growth, YoY % (annual)."""
         try:
-            df = quandl.get(
-                "ODA/GBR_NGDP_RPCH",
-                start_date=self.start_date,
-                end_date=self.end_date,
-            ).reset_index().rename(columns={"Value": "GDP_Growth_YoY", "Date": "Date"})
+            df = (
+                quandl.get(
+                    "ODA/GBR_NGDP_RPCH",
+                    start_date=self.start_date,
+                    end_date=self.end_date,
+                )
+                .reset_index()
+                .rename(columns={"Value": "GDP_Growth_YoY", "Date": "Date"})
+            )
             # Normalize to Jan 1 of the year for stable merge keys
-            df["Date"] = pd.to_datetime(df["Date"]).dt.to_period("Y").dt.to_timestamp()
+            df["Date"] = pd.to_datetime(
+                df["Date"]).dt.to_period("Y").dt.to_timestamp()
             return df[["Date", "GDP_Growth_YoY"]].sort_values("Date")
         except Exception as e:
             logger.error("Error fetching GDP Growth Data: %s", e)
@@ -44,11 +51,15 @@ class FiveYearMacroDataLoader:
 
     def fetch_inflation_rate(self) -> pd.DataFrame:
         """Placeholder inflation series (annual, constant 2.5%)."""
-        dates = pd.date_range(start=self.start_date, end=self.end_date, freq="Y")
-        df = pd.DataFrame({
-            "Date": dates.to_period("Y").to_timestamp(),  # normalize to year start
-            "Inflation_YoY": [2.5] * len(dates),
-        })
+        dates = pd.date_range(start=self.start_date,
+                              end=self.end_date, freq="Y")
+        df = pd.DataFrame(
+            {
+                # normalize to year start
+                "Date": dates.to_period("Y").to_timestamp(),
+                "Inflation_YoY": [2.5] * len(dates),
+            }
+        )
         return df
 
     def get_combined_macro_data(self) -> pd.DataFrame | None:
@@ -56,7 +67,9 @@ class FiveYearMacroDataLoader:
         infl = self.fetch_inflation_rate()
         if gdp is None or gdp.empty:
             return None
-        out = gdp.merge(infl, on="Date", how="outer").sort_values("Date").reset_index(drop=True)
+        out = (
+            gdp.merge(infl, on="Date", how="outer")
+            .sort_values("Date")
+            .reset_index(drop=True)
+        )
         return out
-
-
