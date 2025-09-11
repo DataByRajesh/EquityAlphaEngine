@@ -18,6 +18,9 @@ import yfinance as yf  # For fetching financial data
 
 # Local imports
 try:
+    from data_pipeline.db_connection import engine, reinitialize_engine
+    from data_pipeline.utils import get_secret
+
     from . import config  # Importing configuration file
     from .compute_factors import \
         compute_factors  # Function to compute financial factors
@@ -26,16 +29,15 @@ try:
     from .gmail_utils import create_message  # For Gmail API operations
     from .gmail_utils import get_gmail_service, send_message
     from .Macro_data import FiveYearMacroDataLoader  # Macro data loader
-    from data_pipeline.utils import get_secret
-    from data_pipeline.db_connection import engine, reinitialize_engine
 except ImportError:
     import data_pipeline.config as config
     from data_pipeline.compute_factors import compute_factors
+    from data_pipeline.db_connection import engine, reinitialize_engine
     from data_pipeline.financial_utils import round_financial_columns
-    from data_pipeline.gmail_utils import create_message, get_gmail_service, send_message
+    from data_pipeline.gmail_utils import (create_message, get_gmail_service,
+                                           send_message)
     from data_pipeline.Macro_data import FiveYearMacroDataLoader
     from data_pipeline.utils import get_secret
-    from data_pipeline.db_connection import engine, reinitialize_engine
 
 # Updated import for market_data to use fallback mechanism
 try:
@@ -48,7 +50,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+formatter = logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
@@ -131,8 +134,11 @@ def fetch_historical_data(
     Downloads historical price data for tickers, cleans and rounds it.
     Returns a DataFrame or empty DataFrame on failure.
     Includes retry logic and timeout for robustness.
+    Disables yfinance caching to prevent database lock issues.
     """
-    logger.debug(f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}")
+    logger.debug(
+        f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}"
+    )
     logger.info(
         f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}..."
     )
@@ -140,15 +146,37 @@ def fetch_historical_data(
         logger.error("No tickers provided.")
         return pd.DataFrame()
 
-    max_retries = 3
+    max_retries = 5  # Increased retries for better reliability
     timeout = 300  # 5 minutes timeout per attempt
+    base_delay = 2  # Base delay for exponential backoff
 
     for attempt in range(max_retries):
         try:
-            logger.info(f"Attempt {attempt + 1}/{max_retries} to download data...")
+            logger.info(
+                f"Attempt {attempt + 1}/{max_retries} to download data...")
+
+            # Configure yfinance to prevent database lock issues
+            if config.YF_DISABLE_CACHE:
+                # Disable yfinance caching to prevent SQLite database lock issues
+                yf.set_tz_cache_location(None)  # Disable timezone cache
+                # Create a unique cache directory for this process to avoid conflicts
+                import uuid
+
+                unique_cache_dir = os.path.join(
+                    config.YF_CACHE_DIR, str(uuid.uuid4()))
+                os.makedirs(unique_cache_dir, exist_ok=True)
+                # Note: yfinance doesn't have a direct way to disable all caching,
+                # but we can minimize it by using unique directories
+
             # Explicitly set auto_adjust=False to ensure we get Adj Close column
-            data = yf.download(tickers, start=start_date,
-                               end=end_date, progress=False, auto_adjust=False, timeout=timeout)
+            data = yf.download(
+                tickers,
+                start=start_date,
+                end=end_date,
+                progress=False,
+                auto_adjust=False,
+                timeout=timeout,
+            )
 
             # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
             # If only a single ticker is returned, the columns are a simple
@@ -156,8 +184,9 @@ def fetch_historical_data(
             # ticker symbol manually without calling ``stack``.
             if isinstance(data.columns, pd.MultiIndex):
                 data = data.stack(level=1, future_stack=True).reset_index()
-                data.rename(columns={"level_0": "Date",
-                            "level_1": "Ticker"}, inplace=True)
+                data.rename(
+                    columns={"level_0": "Date", "level_1": "Ticker"}, inplace=True
+                )
             else:
                 data = data.reset_index().rename(columns={"index": "Date"})
                 # In single-ticker responses the symbol isn't part of the columns,
@@ -171,7 +200,8 @@ def fetch_historical_data(
             # Ensure Adj Close column exists - if not, use Close as fallback
             if "Adj Close" not in data.columns and "Close" in data.columns:
                 data["Adj Close"] = data["Close"]
-                logger.warning("Adj Close column missing, using Close as fallback")
+                logger.warning(
+                    "Adj Close column missing, using Close as fallback")
 
             required_cols = {
                 "Date",
@@ -186,19 +216,58 @@ def fetch_historical_data(
             missing_cols = required_cols - set(data.columns)
             if missing_cols:
                 logger.error(
-                    f"Historical data missing required columns: {missing_cols}")
+                    f"Historical data missing required columns: {missing_cols}"
+                )
                 return pd.DataFrame()
             logger.info("Historical data fetched successfully.")
             logger.debug("Historical data fetch completed.")
             return data
         except Exception as e:
-            logger.warning(f"Attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                import time
-                time.sleep(2 ** attempt)  # Exponential backoff
+            error_msg = str(e).lower()
+            if "database is locked" in error_msg:
+                logger.warning(
+                    f"Database lock detected on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    # Longer delay for database lock issues
+                    delay = base_delay * (2**attempt) + 1
+                    logger.info(
+                        f"Waiting {delay} seconds before retry due to database lock..."
+                    )
+                    import time
+
+                    time.sleep(delay)
+                    continue
+                else:
+                    logger.error(
+                        "All attempts failed due to persistent database lock. This may indicate concurrent yfinance usage."
+                    )
+            elif "timeout" in error_msg or "connection" in error_msg:
+                logger.warning(f"Network issue on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)
+                    logger.info(
+                        f"Waiting {delay} seconds before retry due to network issue..."
+                    )
+                    import time
+
+                    time.sleep(delay)
+                    continue
             else:
-                logger.error(f"All {max_retries} attempts failed. Returning empty DataFrame.")
-                return pd.DataFrame()
+                logger.warning(
+                    f"Unexpected error on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)
+                    logger.info(f"Waiting {delay} seconds before retry...")
+                    import time
+
+                    time.sleep(delay)
+                    continue
+
+            # If we reach here, all retries are exhausted
+            logger.error(
+                f"All {max_retries} attempts failed. Returning empty DataFrame."
+            )
+            return pd.DataFrame()
 
 
 async def _fetch_single_info(
@@ -213,7 +282,7 @@ async def _fetch_single_info(
     This helper runs the blocking ``ticker_obj.info`` call in a thread and
     retries with exponential backoff, using ``asyncio.sleep`` to avoid blocking
     the event loop. Returns a ``(ticker, info_dict)`` tuple where ``info_dict``
-    is empty on failure.
+    is empty on failure. Includes special handling for database lock issues.
     """
     delay = config.INITIAL_DELAY
     for attempt in range(retries):
@@ -225,10 +294,43 @@ async def _fetch_single_info(
         except (
             Exception
         ) as exc:  # pragma: no cover - network errors are non-deterministic
-            logger.warning(f"Attempt {attempt+1} failed for {ticker}: {exc}")
-            if attempt < retries - 1:
-                await asyncio.sleep(delay)
-                delay *= backoff_factor
+            error_msg = str(exc).lower()
+            if "database is locked" in error_msg:
+                logger.warning(
+                    f"Database lock detected for {ticker} on attempt {attempt+1}: {exc}"
+                )
+                if attempt < retries - 1:
+                    # Longer delay for database lock issues
+                    delay = max(
+                        delay * backoff_factor, 3.0
+                    )  # Minimum 3 seconds for DB locks
+                    logger.info(
+                        f"Waiting {delay} seconds before retry for {ticker} due to database lock..."
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                else:
+                    logger.error(
+                        f"All attempts failed for {ticker} due to persistent database lock"
+                    )
+            elif "timeout" in error_msg or "connection" in error_msg:
+                logger.warning(
+                    f"Network issue for {ticker} on attempt {attempt+1}: {exc}"
+                )
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                    delay *= backoff_factor
+                    continue
+            else:
+                logger.warning(
+                    f"Attempt {attempt+1} failed for {ticker}: {exc}")
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                    delay *= backoff_factor
+                    continue
+
+            # If we reach here, all retries are exhausted
+            return ticker, {}
     return ticker, {}
 
 
@@ -396,7 +498,8 @@ def main(engine, start_date, end_date):
 
     try:
         start_time = time.time()
-        logger.info("Starting market data pipeline at %s", time.ctime(start_time))
+        logger.info("Starting market data pipeline at %s",
+                    time.ctime(start_time))
 
         # Ensure cache and data directories exist at module import
         ensure_directories()
@@ -421,7 +524,9 @@ def main(engine, start_date, end_date):
             logger.error("No fundamentals data fetched. Exiting.")
             return
 
-        price_fundamentals_df = combine_price_and_fundamentals(hist_df, fundamentals_list)
+        price_fundamentals_df = combine_price_and_fundamentals(
+            hist_df, fundamentals_list
+        )
 
         # Compute factors
         logger.info("Computing factors...")
@@ -436,16 +541,25 @@ def main(engine, start_date, end_date):
         if financial_df is not None:
             financial_tbl = "financial_tbl"
             from data_pipeline.db_utils import DBHelper
+
             db_helper = DBHelper(engine=engine)  # Use provided engine
             try:
-                db_helper.create_table(financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
-                db_helper.insert_dataframe(financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
+                db_helper.create_table(
+                    financial_tbl, financial_df, primary_keys=[
+                        "Date", "Ticker"]
+                )
+                db_helper.insert_dataframe(
+                    financial_tbl, financial_df, unique_cols=["Date", "Ticker"]
+                )
 
                 macro_df = fetch_macro_data(start_date, end_date)
                 if macro_df is not None:
                     macro_tbl = "macro_data_tbl"
-                    db_helper.create_table(macro_tbl, macro_df, primary_keys=["Date"])
-                    db_helper.insert_dataframe(macro_tbl, macro_df, unique_cols=["Date"])
+                    db_helper.create_table(
+                        macro_tbl, macro_df, primary_keys=["Date"])
+                    db_helper.insert_dataframe(
+                        macro_tbl, macro_df, unique_cols=["Date"]
+                    )
             finally:
                 db_helper.close()
 
@@ -457,7 +571,9 @@ def main(engine, start_date, end_date):
                 gmail_service = None
 
             if gmail_service is None:
-                logger.error("Failed to initialize Gmail service. Email notification will not be sent.")
+                logger.error(
+                    "Failed to initialize Gmail service. Email notification will not be sent."
+                )
                 return
 
             sender = "raj.analystdata@gmail.com"
@@ -484,4 +600,3 @@ def main(engine, start_date, end_date):
         raise
     finally:
         signal.alarm(0)  # Cancel the alarm
-

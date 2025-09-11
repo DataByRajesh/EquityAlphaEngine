@@ -6,8 +6,11 @@ It avoids hardcoded credentials and IPs for security and flexibility.
 """
 
 import os
+
 import sqlalchemy
+
 from data_pipeline.db_connection import engine
+
 
 def test_connection():
     """Test database connection using the configured engine."""
@@ -19,6 +22,7 @@ def test_connection():
     except Exception as e:
         print(f"Connection failed: {e}")
         return False
+
 
 if __name__ == "__main__":
     success = test_connection()
