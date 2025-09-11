@@ -14,7 +14,8 @@
 #     --image IMAGE_URI \
 #     --set-env-vars "DATABASE_URL=your-db-url,CACHE_BACKEND=gcs,CACHE_GCS_BUCKET=your-bucket"
 #
-# If an environment variable is not set, a safe default is used for local development.
+# If an environment variable is not set, a safe default is used for local
+# development.
 
 
 import logging
@@ -23,7 +24,6 @@ import os
 import tempfile
 
 # Third-party imports
-from sqlalchemy import create_engine
 
 try:
     from google.cloud import secretmanager

@@ -9,8 +9,6 @@ Requires:
 from __future__ import annotations
 
 import json
-import logging
-import os
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 from typing import Any, Dict, Optional
@@ -167,7 +165,8 @@ def clear_all_cache() -> None:
         return  # GCS not available, skip
 
     try:
-        for blob in _client.list_blobs(config.CACHE_GCS_BUCKET, prefix=_prefix()):
+        for blob in _client.list_blobs(
+                config.CACHE_GCS_BUCKET, prefix=_prefix()):
             try:
                 blob.delete()
             except Exception:

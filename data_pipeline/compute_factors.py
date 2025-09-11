@@ -34,7 +34,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     Compute technical, value, quality, liquidity, and a composite factor.
 
     Requires columns:
-      Date, Ticker, Close, Volume
+      Date, Ticker, close_price, Volume
     Uses when available:
       trailingPE, priceToBook, returnOnEquity, profitMargins,
       marketCap, dividendYield, priceToSalesTrailing12Months
@@ -119,11 +119,12 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             )
         except Exception as e:
             logger.warning("MACD calculation failed: %s", e, exc_info=True)
-            return pd.DataFrame({"MACD": np.nan, "MACDh": np.nan}, index=series.index)
+            return pd.DataFrame(
+                {"MACD": np.nan, "MACDh": np.nan}, index=series.index)
 
     try:
         macd_df = (
-            df.groupby("Ticker", group_keys=False)["Close"]
+            df.groupby("Ticker", group_keys=False)["close_price"]
             .apply(_macd)
             .reset_index(level=0, drop=True)
         )
@@ -155,7 +156,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
 
     try:
         bb_df = (
-            df.groupby("Ticker", group_keys=False)["Close"]
+            df.groupby("Ticker", group_keys=False)["close_price"]
             .apply(_bb)
             .reset_index(level=0, drop=True)
         )
@@ -237,9 +238,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_amihud called for group of length %d", len(grp))
         try:
-            ret = grp["Close"].pct_change(fill_method=None).abs()
+            ret = grp["close_price"].pct_change(fill_method=None).abs()
             vol = grp["Volume"].replace(0, np.nan)
-            amt = vol * grp["Close"]
+            amt = vol * grp["close_price"]
             raw = ret / amt
             return raw.rolling(21, min_periods=5).mean()
         except Exception as e:
@@ -248,7 +249,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
 
     try:
         df["amihud_illiquidity"] = (
-            df.groupby("Ticker", group_keys=False)[["Close", "Volume"]]
+            df.groupby("Ticker", group_keys=False)[["close_price", "Volume"]]
             .apply(_amihud)
             .reset_index(level=0, drop=True)
         )

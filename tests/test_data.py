@@ -67,7 +67,8 @@ class TestMarketData(unittest.TestCase):
         self.assertIn("marketCap", result_list[0])
 
     @patch("yfinance.Tickers")
-    def test_fetch_fundamental_data_no_loop_uses_asyncio_run(self, mock_tickers):
+    def test_fetch_fundamental_data_no_loop_uses_asyncio_run(
+            self, mock_tickers):
         ticker_name = "MOCK.L"
         mock_info = {
             "returnOnEquity": 0.1,
@@ -90,7 +91,8 @@ class TestMarketData(unittest.TestCase):
         self.assertEqual(result_list[0]["Ticker"], ticker_name)
 
     @patch("yfinance.Tickers")
-    def test_fetch_fundamental_data_running_loop_uses_create_task(self, mock_tickers):
+    def test_fetch_fundamental_data_running_loop_uses_create_task(
+            self, mock_tickers):
         ticker_name = "MOCK.L"
         mock_info = {
             "returnOnEquity": 0.2,
@@ -136,7 +138,7 @@ class TestMarketData(unittest.TestCase):
         df = market_data.fetch_historical_data(
             ["MOCK.L"], "2022-01-01", "2022-01-02")
         self.assertIn("Ticker", df.columns)
-        self.assertIn("Close", df.columns)
+        self.assertIn("close_price", df.columns)
         self.assertEqual(df["Ticker"].iloc[0], "MOCK.L")
 
     @patch("yfinance.download")
@@ -158,10 +160,11 @@ class TestMarketData(unittest.TestCase):
         df = market_data.fetch_historical_data(
             ["MOCK.L"], "2022-01-01", "2022-01-02")
         self.assertEqual(df["Ticker"].unique().tolist(), ["MOCK.L"])
-        self.assertIn("Close", df.columns)
+        self.assertIn("close_price", df.columns)
 
     @patch("yfinance.download")
-    def test_fetch_historical_data_missing_required_columns(self, mock_download):
+    def test_fetch_historical_data_missing_required_columns(
+            self, mock_download):
         """Return empty DataFrame when required columns are missing."""
         mock_df = pd.DataFrame(
             {
@@ -183,7 +186,7 @@ class TestMarketData(unittest.TestCase):
     def test_combine_price_and_fundamentals(self):
         # Fake price and fundamentals
         price_df = pd.DataFrame(
-            {"Date": ["2022-01-01"], "Ticker": ["ABC.L"], "Close": [100]}
+            {"Date": ["2022-01-01"], "Ticker": ["ABC.L"], "close_price": [100]}
         )
         fundamentals = [{"Ticker": "ABC.L", "returnOnEquity": 0.1}]
         combined = market_data.combine_price_and_fundamentals(
@@ -236,13 +239,16 @@ class TestPipelineAdvanced(unittest.TestCase):
         rounded = market_data.round_financial_columns(combined)
         # Date as string for groupby in factors
         rounded["Date"] = rounded["Date"].astype(str)
+        # Rename Close to close_price to match compute_factors
+        rounded = rounded.rename(columns={"Close": "close_price"})
         factors = compute_factors(rounded)
         # Check a few factor columns
         self.assertIn("return_1m", factors.columns)
         self.assertIn("ma_20", factors.columns)
         self.assertIn("factor_composite", factors.columns)
         self.assertEqual(len(factors), len(rounded))
-        # Check for NaNs in factors due to short length (OK in this synthetic case)
+        # Check for NaNs in factors due to short length (OK in this synthetic
+        # case)
         self.assertTrue(
             np.isnan(factors["return_1m"]).all()
             or not factors["return_1m"].dropna().empty
@@ -257,6 +263,8 @@ class TestPipelineAdvanced(unittest.TestCase):
         )
         rounded = market_data.round_financial_columns(combined)
         rounded["Date"] = rounded["Date"].astype(str)
+        # Rename Close to close_price
+        rounded = rounded.rename(columns={"Close": "close_price"})
         factors = compute_factors(rounded)
         self.assertIn("earnings_yield", factors.columns)
         self.assertTrue(
@@ -271,8 +279,11 @@ class TestDBHelper(unittest.TestCase):
         self.db_url = f"sqlite:///{self.test_db}"
         self.helper = DBHelper(self.db_url)
         self.df = pd.DataFrame(
-            {"Ticker": ["A.L", "B.L"], "Close": [
-                100, 200], "Volume": [1000, 1500]}
+            {
+                "Ticker": ["A.L", "B.L"],
+                "close_price": [100, 200],
+                "Volume": [1000, 1500],
+            }
         )
 
     def tearDown(self):
@@ -285,20 +296,20 @@ class TestDBHelper(unittest.TestCase):
         # Read back to check
         result = pd.read_sql("SELECT * FROM test_tbl", self.helper.engine)
         self.assertEqual(len(result), 2)
-        self.assertIn("Close", result.columns)
+        self.assertIn("close_price", result.columns)
 
     def test_upsert_dataframe(self):
         self.helper.create_table("test_tbl", self.df, primary_keys=["Ticker"])
         self.helper.insert_dataframe(
             "test_tbl", self.df, unique_cols=["Ticker"])
         updated = self.df.copy()
-        updated.loc[0, "Close"] = 150
+        updated.loc[0, "close_price"] = 150
         self.helper.insert_dataframe(
             "test_tbl", updated, unique_cols=["Ticker"])
         result = pd.read_sql("SELECT * FROM test_tbl", self.helper.engine)
         self.assertEqual(len(result), 2)
         self.assertEqual(result[result["Ticker"] == "A.L"]
-                         ["Close"].iloc[0], 150)
+                         ["close_price"].iloc[0], 150)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from importlib import import_module
 from types import ModuleType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 # Public API surface
 __all__: tuple[str, ...] = (
@@ -33,6 +33,7 @@ def __dir__() -> list[str]:
     return sorted(list(globals().keys()) + list(__all__))
 
 
-# Make static analyzers aware of the submodules without changing runtime behavior.
+# Make static analyzers aware of the submodules without changing runtime
+# behavior.
 if TYPE_CHECKING:
     from . import compute_factors, config, db_utils, market_data  # noqa: F401
