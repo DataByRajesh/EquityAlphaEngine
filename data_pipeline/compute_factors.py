@@ -53,7 +53,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         try:
             df[f"return_{label}"] = (
                 df.groupby("Ticker")["close_price"]
-                .transform(lambda x: x.pct_change(period, fill_method=None))
+                .transform(lambda x: x.pct_change(period, fill_method=None).squeeze())
                 .fillna(0.0)
             )
         except Exception as e:
@@ -63,12 +63,12 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     try:
         mom_252 = (
             df.groupby("Ticker")["close_price"]
-            .transform(lambda x: x.pct_change(252, fill_method=None))
+            .transform(lambda x: x.pct_change(252, fill_method=None).squeeze())
             .fillna(0.0)
         )
         mom_21 = (
             df.groupby("Ticker")["close_price"]
-            .transform(lambda x: x.pct_change(21, fill_method=None))
+            .transform(lambda x: x.pct_change(21, fill_method=None).squeeze())
             .fillna(0.0)
         )
         df["momentum_12_1"] = mom_252 - mom_21
@@ -82,7 +82,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             df[f"vol_{window}d"] = (
                 df.groupby("Ticker")["close_price"]
                 .transform(lambda x: x.dropna().pct_change(fill_method=None).rolling(
-                    window, min_periods=max(2, window // 3)).std())
+                    window, min_periods=max(2, window // 3)).std().squeeze())
                 .fillna(0.0)
             )
         except Exception as e:
@@ -95,7 +95,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         try:
             df[f"ma_{window}"] = (
                 df.groupby("Ticker")["close_price"]
-                .transform(lambda x: ta.trend.sma_indicator(x, window=window))
+                .transform(lambda x: ta.trend.sma_indicator(x, window=window).squeeze())
                 .fillna(0.0)
             )
         except Exception as e:
@@ -107,7 +107,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     try:
         df["RSI_14"] = (
             df.groupby("Ticker")["close_price"]
-            .transform(lambda x: ta.momentum.rsi(x, window=14))
+            .transform(lambda x: ta.momentum.rsi(x, window=14).squeeze())
             .fillna(0.0)
         )
     except Exception as e:
@@ -240,7 +240,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_amihud called for group of length %d", len(grp))
         try:
-            ret = grp["close_price"].pct_change(fill_method=None).abs()
+            ret = grp["close_price"].pct_change(fill_method=None).abs().squeeze()
             vol = grp["Volume"].replace(0, np.nan)
             amt = vol * grp["close_price"]
             raw = ret / amt

@@ -116,6 +116,9 @@ def _persist_entry(ticker: str) -> None:
     try:
         payload = json.dumps(entry, separators=(",", ":"), ensure_ascii=False)
         blob.upload_from_string(payload, content_type="application/json")
+    except NotFound:
+        logger.warning("GCS bucket '%s' not found; skipping persist for %s",
+                       config.CACHE_GCS_BUCKET, ticker)
     except Exception as e:
         logger.warning("Persist to GCS failed for %s: %s",
                        ticker, e, exc_info=True)
