@@ -23,8 +23,7 @@ class FiveYearMacroDataLoader:
         self.api_key = api_key or DEFAULT_API_KEY
         if not self.api_key:
             raise ValueError(
-                "QUANDL_API_KEY is not configured. Set env or pass api_key."
-            )
+                "QUANDL_API_KEY is not configured. Set env or pass api_key.")
         quandl.ApiConfig.api_key = self.api_key
         self.start_date = start_date
         self.end_date = end_date
@@ -67,9 +66,6 @@ class FiveYearMacroDataLoader:
         infl = self.fetch_inflation_rate()
         if gdp is None or gdp.empty:
             return None
-        out = (
-            gdp.merge(infl, on="Date", how="outer")
-            .sort_values("Date")
-            .reset_index(drop=True)
-        )
+        out = gdp.merge(infl, on="Date", how="outer").sort_values(
+            "Date").reset_index(drop=True)
         return out

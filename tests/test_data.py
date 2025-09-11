@@ -77,14 +77,11 @@ class TestMarketData(unittest.TestCase):
         mock_tickers.return_value.tickers = {ticker_name: mock_ticker_obj}
 
         original_run = asyncio.run
-        with patch(
-            "data_pipeline.market_data.asyncio.run", side_effect=original_run
-        ) as mock_run, patch(
+        with patch("data_pipeline.market_data.asyncio.run", side_effect=original_run) as mock_run, patch(
             "data_pipeline.market_data.asyncio.create_task"
         ) as mock_ct:
             result_list = market_data.fetch_fundamental_data(
-                [ticker_name], use_cache=False
-            )
+                [ticker_name], use_cache=False)
             self.assertTrue(mock_run.called)
             mock_ct.assert_not_called()
         self.assertEqual(result_list[0]["Ticker"], ticker_name)
@@ -101,15 +98,11 @@ class TestMarketData(unittest.TestCase):
 
         async def runner():
             original_create = asyncio.create_task
-            with patch(
-                "data_pipeline.market_data.asyncio.run", wraps=asyncio.run
-            ) as mock_run, patch(
+            with patch("data_pipeline.market_data.asyncio.run", wraps=asyncio.run) as mock_run, patch(
                 "data_pipeline.market_data.asyncio.create_task",
                 side_effect=original_create,
             ) as mock_ct:
-                result = await market_data.fetch_fundamental_data(
-                    [ticker_name], use_cache=False
-                )
+                result = await market_data.fetch_fundamental_data([ticker_name], use_cache=False)
                 self.assertFalse(mock_run.called)
                 self.assertTrue(mock_ct.called)
                 return result
@@ -183,8 +176,7 @@ class TestMarketData(unittest.TestCase):
     def test_combine_price_and_fundamentals(self):
         # Fake price and fundamentals
         price_df = pd.DataFrame(
-            {"Date": ["2022-01-01"], "Ticker": ["ABC.L"], "close_price": [100]}
-        )
+            {"Date": ["2022-01-01"], "Ticker": ["ABC.L"], "close_price": [100]})
         fundamentals = [{"Ticker": "ABC.L", "returnOnEquity": 0.1}]
         combined = market_data.combine_price_and_fundamentals(
             price_df, fundamentals)
@@ -231,8 +223,7 @@ class TestPipelineAdvanced(unittest.TestCase):
     def test_full_pipeline(self):
         # Merge and round
         combined = market_data.combine_price_and_fundamentals(
-            self.price_df, self.fundamentals
-        )
+            self.price_df, self.fundamentals)
         rounded = market_data.round_financial_columns(combined)
         # Date as string for groupby in factors
         rounded["Date"] = rounded["Date"].astype(str)
@@ -246,28 +237,23 @@ class TestPipelineAdvanced(unittest.TestCase):
         self.assertEqual(len(factors), len(rounded))
         # Check for NaNs in factors due to short length (OK in this synthetic
         # case)
-        self.assertTrue(
-            np.isnan(factors["return_1m"]).all()
-            or not factors["return_1m"].dropna().empty
-        )
+        self.assertTrue(np.isnan(factors["return_1m"]).all(
+        ) or not factors["return_1m"].dropna().empty)
 
     def test_missing_trailingPE(self):
         # Remove 'trailingPE', earnings_yield should be nan or inf
         fundamentals = [dict(self.fundamentals[0])]
         fundamentals[0].pop("trailingPE")
         combined = market_data.combine_price_and_fundamentals(
-            self.price_df.iloc[:1], fundamentals
-        )
+            self.price_df.iloc[:1], fundamentals)
         rounded = market_data.round_financial_columns(combined)
         rounded["Date"] = rounded["Date"].astype(str)
         # Rename Close to close_price
         rounded = rounded.rename(columns={"Close": "close_price"})
         factors = compute_factors(rounded)
         self.assertIn("earnings_yield", factors.columns)
-        self.assertTrue(
-            np.isnan(factors["earnings_yield"].iloc[0])
-            or np.isinf(factors["earnings_yield"].iloc[0])
-        )
+        self.assertTrue(np.isnan(factors["earnings_yield"].iloc[0]) or np.isinf(
+            factors["earnings_yield"].iloc[0]))
 
 
 class TestDBHelper(unittest.TestCase):
