@@ -37,8 +37,7 @@ def _ensure_gcs():
     global _client, _bucket
     if not getattr(config, "CACHE_GCS_BUCKET", None):
         logger.warning(
-            "CACHE_GCS_BUCKET not set; falling back to in-memory cache only."
-        )
+            "CACHE_GCS_BUCKET not set; falling back to in-memory cache only.")
         return False
     if _client is None:
         _client = storage.Client()

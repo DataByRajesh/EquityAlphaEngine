@@ -93,9 +93,8 @@ def create_message(sender, to, subject, message_text):
 def send_message(service, user_id, message):
     """Send ``message`` using the Gmail API service."""
     try:
-        message = (
-            service.users().messages().send(userId=user_id, body=message).execute()
-        )
+        message = service.users().messages().send(
+            userId=user_id, body=message).execute()
         logger.info(f"Message Id: {message['id']}")
         return message
     except Exception as e:  # pragma: no cover - network errors
