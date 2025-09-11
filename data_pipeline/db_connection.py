@@ -165,8 +165,7 @@ def _create_engine_with_retry(
             last_exception = e
             if attempt < MAX_RETRIES - 1:
                 logger.warning(
-                    f"Engine creation attempt {
-                        attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds..."
+                    f"Engine creation attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds..."
                 )
                 time.sleep(RETRY_DELAY)
             else:
