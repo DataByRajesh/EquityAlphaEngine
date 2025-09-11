@@ -55,7 +55,7 @@ def test_connection_args():
 
             # Check timeout is always present
             if "timeout" not in args:
-                print(f"   ❌ FAIL: Missing 'timeout' parameter")
+                print("   ❌ FAIL: Missing 'timeout' parameter")
                 all_passed = False
                 continue
 
@@ -67,7 +67,7 @@ def test_connection_args():
                 status = "✅ PASS"
                 if should_have:
                     print(
-                        f"   {status}: Correctly includes 'connect_timeout' for psycopg2"
+                        "   {}: Correctly includes 'connect_timeout' for psycopg2".format(status)
                     )
                 else:
                     print(
