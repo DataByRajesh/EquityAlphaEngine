@@ -15,6 +15,7 @@ from typing import Optional, Union  # For type hinting
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
 import yfinance as yf  # For fetching financial data
+from yfinance.exceptions import YFPricesMissingError  # For handling missing price data
 
 # Local imports
 try:
@@ -178,6 +179,10 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                     if not ticker_data.empty:
                         ticker_data["Ticker"] = ticker
                         all_data.append(ticker_data)
+                except YFPricesMissingError as e:
+                    logger.info(
+                        f"No price data available for {ticker} (possibly delisted): {e}")
+                    continue
                 except Exception as e:
                     logger.warning(
                         f"Failed to download data for {ticker}: {e}")
