@@ -71,8 +71,7 @@ def _records(df: pd.DataFrame):
     return df.where(pd.notna(df), None).to_dict(orient="records")
 
 
-def _chunked_insert(conn, stmt, df: pd.DataFrame,
-                    chunksize: int = 900) -> None:
+def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
     """
     Helper to insert DataFrame in chunks using the given statement.
     Includes retry logic for database lock errors and performance tracking.
@@ -125,8 +124,7 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame,
                     )
                 break  # Success, exit retry loop
             except OperationalError as e:
-                if "database is locked" in str(
-                        e).lower() and attempt < max_retries - 1:
+                if "database is locked" in str(e).lower() and attempt < max_retries - 1:
                     logger.warning(
                         "Database locked, retrying insert in %s seconds (attempt %d/%d): %s",
                         retry_delay,
@@ -358,8 +356,7 @@ class DBHelper:
         finally:
             DBHelper._population_running = False
 
-    def _ensure_unique_index(
-            self, conn, table_name: str, cols: tuple[str, ...]):
+    def _ensure_unique_index(self, conn, table_name: str, cols: tuple[str, ...]):
         """
         Ensure a unique index exists for the given columns.
         """
