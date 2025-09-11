@@ -130,7 +130,7 @@ MAX_THREADS = int(os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5))
 CACHE_EXPIRY_MINUTES = 1440  # Cache expiry time in minutes (24 hours)
 
 # Yfinance configuration to prevent database lock issues
-YF_DISABLE_CACHE = os.environ.get("YF_DISABLE_CACHE", "true").lower() == "true"
+YF_DISABLE_CACHE = os.environ.get("YF_DISABLE_CACHE", "false").lower() == "true"
 YF_CACHE_DIR = os.environ.get(
     "YF_CACHE_DIR", os.path.join(CACHE_DIR, "yfinance"))
 
