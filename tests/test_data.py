@@ -67,8 +67,7 @@ class TestMarketData(unittest.TestCase):
         self.assertIn("marketCap", result_list[0])
 
     @patch("yfinance.Tickers")
-    def test_fetch_fundamental_data_no_loop_uses_asyncio_run(
-            self, mock_tickers):
+    def test_fetch_fundamental_data_no_loop_uses_asyncio_run(self, mock_tickers):
         ticker_name = "MOCK.L"
         mock_info = {
             "returnOnEquity": 0.1,
@@ -91,8 +90,7 @@ class TestMarketData(unittest.TestCase):
         self.assertEqual(result_list[0]["Ticker"], ticker_name)
 
     @patch("yfinance.Tickers")
-    def test_fetch_fundamental_data_running_loop_uses_create_task(
-            self, mock_tickers):
+    def test_fetch_fundamental_data_running_loop_uses_create_task(self, mock_tickers):
         ticker_name = "MOCK.L"
         mock_info = {
             "returnOnEquity": 0.2,
@@ -163,8 +161,7 @@ class TestMarketData(unittest.TestCase):
         self.assertIn("close_price", df.columns)
 
     @patch("yfinance.download")
-    def test_fetch_historical_data_missing_required_columns(
-            self, mock_download):
+    def test_fetch_historical_data_missing_required_columns(self, mock_download):
         """Return empty DataFrame when required columns are missing."""
         mock_df = pd.DataFrame(
             {
