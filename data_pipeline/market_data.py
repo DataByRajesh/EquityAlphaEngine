@@ -199,7 +199,7 @@ def fetch_historical_data(
             # Ticker column is already set during sequential download
 
             # Rename 'Close' to 'close_price' to avoid PostgreSQL reserved word
-            # issues
+            # issues 
             if "Close" in data.columns:
                 data = data.rename(columns={"Close": "close_price"})
 
@@ -308,8 +308,7 @@ async def _fetch_single_info(
             error_msg = str(exc).lower()
             if "database is locked" in error_msg:
                 logger.warning(
-                    f"Database lock detected for {ticker} on attempt {
-                        attempt + 1}: {exc}"
+                    f"Database lock detected for {ticker} on attempt {attempt + 1}: {exc}"
                 )
                 if attempt < retries - 1:
                     # Longer delay for database lock issues
