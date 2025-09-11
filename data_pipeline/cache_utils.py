@@ -46,9 +46,13 @@ def _ensure_gcs():
         try:
             _bucket.reload()  # Check if bucket exists
         except NotFound:
-            logger.warning(
-                "GCS bucket '%s' does not exist; falling back to in-memory cache only.", config.CACHE_GCS_BUCKET)
-            return False
+            try:
+                _bucket = _client.create_bucket(config.CACHE_GCS_BUCKET)
+                logger.info("Created GCS bucket '%s'", config.CACHE_GCS_BUCKET)
+            except Exception as e:
+                logger.warning(
+                    "Failed to create GCS bucket '%s': %s; falling back to in-memory cache only.", config.CACHE_GCS_BUCKET, e)
+                return False
         except Exception as e:
             logger.warning(
                 "Failed to access GCS bucket '%s': %s; falling back to in-memory cache only.", config.CACHE_GCS_BUCKET, e)
