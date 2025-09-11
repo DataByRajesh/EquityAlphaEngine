@@ -67,12 +67,10 @@ def test_connection_args():
                 status = "✅ PASS"
                 if should_have:
                     print(
-                        "   {}: Correctly includes 'connect_timeout' for psycopg2".format(status)
-                    )
+                        "   {}: Correctly includes 'connect_timeout' for psycopg2".format(status))
                 else:
                     print(
-                        f"   {status}: Correctly excludes 'connect_timeout' for pg8000"
-                    )
+                        f"   {status}: Correctly excludes 'connect_timeout' for pg8000")
             else:
                 status = "❌ FAIL"
                 if should_have:
@@ -92,8 +90,7 @@ def test_connection_args():
         print("🎉 SUCCESS: All connection argument tests passed!")
         print("\nThe fix should resolve the original error:")
         print(
-            "   TypeError: connect() got an unexpected keyword argument 'connect_timeout'"
-        )
+            "   TypeError: connect() got an unexpected keyword argument 'connect_timeout'")
         print("\nThis error occurred because:")
         print("   - pg8000 driver doesn't support 'connect_timeout' parameter")
         print("   - The code was passing it to all PostgreSQL drivers")
