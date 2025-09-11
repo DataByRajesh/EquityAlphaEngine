@@ -6,6 +6,7 @@
 3. **Pandas Deprecation Warnings**: pct_change default fill_method deprecated.
 4. **Multiple Data Population Triggers**: Pipeline runs multiple times due to empty table checks.
 5. **Long Runtime**: Script runs for 19+ minutes before cancellation.
+6. **Cloud Run Deployment Failure**: ImportError in uvicorn due to missing dependencies and incorrect import paths.
 
 ## Planned Fixes
 - [x] Update pct_change calls in compute_factors.py to use fill_method=None
@@ -43,3 +44,11 @@
 - [x] Fix Ticker column overwrite causing database insert errors
 - [ ] Test optimized pipeline performance
 - [ ] Monitor execution time improvements
+
+## Cloud Run Deployment Fixes
+- [x] Install missing dependencies (fastapi, uvicorn) via requirements.txt
+- [x] Fix incorrect import path for get_secret function in web/api.py
+- [x] Verify uvicorn can successfully import and start the FastAPI app
+- [x] Test local deployment to ensure container startup works
+- [ ] Deploy updated container to Cloud Run and verify successful startup
+- [ ] Monitor Cloud Run logs for any remaining import or startup issues

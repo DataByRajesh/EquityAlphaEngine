@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from data_pipeline.compute_factors import compute_factors
 from data_pipeline.db_utils import DBHelper
-from data_pipeline.update_financial_data import get_secret
+from data_pipeline.utils import get_secret
 
 app = FastAPI()
 
