@@ -195,6 +195,8 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
             data = pd.concat(all_data, ignore_index=False)
 
             # Standardize column names to title case in case they are lowercase
+            if isinstance(data.columns, pd.MultiIndex):
+                data.columns = data.columns.get_level_values(0)
             data.columns = data.columns.str.title()
 
             # Since we download sequentially, data is already a regular DataFrame with Ticker column
