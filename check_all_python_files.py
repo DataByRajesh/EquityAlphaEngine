@@ -42,8 +42,8 @@ if __name__ == "__main__":
         f"Formatting {
             len(py_files)} Python files with black, isort, and autopep8...\n"
     )
-    # Run black
-    subprocess.run(["black"] + py_files)
+    # Run black with longer line length to prevent splitting f-strings
+    subprocess.run(["black", "--line-length", "120"] + py_files)
     # Run isort
     subprocess.run(["isort"] + py_files)
     # Run autopep8

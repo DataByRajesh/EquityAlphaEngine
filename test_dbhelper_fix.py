@@ -37,8 +37,7 @@ def test_dbhelper_with_custom_url():
 
         # Test basic database operations
         test_df = pd.DataFrame(
-            {"id": [1, 2], "name": ["test1", "test2"], "value": [10.5, 20.7]}
-        )
+            {"id": [1, 2], "name": ["test1", "test2"], "value": [10.5, 20.7]})
 
         # Test table creation
         db.create_table("test_table", test_df)

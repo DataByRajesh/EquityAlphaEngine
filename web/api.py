@@ -68,9 +68,8 @@ def get_undervalued_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -85,9 +84,8 @@ def get_overvalued_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -102,9 +100,8 @@ def get_high_quality_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -119,9 +116,8 @@ def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -136,9 +132,8 @@ def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -153,9 +148,8 @@ def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -170,9 +164,8 @@ def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -187,9 +180,8 @@ def get_high_momentum_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -204,9 +196,8 @@ def get_low_volatility_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -221,9 +212,8 @@ def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -238,9 +228,8 @@ def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -255,9 +244,8 @@ def get_top_factor_composite_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -272,9 +260,8 @@ def get_high_risk_stocks(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")
 
 
@@ -292,7 +279,6 @@ def get_top_combined_screen_limited(min_mktcap: int = 0, top_n: int = 10):
             LIMIT :top_n
         """
         )
-        df = pd.read_sql(
-            query, db.engine, params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
         return df.to_dict(orient="records")

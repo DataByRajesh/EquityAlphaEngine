@@ -10,8 +10,7 @@ class TestErrorHandling(unittest.TestCase):
     def test_missing_fields(self):
         # Simulate missing fields
         price_df = pd.DataFrame(
-            {"Date": ["2023-07-01"], "Ticker": ["ERR.L"], "Close": [100]}
-        )
+            {"Date": ["2023-07-01"], "Ticker": ["ERR.L"], "Close": [100]})
         fundamentals = [{"Ticker": "ERR.L"}]  # minimal
         combined = market_data.combine_price_and_fundamentals(
             price_df, fundamentals)
@@ -35,8 +34,7 @@ class TestErrorHandling(unittest.TestCase):
             price_df, fundamentals)
         rounded = market_data.round_financial_columns(combined)
         self.assertTrue(
-            pd.isna(rounded["Open"].iloc[0]) or rounded["Open"].iloc[0] == 0
-        )
+            pd.isna(rounded["Open"].iloc[0]) or rounded["Open"].iloc[0] == 0)
 
 
 if __name__ == "__main__":
