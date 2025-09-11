@@ -51,19 +51,21 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting momentum calculations")
     for period, label in zip([21, 63, 126, 252], ["1m", "3m", "6m", "12m"]):
         try:
-            df[f"return_{label}"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
-                lambda x: x.pct_change(periods=period)
+            df[f"return_{label}"] = df.groupby("Ticker")["close_price"].transform(
+                lambda x: x.pct_change(periods=period, fill_method=None)
             )
         except Exception as e:
             logger.warning(
                 f"Failed to compute return_{label}: %s", e, exc_info=True)
     # 12-1 momentum
     try:
-        df["momentum_12_1"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
-            lambda x: x.pct_change(252)
-        ) - df.groupby("Ticker", group_keys=False)["close_price"].transform(
-            lambda x: x.pct_change(21)
+        mom_252_series = df.groupby("Ticker")["close_price"].transform(
+            lambda x: x.pct_change(252, fill_method=None)
         )
+        mom_21_series = df.groupby("Ticker")["close_price"].transform(
+            lambda x: x.pct_change(21, fill_method=None)
+        )
+        df["momentum_12_1"] = mom_252_series - mom_21_series
     except Exception as e:
         logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
 
@@ -71,8 +73,8 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting volatility calculations")
     for window in [21, 63, 252]:
         try:
-            df[f"vol_{window}d"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
-                lambda x: x.dropna().pct_change().rolling(
+            df[f"vol_{window}d"] = df.groupby("Ticker")["close_price"].transform(
+                lambda x: x.dropna().pct_change(fill_method=None).rolling(
                     window, min_periods=max(2, window // 3)).std()
             )
         except Exception as e:
@@ -83,9 +85,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting moving averages calculations")
     for window in [20, 50, 200]:
         try:
-            df[f"ma_{window}"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
+            ma_series = df.groupby("Ticker", group_keys=False)["close_price"].apply(
                 lambda x: ta.trend.sma_indicator(x, window=window)
-            )
+            ).reset_index(level=0, drop=True)
+            df[f"ma_{window}"] = ma_series
         except Exception as e:
             logger.warning(
                 f"Failed to compute ma_{window}: %s", e, exc_info=True)
@@ -93,9 +96,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- RSI ----------
     logger.debug("Starting RSI calculation")
     try:
-        df["RSI_14"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
+        rsi_series = df.groupby("Ticker", group_keys=False)["close_price"].apply(
             lambda x: ta.momentum.rsi(x, window=14)
-        )
+        ).reset_index(level=0, drop=True)
+        df["RSI_14"] = rsi_series
     except Exception as e:
         logger.warning("Failed to compute RSI_14: %s", e, exc_info=True)
 
@@ -210,9 +214,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("Column 'Volume' missing; avg_volume_21d set to NaN.")
         df["avg_volume_21d"] = np.nan
     else:
-        df["avg_volume_21d"] = df.groupby("Ticker", group_keys=False)["Volume"].transform(
+        avg_vol_series = df.groupby("Ticker", group_keys=False)["Volume"].apply(
             lambda x: x.dropna().rolling(21, min_periods=5).mean()
-        )
+        ).reset_index(level=0, drop=True)
+        df["avg_volume_21d"] = avg_vol_series
 
     # ---------- Amihud illiquidity ----------
     logger.debug("Starting Amihud illiquidity calculation")
@@ -224,7 +229,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_amihud called for group of length %d", len(grp))
         try:
-            ret = grp["close_price"].pct_change().abs()
+            ret = grp["close_price"].pct_change(fill_method=None).abs()
             vol = grp["Volume"].replace(0, np.nan)
             amt = vol * grp["close_price"]
             raw = ret / amt
