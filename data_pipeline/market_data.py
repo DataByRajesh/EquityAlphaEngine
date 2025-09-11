@@ -157,14 +157,14 @@ def fetch_historical_data(
 
             # Configure yfinance to prevent database lock issues
             if config.YF_DISABLE_CACHE:
-                # Disable yfinance caching to prevent SQLite database lock issues
-                yf.set_tz_cache_location(None)  # Disable timezone cache
                 # Create a unique cache directory for this process to avoid conflicts
                 import uuid
 
                 unique_cache_dir = os.path.join(
                     config.YF_CACHE_DIR, str(uuid.uuid4()))
                 os.makedirs(unique_cache_dir, exist_ok=True)
+                # Set timezone cache to unique directory to avoid conflicts
+                yf.set_tz_cache_location(unique_cache_dir)
                 # Note: yfinance doesn't have a direct way to disable all caching,
                 # but we can minimize it by using unique directories
 

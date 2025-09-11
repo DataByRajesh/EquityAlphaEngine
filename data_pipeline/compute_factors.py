@@ -53,14 +53,14 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     for period, label in zip([21, 63, 126, 252], ["1m", "3m", "6m", "12m"]):
         try:
             df[f"return_{label}"] = df.groupby("Ticker", group_keys=False)[
-                "Close"
+                "close_price"
             ].pct_change(periods=period, fill_method=None)
         except Exception as e:
             logger.warning(
                 f"Failed to compute return_{label}: %s", e, exc_info=True)
     # 12-1 momentum
     try:
-        g = df.groupby("Ticker", group_keys=False)["Close"]
+        g = df.groupby("Ticker", group_keys=False)["close_price"]
         df["momentum_12_1"] = g.pct_change(252, fill_method=None) - g.pct_change(
             21, fill_method=None
         )
@@ -72,7 +72,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     for window in [21, 63, 252]:
         try:
             df[f"vol_{window}d"] = df.groupby("Ticker", group_keys=False)[
-                "Close"
+                "close_price"
             ].transform(
                 lambda x: x.pct_change(fill_method=None)
                 .rolling(window, min_periods=max(2, window // 3))
@@ -87,7 +87,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     for window in [20, 50, 200]:
         try:
             df[f"ma_{window}"] = df.groupby("Ticker", group_keys=False)[
-                "Close"
+                "close_price"
             ].transform(lambda x: ta.trend.sma_indicator(x, window=window))
         except Exception as e:
             logger.warning(
@@ -96,7 +96,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- RSI ----------
     logger.debug("Starting RSI calculation")
     try:
-        df["RSI_14"] = df.groupby("Ticker", group_keys=False)["Close"].transform(
+        df["RSI_14"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
             lambda x: ta.momentum.rsi(x, window=14)
         )
     except Exception as e:
