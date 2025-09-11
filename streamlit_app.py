@@ -27,8 +27,9 @@ try:
 
     st.sidebar.header("Filter Options")
     min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
-    top_n = st.sidebar.slider("Number of Top Stocks",
-                              min_value=5, max_value=50, value=10)
+    top_n = st.sidebar.slider(
+        "Number of Top Stocks", min_value=5, max_value=50, value=10
+    )
 
     # Define Tabs
     TABS = [
@@ -81,7 +82,8 @@ try:
     with tabs[4]:
         st.header("🏦 Top Market Cap Stocks")
         df_mktcap = get_data(
-            "get_top_market_cap_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
+            "get_top_market_cap_stocks",
+            params={"min_mktcap": min_mktcap, "top_n": top_n},
         )
         st.dataframe(df_mktcap)
 
@@ -103,14 +105,16 @@ try:
     with tabs[7]:
         st.header("🚀 High Momentum Stocks")
         df_mom = get_data(
-            "get_high_momentum_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
+            "get_high_momentum_stocks",
+            params={"min_mktcap": min_mktcap, "top_n": top_n},
         )
         st.dataframe(df_mom)
 
     with tabs[8]:
         st.header("🛡️ Low Volatility Stocks")
         df_lowvol = get_data(
-            "get_low_volatility_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
+            "get_low_volatility_stocks",
+            params={"min_mktcap": min_mktcap, "top_n": top_n},
         )
         st.dataframe(df_lowvol)
 
@@ -146,7 +150,9 @@ try:
         st.dataframe(df_risk)
 
     with tabs[13]:
-        st.header("🏆 Top Combined Screener (Undervalued + High Quality + High Momentum)")
+        st.header(
+            "🏆 Top Combined Screener (Undervalued + High Quality + High Momentum)"
+        )
         df_combined = get_data(
             "get_top_combined_screen_limited",
             params={"min_mktcap": min_mktcap, "top_n": top_n},
@@ -160,7 +166,8 @@ try:
                 mime="text/csv",
             )
         else:
-            st.warning("No combined results found based on current filter criteria.")
+            st.warning(
+                "No combined results found based on current filter criteria.")
 
     st.success("Dashboard Loaded Successfully!")
 
