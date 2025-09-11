@@ -194,6 +194,9 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
 
             data = pd.concat(all_data, ignore_index=False)
 
+            # Standardize column names to title case in case they are lowercase
+            data.columns = data.columns.str.title()
+
             # Since we download sequentially, data is already a regular DataFrame with Ticker column
             # No need for MultiIndex handling as in concurrent download
             data = data.reset_index().rename(columns={"index": "Date"})
@@ -224,6 +227,12 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                 "Volume",
                 "Ticker",
             }
+            # Add missing required columns with NaN values to prevent errors
+            for col in required_cols:
+                if col not in data.columns:
+                    data[col] = np.nan
+                    logger.warning(f"Added missing column {col} with NaN values")
+
             missing_cols = required_cols - set(data.columns)
             if missing_cols:
                 logger.error(
