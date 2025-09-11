@@ -194,21 +194,10 @@ def fetch_historical_data(
 
             data = pd.concat(all_data, ignore_index=False)
 
-            # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
-            # If only a single ticker is returned, the columns are a simple
-            # ``Index`` which cannot be stacked. Detect this scenario and insert the
-            # ticker symbol manually without calling ``stack``.
-            if isinstance(data.columns, pd.MultiIndex):
-                data = data.stack(level=1, future_stack=True).reset_index()
-                data.rename(
-                    columns={"level_0": "Date", "level_1": "Ticker"}, inplace=True
-                )
-            else:
-                data = data.reset_index().rename(columns={"index": "Date"})
-                # In single-ticker responses the symbol isn't part of the columns,
-                # so assume the first requested ticker corresponds to the data
-                # returned.
-                data["Ticker"] = tickers[0]
+            # Since we download sequentially, data is already a regular DataFrame with Ticker column
+            # No need for MultiIndex handling as in concurrent download
+            data = data.reset_index().rename(columns={"index": "Date"})
+            # Ticker column is already set during sequential download
 
             if "Volume" in data.columns:
                 data["Volume"] = data["Volume"].fillna(0).astype(int)

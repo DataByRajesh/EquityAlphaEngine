@@ -39,5 +39,7 @@
 - [x] Implement process-specific cache directories to prevent conflicts
 - [x] Add detailed timing logs for all major operations
 - [x] Improve error handling with specific error types and recovery strategies
+- [x] Create pull request for yfinance database lock fix
+- [x] Fix Ticker column overwrite causing database insert errors
 - [ ] Test optimized pipeline performance
 - [ ] Monitor execution time improvements
