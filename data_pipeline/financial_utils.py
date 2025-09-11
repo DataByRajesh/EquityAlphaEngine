@@ -13,7 +13,7 @@ def financial_round(value, places):
             return float("nan")
         return float(
             Decimal(str(value)).quantize(
-                Decimal(f'1.{"0"*places}'), rounding=ROUND_HALF_UP
+                Decimal(f'1.{"0" * places}'), rounding=ROUND_HALF_UP
             )
         )
     except (InvalidOperation, TypeError, ValueError):
@@ -34,7 +34,7 @@ def round_financial_columns(df: pd.DataFrame) -> pd.DataFrame:
         "Open": 2,
         "High": 2,
         "Low": 2,
-        "Close": 2,
+        "close_price": 2,
         "returnOnEquity": 4,
         "grossMargins": 4,
         "operatingMargins": 4,

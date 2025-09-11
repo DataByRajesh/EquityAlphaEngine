@@ -4,13 +4,12 @@ Simple test script to verify the database connection fix works.
 This test focuses specifically on the connect_timeout parameter issue.
 """
 
-from data_pipeline.db_connection import (_get_driver_specific_connect_args,
-                                         initialize_engine)
-import sys
 import os
+import sys
 import tempfile
 
-from sqlalchemy import create_engine
+from data_pipeline.db_connection import (_get_driver_specific_connect_args,
+                                         initialize_engine)
 
 
 # Mock the get_secret function to avoid Google Cloud dependencies

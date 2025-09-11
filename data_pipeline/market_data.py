@@ -18,8 +18,7 @@ import yfinance as yf  # For fetching financial data
 
 # Local imports
 try:
-    from data_pipeline.db_connection import engine, reinitialize_engine
-    from data_pipeline.utils import get_secret
+    pass
 
     from . import config  # Importing configuration file
     from .compute_factors import \
@@ -32,18 +31,16 @@ try:
 except ImportError:
     import data_pipeline.config as config
     from data_pipeline.compute_factors import compute_factors
-    from data_pipeline.db_connection import engine, reinitialize_engine
     from data_pipeline.financial_utils import round_financial_columns
     from data_pipeline.gmail_utils import (create_message, get_gmail_service,
                                            send_message)
     from data_pipeline.Macro_data import FiveYearMacroDataLoader
-    from data_pipeline.utils import get_secret
 
 # Updated import for market_data to use fallback mechanism
 try:
-    from . import market_data
+    pass
 except ImportError:
-    import data_pipeline.market_data as market_data
+    pass
 
 # Set up logging for debugging
 logger = logging.getLogger(__name__)
@@ -140,7 +137,8 @@ def fetch_historical_data(
         f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}"
     )
     logger.info(
-        f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}..."
+        f"Downloading historical price data for {
+            len(tickers)} tickers from {start_date} to {end_date}..."
     )
     if not tickers:
         logger.error("No tickers provided.")
@@ -157,7 +155,8 @@ def fetch_historical_data(
 
             # Configure yfinance to prevent database lock issues
             if config.YF_DISABLE_CACHE:
-                # Create a unique cache directory for this process to avoid conflicts
+                # Create a unique cache directory for this process to avoid
+                # conflicts
                 import uuid
 
                 unique_cache_dir = os.path.join(
@@ -182,10 +181,11 @@ def fetch_historical_data(
                         timeout=timeout,
                     )
                     if not ticker_data.empty:
-                        ticker_data['Ticker'] = ticker
+                        ticker_data["Ticker"] = ticker
                         all_data.append(ticker_data)
                 except Exception as e:
-                    logger.warning(f"Failed to download data for {ticker}: {e}")
+                    logger.warning(
+                        f"Failed to download data for {ticker}: {e}")
                     continue
 
             if not all_data:
@@ -199,21 +199,28 @@ def fetch_historical_data(
             data = data.reset_index().rename(columns={"index": "Date"})
             # Ticker column is already set during sequential download
 
+            # Rename 'Close' to 'close_price' to avoid PostgreSQL reserved word
+            # issues
+            if "Close" in data.columns:
+                data = data.rename(columns={"Close": "close_price"})
+
             if "Volume" in data.columns:
                 data["Volume"] = data["Volume"].fillna(0).astype(int)
 
-            # Ensure Adj Close column exists - if not, use Close as fallback
-            if "Adj Close" not in data.columns and "Close" in data.columns:
-                data["Adj Close"] = data["Close"]
+            # Ensure Adj Close column exists - if not, use close_price as
+            # fallback
+            if "Adj Close" not in data.columns and "close_price" in data.columns:
+                data["Adj Close"] = data["close_price"]
                 logger.warning(
-                    "Adj Close column missing, using Close as fallback")
+                    "Adj Close column missing, using close_price as fallback"
+                )
 
             required_cols = {
                 "Date",
                 "Open",
                 "High",
                 "Low",
-                "Close",
+                "close_price",
                 "Adj Close",
                 "Volume",
                 "Ticker",
@@ -302,7 +309,8 @@ async def _fetch_single_info(
             error_msg = str(exc).lower()
             if "database is locked" in error_msg:
                 logger.warning(
-                    f"Database lock detected for {ticker} on attempt {attempt+1}: {exc}"
+                    f"Database lock detected for {ticker} on attempt {
+                        attempt + 1}: {exc}"
                 )
                 if attempt < retries - 1:
                     # Longer delay for database lock issues
@@ -320,7 +328,8 @@ async def _fetch_single_info(
                     )
             elif "timeout" in error_msg or "connection" in error_msg:
                 logger.warning(
-                    f"Network issue for {ticker} on attempt {attempt+1}: {exc}"
+                    f"Network issue for {ticker} on attempt {
+                        attempt + 1}: {exc}"
                 )
                 if attempt < retries - 1:
                     await asyncio.sleep(delay)
@@ -328,7 +337,7 @@ async def _fetch_single_info(
                     continue
             else:
                 logger.warning(
-                    f"Attempt {attempt+1} failed for {ticker}: {exc}")
+                    f"Attempt {attempt + 1} failed for {ticker}: {exc}")
                 if attempt < retries - 1:
                     await asyncio.sleep(delay)
                     delay *= backoff_factor

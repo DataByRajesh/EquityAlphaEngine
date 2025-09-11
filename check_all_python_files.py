@@ -39,7 +39,8 @@ if __name__ == "__main__":
     root = os.path.dirname(os.path.abspath(__file__))
     py_files = find_python_files(root)
     print(
-        f"Formatting {len(py_files)} Python files with black, isort, and autopep8...\n"
+        f"Formatting {
+            len(py_files)} Python files with black, isort, and autopep8...\n"
     )
     # Run black
     subprocess.run(["black"] + py_files)

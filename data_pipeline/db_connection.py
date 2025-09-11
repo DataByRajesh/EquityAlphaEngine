@@ -102,7 +102,7 @@ def _get_cloud_sql_instance_name():
         region = os.environ.get("GCP_REGION", "us-central1")  # Default region
         instance = "equity-db"  # Assumed instance name
         return f"{project}:{region}:{instance}"
-    except:
+    except BaseException:
         logger.warning(
             "Could not determine Cloud SQL instance name, using direct connection"
         )
@@ -165,7 +165,8 @@ def _create_engine_with_retry(
             last_exception = e
             if attempt < MAX_RETRIES - 1:
                 logger.warning(
-                    f"Engine creation attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds..."
+                    f"Engine creation attempt {
+                        attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds..."
                 )
                 time.sleep(RETRY_DELAY)
             else:
