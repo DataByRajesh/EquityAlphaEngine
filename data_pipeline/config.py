@@ -113,7 +113,7 @@ GMAIL_TOKEN_FILE = os.environ.get("GMAIL_TOKEN_FILE", "token.json")
 # environment variable ``CACHE_GCS_BUCKET``. Optionally, set a prefix via
 # ``CACHE_GCS_PREFIX``.
 # ---------------------------------------------------------------------------
-CACHE_GCS_BUCKET = os.environ.get("CACHE_GCS_BUCKET")
+CACHE_GCS_BUCKET = os.environ.get("CACHE_GCS_BUCKET", "equity-alpha-engine-cache")
 CACHE_GCS_PREFIX = os.environ.get("CACHE_GCS_PREFIX", "")
 
 # ---------------------------------------------------------------------------

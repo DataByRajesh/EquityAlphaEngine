@@ -16,6 +16,8 @@
 - [x] Optimize yfinance fetch in market_data.py with better error handling
 - [x] Add timeout and progress tracking to prevent long runs
 - [x] Fix yfinance "database is locked" error with cache management and retry logic
+- [x] Fix pct_change DataFrame assignment errors in compute_factors.py by using transform instead of apply/reset_index
+- [x] Set CACHE_GCS_BUCKET default in config.py
 
 ## Implementation Steps
 1. Fix pct_change deprecation warnings
