@@ -51,20 +51,20 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting momentum calculations")
     for period, label in zip([21, 63, 126, 252], ["1m", "3m", "6m", "12m"]):
         try:
-            df[f"return_{label}"] = df.groupby("Ticker").apply(
-                lambda g: g["close_price"].pct_change(period, fill_method=None).fillna(0.0).squeeze()
-            ).reset_index(level=0, drop=True)
+            df[f"return_{label}"] = df.groupby("Ticker")["close_price"].transform(
+                lambda x: x.pct_change(period, fill_method=None).fillna(0.0)
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to compute return_{label}: %s", e, exc_info=True)
     # 12-1 momentum
     try:
-        mom_252 = df.groupby("Ticker").apply(
-            lambda g: g["close_price"].pct_change(252, fill_method=None).fillna(0.0).squeeze()
-        ).reset_index(level=0, drop=True)
-        mom_21 = df.groupby("Ticker").apply(
-            lambda g: g["close_price"].pct_change(21, fill_method=None).fillna(0.0).squeeze()
-        ).reset_index(level=0, drop=True)
+        mom_252 = df.groupby("Ticker")["close_price"].transform(
+            lambda x: x.pct_change(252, fill_method=None).fillna(0.0)
+        )
+        mom_21 = df.groupby("Ticker")["close_price"].transform(
+            lambda x: x.pct_change(21, fill_method=None).fillna(0.0)
+        )
         df["momentum_12_1"] = mom_252 - mom_21
     except Exception as e:
         logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
@@ -73,10 +73,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting volatility calculations")
     for window in [21, 63, 252]:
         try:
-            df[f"vol_{window}d"] = df.groupby("Ticker").apply(
-                lambda g: g["close_price"].dropna().pct_change(fill_method=None).rolling(
-                    window, min_periods=max(2, window // 3)).std().fillna(0.0).squeeze()
-            ).reset_index(level=0, drop=True)
+            df[f"vol_{window}d"] = df.groupby("Ticker")["close_price"].transform(
+                lambda x: x.pct_change(fill_method=None).rolling(
+                    window, min_periods=max(2, window // 3)).std().fillna(0.0)
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to compute vol_{window}d: %s", e, exc_info=True)
@@ -85,9 +85,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting moving averages calculations")
     for window in [20, 50, 200]:
         try:
-            df[f"ma_{window}"] = df.groupby("Ticker").apply(
-                lambda g: ta.trend.sma_indicator(g["close_price"], window=window).fillna(0.0).squeeze()
-            ).reset_index(level=0, drop=True)
+            df[f"ma_{window}"] = df.groupby("Ticker")["close_price"].transform(
+                lambda x: ta.trend.sma_indicator(x, window=window).fillna(0.0)
+            )
         except Exception as e:
             logger.warning(
                 f"Failed to compute ma_{window}: %s", e, exc_info=True)
@@ -95,9 +95,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- RSI ----------
     logger.debug("Starting RSI calculation")
     try:
-        df["RSI_14"] = df.groupby("Ticker").apply(
-            lambda g: ta.momentum.rsi(g["close_price"], window=14).fillna(0.0).squeeze()
-        ).reset_index(level=0, drop=True)
+        df["RSI_14"] = df.groupby("Ticker")["close_price"].transform(
+            lambda x: ta.momentum.rsi(x, window=14).fillna(0.0)
+        )
     except Exception as e:
         logger.warning("Failed to compute RSI_14: %s", e, exc_info=True)
 
@@ -212,9 +212,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("Column 'Volume' missing; avg_volume_21d set to NaN.")
         df["avg_volume_21d"] = np.nan
     else:
-        df["avg_volume_21d"] = df.groupby("Ticker").apply(
-            lambda g: g["Volume"].dropna().rolling(21, min_periods=5).mean().fillna(0.0).squeeze()
-        ).reset_index(level=0, drop=True)
+        df["avg_volume_21d"] = df.groupby("Ticker")["Volume"].transform(
+            lambda x: x.dropna().rolling(21, min_periods=5).mean().fillna(0.0)
+        )
 
     # ---------- Amihud illiquidity ----------
     logger.debug("Starting Amihud illiquidity calculation")
