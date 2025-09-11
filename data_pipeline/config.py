@@ -48,7 +48,7 @@ def _ensure_dir(env_var: str, default: str) -> str:
     available. The path is created if missing. If the directory cannot be
     created, a temporary directory is returned instead.
     """
-    path = os.environ.get(env_var, default)
+    path = os.path.abspath(os.environ.get(env_var, default))
     try:
         os.makedirs(path, exist_ok=True)
     except OSError:
@@ -130,7 +130,7 @@ MAX_THREADS = int(os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5))
 CACHE_EXPIRY_MINUTES = 1440  # Cache expiry time in minutes (24 hours)
 
 # Yfinance configuration to prevent database lock issues
-YF_DISABLE_CACHE = os.environ.get("YF_DISABLE_CACHE", "false").lower() == "true"
+YF_DISABLE_CACHE = os.environ.get("YF_DISABLE_CACHE", "true").lower() == "true"
 YF_CACHE_DIR = os.environ.get(
     "YF_CACHE_DIR", os.path.join(CACHE_DIR, "yfinance"))
 
