@@ -124,9 +124,7 @@ def fetch_macro_data(start_date: str, end_date: str) -> Optional[pd.DataFrame]:
         return None
 
 
-def fetch_historical_data(
-    tickers: list[str], start_date: str, end_date: str
-) -> pd.DataFrame:
+def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) -> pd.DataFrame:
     """
     Downloads historical price data for tickers, cleans and rounds it.
     Returns a DataFrame or empty DataFrame on failure.
@@ -134,11 +132,9 @@ def fetch_historical_data(
     Disables yfinance caching to prevent database lock issues.
     """
     logger.debug(
-        f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}"
-    )
+        f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}")
     logger.info(
-        f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}..."
-    )
+        f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}...")
     if not tickers:
         logger.error("No tickers provided.")
         return pd.DataFrame()
@@ -199,7 +195,7 @@ def fetch_historical_data(
             # Ticker column is already set during sequential download
 
             # Rename 'Close' to 'close_price' to avoid PostgreSQL reserved word
-            # issues 
+            # issues
             if "Close" in data.columns:
                 data = data.rename(columns={"Close": "close_price"})
 
@@ -211,8 +207,7 @@ def fetch_historical_data(
             if "Adj Close" not in data.columns and "close_price" in data.columns:
                 data["Adj Close"] = data["close_price"]
                 logger.warning(
-                    "Adj Close column missing, using close_price as fallback"
-                )
+                    "Adj Close column missing, using close_price as fallback")
 
             required_cols = {
                 "Date",
@@ -227,8 +222,7 @@ def fetch_historical_data(
             missing_cols = required_cols - set(data.columns)
             if missing_cols:
                 logger.error(
-                    f"Historical data missing required columns: {missing_cols}"
-                )
+                    f"Historical data missing required columns: {missing_cols}")
                 return pd.DataFrame()
             logger.info("Historical data fetched successfully.")
             logger.debug("Historical data fetch completed.")
@@ -242,8 +236,7 @@ def fetch_historical_data(
                     # Longer delay for database lock issues
                     delay = base_delay * (2**attempt) + 1
                     logger.info(
-                        f"Waiting {delay} seconds before retry due to database lock..."
-                    )
+                        f"Waiting {delay} seconds before retry due to database lock...")
                     import time
 
                     time.sleep(delay)
@@ -257,8 +250,7 @@ def fetch_historical_data(
                 if attempt < max_retries - 1:
                     delay = base_delay * (2**attempt)
                     logger.info(
-                        f"Waiting {delay} seconds before retry due to network issue..."
-                    )
+                        f"Waiting {delay} seconds before retry due to network issue...")
                     import time
 
                     time.sleep(delay)
@@ -276,8 +268,7 @@ def fetch_historical_data(
 
             # If we reach here, all retries are exhausted
             logger.error(
-                f"All {max_retries} attempts failed. Returning empty DataFrame."
-            )
+                f"All {max_retries} attempts failed. Returning empty DataFrame.")
             return pd.DataFrame()
 
 
@@ -298,37 +289,27 @@ async def _fetch_single_info(
     delay = config.INITIAL_DELAY
     for attempt in range(retries):
         try:
-            info = await asyncio.wait_for(
-                asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout
-            )
+            info = await asyncio.wait_for(asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout)
             return ticker, info
-        except (
-            Exception
-        ) as exc:  # pragma: no cover - network errors are non-deterministic
+        except Exception as exc:  # pragma: no cover - network errors are non-deterministic
             error_msg = str(exc).lower()
             if "database is locked" in error_msg:
                 logger.warning(
-                    f"Database lock detected for {ticker} on attempt {attempt + 1}: {exc}"
-                )
+                    f"Database lock detected for {ticker} on attempt {attempt + 1}: {exc}")
                 if attempt < retries - 1:
                     # Longer delay for database lock issues
-                    delay = max(
-                        delay * backoff_factor, 3.0
-                    )  # Minimum 3 seconds for DB locks
+                    # Minimum 3 seconds for DB locks
+                    delay = max(delay * backoff_factor, 3.0)
                     logger.info(
-                        f"Waiting {delay} seconds before retry for {ticker} due to database lock..."
-                    )
+                        f"Waiting {delay} seconds before retry for {ticker} due to database lock...")
                     await asyncio.sleep(delay)
                     continue
                 else:
                     logger.error(
-                        f"All attempts failed for {ticker} due to persistent database lock"
-                    )
+                        f"All attempts failed for {ticker} due to persistent database lock")
             elif "timeout" in error_msg or "connection" in error_msg:
-                logger.warning(
-                    f"Network issue for {ticker} on attempt {
-                        attempt + 1}: {exc}"
-                )
+                logger.warning("Network issue for {} on attempt {}: {}".format(
+                    ticker, attempt + 1, exc))
                 if attempt < retries - 1:
                     await asyncio.sleep(delay)
                     delay *= backoff_factor
@@ -373,8 +354,7 @@ def fetch_fundamental_data(
     if use_cache:
         for symbol in ticker_symbols:
             cached = load_cached_fundamentals(
-                symbol, expiry_minutes=cache_expiry_minutes
-            )
+                symbol, expiry_minutes=cache_expiry_minutes)
             if cached is not None:
                 logger.info(f"Loaded cached fundamentals for {symbol}")
                 results.append(cached)
@@ -390,10 +370,7 @@ def fetch_fundamental_data(
         """Fetch fundamentals for the remaining tickers asynchronously."""
         tickers_obj = yf.Tickers(" ".join(remaining))
         tasks = [
-            _fetch_single_info(
-                tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout
-            )
-            for t in remaining
+            _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout) for t in remaining
         ]
 
         fetched: list[tuple[str, dict]] = []
@@ -415,8 +392,7 @@ def fetch_fundamental_data(
         for symbol, info in fetched:
             if not info:
                 logger.error(
-                    f"Failed to fetch fundamentals for {symbol} after {retries} attempts"
-                )
+                    f"Failed to fetch fundamentals for {symbol} after {retries} attempts")
                 continue
             key_ratios = {
                 "Ticker": symbol,
@@ -428,9 +404,7 @@ def fetch_fundamental_data(
                 "priceToBook": info.get("priceToBook"),
                 "trailingPE": info.get("trailingPE"),
                 "forwardPE": info.get("forwardPE"),
-                "priceToSalesTrailing12Months": info.get(
-                    "priceToSalesTrailing12Months"
-                ),
+                "priceToSalesTrailing12Months": info.get("priceToSalesTrailing12Months"),
                 "debtToEquity": info.get("debtToEquity"),
                 "currentRatio": info.get("currentRatio"),
                 "quickRatio": info.get("quickRatio"),
@@ -454,9 +428,7 @@ def fetch_fundamental_data(
         return asyncio.create_task(_fetch_all())
 
 
-def combine_price_and_fundamentals(
-    price_df: pd.DataFrame, fundamentals_list: list[dict]
-) -> pd.DataFrame:
+def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: list[dict]) -> pd.DataFrame:
     """
     Merges price data DataFrame with a list of fundamental dicts (as DataFrame).
     Returns a combined DataFrame.
@@ -537,8 +509,7 @@ def main(engine, start_date, end_date):
             return
 
         price_fundamentals_df = combine_price_and_fundamentals(
-            hist_df, fundamentals_list
-        )
+            hist_df, fundamentals_list)
 
         # Compute factors
         logger.info("Computing factors...")
@@ -557,12 +528,9 @@ def main(engine, start_date, end_date):
             db_helper = DBHelper(engine=engine)  # Use provided engine
             try:
                 db_helper.create_table(
-                    financial_tbl, financial_df, primary_keys=[
-                        "Date", "Ticker"]
-                )
+                    financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
                 db_helper.insert_dataframe(
-                    financial_tbl, financial_df, unique_cols=["Date", "Ticker"]
-                )
+                    financial_tbl, financial_df, unique_cols=["Date", "Ticker"])
 
                 macro_df = fetch_macro_data(start_date, end_date)
                 if macro_df is not None:
@@ -570,8 +538,7 @@ def main(engine, start_date, end_date):
                     db_helper.create_table(
                         macro_tbl, macro_df, primary_keys=["Date"])
                     db_helper.insert_dataframe(
-                        macro_tbl, macro_df, unique_cols=["Date"]
-                    )
+                        macro_tbl, macro_df, unique_cols=["Date"])
             finally:
                 db_helper.close()
 
@@ -584,8 +551,7 @@ def main(engine, start_date, end_date):
 
             if gmail_service is None:
                 logger.error(
-                    "Failed to initialize Gmail service. Email notification will not be sent."
-                )
+                    "Failed to initialize Gmail service. Email notification will not be sent.")
                 return
 
             sender = "raj.analystdata@gmail.com"
