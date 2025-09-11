@@ -45,8 +45,7 @@ def test_main_stores_macro_data(monkeypatch):
         market_data,
         "compute_factors",
         lambda df: pd.DataFrame(
-            {"Date": [pd.Timestamp("2020-01-01")], "Ticker": ["A"]}
-        ),
+            {"Date": [pd.Timestamp("2020-01-01")], "Ticker": ["A"]}),
     )
     monkeypatch.setattr(market_data, "round_financial_columns", lambda df: df)
     monkeypatch.setattr(

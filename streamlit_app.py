@@ -27,9 +27,8 @@ try:
 
     st.sidebar.header("Filter Options")
     min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
-    top_n = st.sidebar.slider(
-        "Number of Top Stocks", min_value=5, max_value=50, value=10
-    )
+    top_n = st.sidebar.slider("Number of Top Stocks",
+                              min_value=5, max_value=50, value=10)
 
     # Define Tabs
     TABS = [
@@ -52,23 +51,20 @@ try:
 
     with tabs[0]:
         st.header("💰 Undervalued Stocks")
-        df_undervalued = get_data(
-            "get_undervalued_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df_undervalued = get_data("get_undervalued_stocks", params={
+                                  "min_mktcap": min_mktcap, "top_n": top_n})
         st.dataframe(df_undervalued)
 
     with tabs[1]:
         st.header("📉 Overvalued Stocks")
-        df_overvalued = get_data(
-            "get_overvalued_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df_overvalued = get_data("get_overvalued_stocks", params={
+                                 "min_mktcap": min_mktcap, "top_n": top_n})
         st.dataframe(df_overvalued)
 
     with tabs[2]:
         st.header("🏅 High Quality Stocks")
-        df_quality = get_data(
-            "get_high_quality_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df_quality = get_data("get_high_quality_stocks", params={
+                              "min_mktcap": min_mktcap, "top_n": top_n})
         st.dataframe(df_quality)
 
     with tabs[3]:
@@ -89,9 +85,8 @@ try:
 
     with tabs[5]:
         st.header("🛡️ Low Beta Stocks")
-        df_lowbeta = get_data(
-            "get_low_beta_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df_lowbeta = get_data("get_low_beta_stocks", params={
+                              "min_mktcap": min_mktcap, "top_n": top_n})
         st.dataframe(df_lowbeta)
 
     with tabs[6]:
@@ -144,15 +139,13 @@ try:
 
     with tabs[12]:
         st.header("🚩 High Risk Warning Stocks")
-        df_risk = get_data(
-            "get_high_risk_stocks", params={"min_mktcap": min_mktcap, "top_n": top_n}
-        )
+        df_risk = get_data("get_high_risk_stocks", params={
+                           "min_mktcap": min_mktcap, "top_n": top_n})
         st.dataframe(df_risk)
 
     with tabs[13]:
         st.header(
-            "🏆 Top Combined Screener (Undervalued + High Quality + High Momentum)"
-        )
+            "🏆 Top Combined Screener (Undervalued + High Quality + High Momentum)")
         df_combined = get_data(
             "get_top_combined_screen_limited",
             params={"min_mktcap": min_mktcap, "top_n": top_n},

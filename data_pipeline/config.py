@@ -197,8 +197,8 @@ def get_file_logger(name: str, filename: str = None):
     file_handler.setFormatter(formatter)
     # Avoid duplicate handlers
     if not any(
-        isinstance(h, logging.FileHandler)
-        and getattr(h, "baseFilename", None) == file_handler.baseFilename
+        isinstance(h, logging.FileHandler) and getattr(
+            h, "baseFilename", None) == file_handler.baseFilename
         for h in logger.handlers
     ):
         logger.addHandler(file_handler)

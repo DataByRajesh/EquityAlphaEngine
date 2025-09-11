@@ -53,9 +53,7 @@ def test_driver_detection():
         args = _get_driver_specific_connect_args(url)
         print(f"  URL: {url}")
         print(f"  Args: {args}")
-        assert (
-            "connect_timeout" in args
-        ), f"psycopg2 should have connect_timeout: {args}"
+        assert "connect_timeout" in args, f"psycopg2 should have connect_timeout: {args}"
         assert args["timeout"] == 60, f"Should have timeout=60: {args}"
         print("  ✅ psycopg2 detection works")
 
@@ -66,9 +64,7 @@ def test_driver_detection():
         args = _get_driver_specific_connect_args(url)
         print(f"  URL: {url}")
         print(f"  Args: {args}")
-        assert (
-            "connect_timeout" not in args
-        ), f"pg8000 should NOT have connect_timeout: {args}"
+        assert "connect_timeout" not in args, f"pg8000 should NOT have connect_timeout: {args}"
         assert args["timeout"] == 60, f"Should have timeout=60: {args}"
         print("  ✅ pg8000 detection works")
 
@@ -136,14 +132,10 @@ def test_postgresql_url_parsing():
         args = _get_driver_specific_connect_args(case["url"])
 
         if case["should_have_connect_timeout"]:
-            assert (
-                "connect_timeout" in args
-            ), f"Should have connect_timeout for {case['expected_driver']}"
+            assert "connect_timeout" in args, f"Should have connect_timeout for {case['expected_driver']}"
             print(f"    ✅ {case['expected_driver']} has connect_timeout")
         else:
-            assert (
-                "connect_timeout" not in args
-            ), f"Should NOT have connect_timeout for {case['expected_driver']}"
+            assert "connect_timeout" not in args, f"Should NOT have connect_timeout for {case['expected_driver']}"
             print(
                 f"    ✅ {case['expected_driver']} does not have connect_timeout")
 
@@ -165,9 +157,7 @@ if __name__ == "__main__":
         print("\n" + "=" * 50)
         print("🎉 All tests passed! The database connection fix is working correctly.")
         print("\nThe fix should resolve the original error:")
-        print(
-            "  TypeError: connect() got an unexpected keyword argument 'connect_timeout'"
-        )
+        print("  TypeError: connect() got an unexpected keyword argument 'connect_timeout'")
 
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
