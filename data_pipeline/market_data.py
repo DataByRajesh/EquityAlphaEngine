@@ -14,6 +14,7 @@ from typing import Optional, Union  # For type hinting
 # Third-party imports
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
+import requests  # For HTTP requests
 import yfinance as yf  # For fetching financial data
 from yfinance.exceptions import YFPricesMissingError  # For handling missing price data
 
@@ -163,6 +164,10 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                 # Note: yfinance doesn't have a direct way to disable all caching,
                 # but we can minimize it by using unique directories
 
+            # Create session with user-agent to avoid 401 errors
+            session = requests.Session()
+            session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+
             # Download tickers sequentially to avoid database lock issues
             all_data = []
             for ticker in tickers:
@@ -175,6 +180,7 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                         progress=False,
                         auto_adjust=False,
                         timeout=timeout,
+                        session=session,
                     )
                     if not ticker_data.empty:
                         ticker_data["Ticker"] = ticker
@@ -384,7 +390,9 @@ def fetch_fundamental_data(
 
     async def _fetch_all() -> list[dict]:
         """Fetch fundamentals for the remaining tickers asynchronously."""
-        tickers_obj = yf.Tickers(" ".join(remaining))
+        session = requests.Session()
+        session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        tickers_obj = yf.Tickers(" ".join(remaining), session=session)
         tasks = [
             _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout) for t in remaining
         ]
@@ -493,8 +501,12 @@ def main(engine, start_date, end_date):
         logger.error("Pipeline timed out after %d seconds", timeout_seconds)
         raise TimeoutError("Pipeline execution exceeded timeout")
 
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(timeout_seconds)
+    # Use signal timeout only if SIGALRM is available (Unix systems)
+    if hasattr(signal, 'SIGALRM'):
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout_seconds)
+    else:
+        logger.warning("Signal timeout not available on this platform, proceeding without timeout")
 
     try:
         start_time = time.time()
@@ -593,4 +605,5 @@ def main(engine, start_date, end_date):
         logger.error("Pipeline failed with error: %s", e, exc_info=True)
         raise
     finally:
-        signal.alarm(0)  # Cancel the alarm
+        if hasattr(signal, 'SIGALRM'):
+            signal.alarm(0)  # Cancel the alarm
