@@ -3,8 +3,9 @@
 Focused test for the database connection argument fix.
 """
 
-from data_pipeline.db_connection import _get_driver_specific_connect_args
 import sys
+
+from data_pipeline.db_connection import _get_driver_specific_connect_args
 
 sys.path.insert(0, ".")
 

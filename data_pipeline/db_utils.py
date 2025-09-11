@@ -1,4 +1,3 @@
-from data_pipeline.db_connection import SessionLocal
 import time
 from typing import Dict, Optional, Sequence
 
@@ -6,7 +5,6 @@ import pandas as pd
 from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         Index, Integer, MetaData, String, Table, Text,
                         create_engine, inspect, text)
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
@@ -73,7 +71,8 @@ def _records(df: pd.DataFrame):
     return df.where(pd.notna(df), None).to_dict(orient="records")
 
 
-def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
+def _chunked_insert(conn, stmt, df: pd.DataFrame,
+                    chunksize: int = 900) -> None:
     """
     Helper to insert DataFrame in chunks using the given statement.
     Includes retry logic for database lock errors and performance tracking.
@@ -126,7 +125,8 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
                     )
                 break  # Success, exit retry loop
             except OperationalError as e:
-                if "database is locked" in str(e).lower() and attempt < max_retries - 1:
+                if "database is locked" in str(
+                        e).lower() and attempt < max_retries - 1:
                     logger.warning(
                         "Database locked, retrying insert in %s seconds (attempt %d/%d): %s",
                         retry_delay,
@@ -182,7 +182,8 @@ class DBHelper:
                 autocommit=False, autoflush=False, bind=self.engine
             )
         elif db_url:
-            # Create dedicated engine for custom URL (used by API endpoints and tests)
+            # Create dedicated engine for custom URL (used by API endpoints and
+            # tests)
             self.database_url = db_url
             self.engine = create_engine(db_url, pool_pre_ping=True)
             self._own_engine = True  # Track that we own this engine
@@ -357,7 +358,8 @@ class DBHelper:
         finally:
             DBHelper._population_running = False
 
-    def _ensure_unique_index(self, conn, table_name: str, cols: tuple[str, ...]):
+    def _ensure_unique_index(
+            self, conn, table_name: str, cols: tuple[str, ...]):
         """
         Ensure a unique index exists for the given columns.
         """
@@ -421,7 +423,8 @@ class DBHelper:
             # Use temp table for faster upsert
             temp_table_name = f"temp_{table_name}_{int(time.time())}"
             logger.info("Creating temp table '%s' for upsert", temp_table_name)
-            # Create new column objects for temp table to avoid "already assigned" error
+            # Create new column objects for temp table to avoid "already
+            # assigned" error
             temp_columns = []
             for col in tbl.columns:
                 temp_columns.append(
@@ -559,6 +562,6 @@ class DBHelper:
 
 # Updated import for market_data to use fallback mechanism
 try:
-    from . import market_data
+    pass
 except ImportError:
-    import data_pipeline.market_data as market_data
+    pass

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from data_pipeline.gmail_utils import send_message
 
