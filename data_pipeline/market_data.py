@@ -168,15 +168,31 @@ def fetch_historical_data(
                 # Note: yfinance doesn't have a direct way to disable all caching,
                 # but we can minimize it by using unique directories
 
-            # Explicitly set auto_adjust=False to ensure we get Adj Close column
-            data = yf.download(
-                tickers,
-                start=start_date,
-                end=end_date,
-                progress=False,
-                auto_adjust=False,
-                timeout=timeout,
-            )
+            # Download tickers sequentially to avoid database lock issues
+            all_data = []
+            for ticker in tickers:
+                logger.debug(f"Downloading data for {ticker}")
+                try:
+                    ticker_data = yf.download(
+                        ticker,
+                        start=start_date,
+                        end=end_date,
+                        progress=False,
+                        auto_adjust=False,
+                        timeout=timeout,
+                    )
+                    if not ticker_data.empty:
+                        ticker_data['Ticker'] = ticker
+                        all_data.append(ticker_data)
+                except Exception as e:
+                    logger.warning(f"Failed to download data for {ticker}: {e}")
+                    continue
+
+            if not all_data:
+                logger.error("No data downloaded for any ticker")
+                return pd.DataFrame()
+
+            data = pd.concat(all_data, ignore_index=False)
 
             # yfinance returns a ``MultiIndex`` when multiple tickers are provided.
             # If only a single ticker is returned, the columns are a simple
