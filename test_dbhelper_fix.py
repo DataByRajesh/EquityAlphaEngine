@@ -28,12 +28,12 @@ def test_dbhelper_with_custom_url():
 
         # Test instantiation
         db = DBHelper(db_url)
-        print(f"✅ DBHelper instantiated successfully with custom URL")
+        print("✅ DBHelper instantiated successfully with custom URL")
 
         # Test that engine property exists and works
         assert hasattr(db, "engine"), "Missing self.engine property"
         assert hasattr(db, "inspector"), "Missing self.inspector property"
-        print(f"✅ Engine and inspector properties exist")
+        print("✅ Engine and inspector properties exist")
 
         # Test basic database operations
         test_df = pd.DataFrame(
@@ -42,11 +42,11 @@ def test_dbhelper_with_custom_url():
 
         # Test table creation
         db.create_table("test_table", test_df)
-        print(f"✅ Table creation successful")
+        print("✅ Table creation successful")
 
         # Test data insertion
         db.insert_dataframe("test_table", test_df)
-        print(f"✅ Data insertion successful")
+        print("✅ Data insertion successful")
 
         # Test data retrieval
         result_df = pd.read_sql("SELECT * FROM test_table", db.engine)
@@ -55,7 +55,7 @@ def test_dbhelper_with_custom_url():
 
         # Test cleanup
         db.close()
-        print(f"✅ Database cleanup successful")
+        print("✅ Database cleanup successful")
 
         # Cleanup temp file
         os.unlink(tmp.name)
@@ -79,22 +79,22 @@ def test_dbhelper_without_url():
 
         # Test instantiation without URL
         db = DBHelper()
-        print(f"✅ DBHelper instantiated successfully without URL")
+        print("✅ DBHelper instantiated successfully without URL")
 
         # Test that engine property exists
         assert hasattr(db, "engine"), "Missing self.engine property"
         assert hasattr(db, "inspector"), "Missing self.inspector property"
-        print(f"✅ Engine and inspector properties exist")
+        print("✅ Engine and inspector properties exist")
 
         # Test that it uses global engine
         from data_pipeline.db_connection import engine as global_engine
 
         assert db.engine is global_engine, "Should use global engine"
-        print(f"✅ Uses global engine correctly")
+        print("✅ Uses global engine correctly")
 
         # Test cleanup
         db.close()
-        print(f"✅ Database cleanup successful")
+        print("✅ Database cleanup successful")
 
         return True
 
@@ -114,12 +114,12 @@ def test_streamlit_import():
         # Test the import that was failing
         from data_pipeline.db_connection import get_db
 
-        print(f"✅ Import successful: data_pipeline.db_connection.get_db")
+        print("✅ Import successful: data_pipeline.db_connection.get_db")
 
         # Test that it returns a generator
         db_gen = get_db()
         assert hasattr(db_gen, "__next__"), "get_db should return a generator"
-        print(f"✅ get_db returns generator as expected")
+        print("✅ get_db returns generator as expected")
 
         return True
 
@@ -139,15 +139,15 @@ def test_market_data_import():
         # Test the import that was failing
         from data_pipeline.db_utils import DBHelper
 
-        print(f"✅ Import successful: data_pipeline.db_utils.DBHelper")
+        print("✅ Import successful: data_pipeline.db_utils.DBHelper")
 
         # Test instantiation (the pattern used in market_data.py)
         db_helper = DBHelper()  # Uses global engine
-        print(f"✅ DBHelper instantiation successful")
+        print("✅ DBHelper instantiation successful")
 
         # Test cleanup
         db_helper.close()
-        print(f"✅ Cleanup successful")
+        print("✅ Cleanup successful")
 
         return True
 
@@ -172,9 +172,9 @@ def main():
 
     results = []
     for test_name, test_func in tests:
-        print(f"{'=' * 60}")
+        print("=" * 60)
         print(f"Running: {test_name}")
-        print(f"{'=' * 60}")
+        print("=" * 60)
 
         success = test_func()
         results.append((test_name, success))
@@ -184,9 +184,9 @@ def main():
         else:
             print(f"❌ {test_name}: FAILED")
 
-    print(f"\n{'=' * 60}")
+    print("\n" + "=" * 60)
     print("📊 TEST SUMMARY")
-    print(f"{'=' * 60}")
+    print("=" * 60)
 
     passed = sum(1 for _, success in results if success)
     total = len(results)
