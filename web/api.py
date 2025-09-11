@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 import pandas as pd
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy import text

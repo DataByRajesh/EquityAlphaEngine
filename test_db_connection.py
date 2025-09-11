@@ -5,8 +5,6 @@ This script tests the database connection using DATABASE_URL from environment va
 It avoids hardcoded credentials and IPs for security and flexibility.
 """
 
-import os
-
 import sqlalchemy
 
 from data_pipeline.db_connection import engine

@@ -17,9 +17,9 @@ except ImportError:
 
 # Updated import for market_data to use fallback mechanism
 try:
-    from . import market_data
+    pass
 except ImportError:
-    import data_pipeline.market_data as market_data
+    pass
 
 # Refactored to use the centralized engine from db_connection.py
 from data_pipeline.db_connection import engine
@@ -57,7 +57,7 @@ def main() -> None:
                     df["Ticker"].value_counts())
         logger.info(
             "Selected columns description\n%s",
-            df[["Close", "Volume", "marketCap"]].describe(),
+            df[["close_price", "Volume", "marketCap"]].describe(),
         )
     except Exception as e:
         logger.error(f"Error during database operation: {e}", exc_info=True)

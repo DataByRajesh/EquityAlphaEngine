@@ -18,8 +18,6 @@ from __future__ import annotations
 # Standard library imports
 import argparse
 import logging
-import os
-import urllib.parse
 from datetime import datetime, timedelta
 
 # Third-party library imports
@@ -27,11 +25,9 @@ import pandas as pd
 from sqlalchemy import inspect
 
 # Local application imports
-import data_pipeline.config as config
-from data_pipeline.db_connection import engine, get_db, reinitialize_engine
+from data_pipeline.db_connection import engine
 from data_pipeline.db_utils import DBHelper
 from data_pipeline.market_data import main as market_data_main
-from data_pipeline.utils import get_secret
 
 # Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
