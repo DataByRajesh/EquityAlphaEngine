@@ -119,8 +119,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             )
         except Exception as e:
             logger.warning("MACD calculation failed: %s", e, exc_info=True)
-            return pd.DataFrame(
-                {"MACD": np.nan, "MACDh": np.nan}, index=series.index)
+            return pd.DataFrame({"MACD": np.nan, "MACDh": np.nan}, index=series.index)
 
     try:
         macd_df = (

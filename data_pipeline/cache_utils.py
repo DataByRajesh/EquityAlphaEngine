@@ -165,8 +165,7 @@ def clear_all_cache() -> None:
         return  # GCS not available, skip
 
     try:
-        for blob in _client.list_blobs(
-                config.CACHE_GCS_BUCKET, prefix=_prefix()):
+        for blob in _client.list_blobs(config.CACHE_GCS_BUCKET, prefix=_prefix()):
             try:
                 blob.delete()
             except Exception:

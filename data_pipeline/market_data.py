@@ -137,8 +137,7 @@ def fetch_historical_data(
         f"Fetching historical data for tickers: {tickers}, start_date: {start_date}, end_date: {end_date}"
     )
     logger.info(
-        f"Downloading historical price data for {
-            len(tickers)} tickers from {start_date} to {end_date}..."
+        f"Downloading historical price data for {len(tickers)} tickers from {start_date} to {end_date}..."
     )
     if not tickers:
         logger.error("No tickers provided.")
