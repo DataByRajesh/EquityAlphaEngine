@@ -396,89 +396,79 @@ class DBHelper:
                 len(df),
                 unique_cols,
             )
-            # Use temp table for faster upsert
-            temp_table_name = f"temp_{table_name}_{int(time.time())}"
-            logger.info("Creating temp table '%s' for upsert", temp_table_name)
-            # Create new column objects for temp table to avoid "already
-            # assigned" error
-            temp_columns = []
-            for col in tbl.columns:
-                temp_columns.append(
-                    Column(col.name, col.type, nullable=col.nullable))
-            temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
-            temp_tbl.create(self.engine, checkfirst=True)
-            logger.info("Created temp table '%s' successfully",
-                        temp_table_name)
-
-            # Insert into temp table
-            logger.info(
-                "Starting bulk insert into temp table '%s' with %d rows, chunksize %d",
-                temp_table_name,
-                len(df),
-                chunksize,
-            )
-            insert_start = time.time()
-            df.to_sql(
-                temp_table_name,
-                con=self.engine,
-                if_exists="append",
-                index=False,
-                chunksize=chunksize,
-                method="multi",
-            )
-            insert_elapsed = time.time() - insert_start
-            logger.info(
-                "Inserted %d rows into temp table '%s' in %.2f seconds (%.1f rows/sec)",
-                len(df),
-                temp_table_name,
-                insert_elapsed,
-                len(df) / insert_elapsed if insert_elapsed > 0 else 0,
-            )
-
-            # Perform upsert from temp table
-            logger.info(
-                "Starting upsert from temp table '%s' to '%s'",
-                temp_table_name,
-                table_name,
-            )
-
-            # Properly quote column names for PostgreSQL
-            def quote_column(col):
+            # Properly quote column names
+            def quote_ident(col: str) -> str:
+                if getattr(self.engine.dialect, "name", "") == "mysql":
+                    return f"`{col}`"
                 return f'"{col}"'
 
-            quoted_columns = [quote_column(col) for col in df.columns]
-            quoted_unique_cols = [quote_column(col) for col in unique_cols]
-            non_unique_cols = [
-                col for col in df.columns if col not in unique_cols]
+            quoted_columns = [quote_ident(col) for col in df.columns]
+            quoted_unique_cols = [quote_ident(col) for col in unique_cols]
+            non_unique_cols = [col for col in df.columns if col not in unique_cols]
 
-            upsert_query = f"""
-            INSERT INTO {table_name} ({', '.join(quoted_columns)})
-            SELECT {', '.join(quoted_columns)} FROM {temp_table_name}
-            ON CONFLICT ({', '.join(quoted_unique_cols)}) DO UPDATE SET
-            {', '.join([f'{quote_column(col)} = EXCLUDED.{quote_column(col)}' for col in non_unique_cols])}
-            """
+            dialect_name = getattr(self.engine, "dialect", None)
+            dialect_name = getattr(dialect_name, "name", "")
+
+            # Helper to render SQL literals safely for basic types
+            def _sql_literal(val):
+                import pandas as _pd
+
+                if val is None or (_pd.isna(val) if hasattr(_pd, "isna") else False):
+                    return "NULL"
+                if isinstance(val, str):
+                    return "'" + val.replace("'", "''") + "'"
+                return str(val)
+
+            rows_sql = []
+            for _, row in df.iterrows():
+                values = [ _sql_literal(row[col]) for col in df.columns ]
+                rows_sql.append("(" + ", ".join(values) + ")")
+
+            if dialect_name == "sqlite":
+                # SQLite: INSERT OR REPLACE with VALUES
+                upsert_query = f"""
+                INSERT OR REPLACE INTO {table_name} ({', '.join(quoted_columns)})
+                VALUES {', '.join(rows_sql)}
+                """
+            elif dialect_name == "mysql":
+                # MySQL: ON DUPLICATE KEY UPDATE
+                update_clause = ", ".join([f"{quote_ident(col)} = VALUES({quote_ident(col)})" for col in non_unique_cols])
+                upsert_query = f"""
+                INSERT INTO {table_name} ({', '.join(quoted_columns)})
+                VALUES {', '.join(rows_sql)}
+                ON DUPLICATE KEY UPDATE {update_clause}
+                """
+            elif dialect_name == "postgresql":
+                # PostgreSQL: ON CONFLICT DO UPDATE
+                update_clause = ", ".join([f"{quote_ident(col)} = EXCLUDED.{quote_ident(col)}" for col in non_unique_cols])
+                cols_alias = ", ".join([quote_ident(col) for col in df.columns])
+                upsert_query = f"""
+                INSERT INTO {table_name} ({', '.join(quoted_columns)})
+                VALUES {', '.join(rows_sql)}
+                ON CONFLICT ({', '.join(quoted_unique_cols)}) DO UPDATE SET {update_clause}
+                """
+            else:
+                # Fallback: create temp table, then upsert if supported by DB, else replace
+                temp_table_name = f"temp_{table_name}_{int(time.time())}"
+                logger.info("Creating temp table '%s' for upsert", temp_table_name)
+                temp_columns = []
+                for col in tbl.columns:
+                    temp_columns.append(Column(col.name, col.type, nullable=col.nullable))
+                temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
+                temp_tbl.create(self.engine, checkfirst=True)
+
+                df.to_sql(temp_table_name, con=self.engine, if_exists="append", index=False, chunksize=chunksize, method="multi")
+
+                upsert_query = f"""
+                INSERT INTO {table_name} ({', '.join(quoted_columns)})
+                SELECT {', '.join(quoted_columns)} FROM {temp_table_name}
+                """
+
             logger.info("Upsert query: %s", upsert_query.strip())
-            upsert_start = time.time()
             with self.engine.begin() as conn:
                 logger.info("Executing upsert query...")
-                result = conn.execute(text(upsert_query))
-                upsert_elapsed = time.time() - upsert_start
-                logger.info(
-                    "Upsert query executed in %.2f seconds, affected rows: %s",
-                    upsert_elapsed,
-                    getattr(result, "rowcount", "unknown"),
-                )
-            logger.info(
-                "Upsert completed from temp table '%s' to '%s'",
-                temp_table_name,
-                table_name,
-            )
-
-            # Drop temp table
-            logger.info("Dropping temp table '%s'", temp_table_name)
-            temp_tbl.drop(self.engine)
-            logger.info("Dropped temp table '%s' successfully",
-                        temp_table_name)
+                conn.execute(text(upsert_query))
+            logger.info("Upsert completed into '%s'", table_name)
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
