@@ -43,6 +43,16 @@ def _ensure_gcs():
         _client = storage.Client()
     if _bucket is None:
         _bucket = _client.bucket(config.CACHE_GCS_BUCKET)
+        try:
+            _bucket.reload()  # Check if bucket exists
+        except NotFound:
+            logger.warning(
+                "GCS bucket '%s' does not exist; falling back to in-memory cache only.", config.CACHE_GCS_BUCKET)
+            return False
+        except Exception as e:
+            logger.warning(
+                "Failed to access GCS bucket '%s': %s; falling back to in-memory cache only.", config.CACHE_GCS_BUCKET, e)
+            return False
     return True
 
 
