@@ -267,3 +267,69 @@
 2025-09-11 17:52:36,691 - INFO - Bulk insert completed in 0.02 seconds (254.1 rows/sec)
 2025-09-11 17:52:36,695 - INFO - Closing database session.
 2025-09-11 17:52:36,695 - INFO - Disposing custom database engine.
+2025-09-11 20:02:05,238 - INFO - DBHelper initialized with database URL: sqlite:///test_stocks.db
+2025-09-11 20:02:05,240 - INFO - Creating table 'test_tbl' if not exists.
+2025-09-11 20:02:05,262 - INFO - Table 'test_tbl' created.
+2025-09-11 20:02:05,262 - INFO - Starting bulk insert of 2 rows into 'test_tbl' with chunksize 900
+2025-09-11 20:02:05,276 - INFO - Appending DataFrame to 'test_tbl' (2 rows)
+2025-09-11 20:02:05,276 - INFO - Starting pandas to_sql insert into 'test_tbl' with 2 rows, chunksize 900
+2025-09-11 20:02:05,288 - INFO - Non-upsert insert into 'test_tbl' completed in 0.01 seconds (165.3 rows/sec)
+2025-09-11 20:02:05,289 - INFO - Bulk insert completed in 0.03 seconds (76.1 rows/sec)
+2025-09-11 20:02:05,290 - INFO - Closing database session.
+2025-09-11 20:02:05,291 - INFO - Disposing custom database engine.
+2025-09-11 20:02:05,299 - INFO - DBHelper initialized with database URL: sqlite:///test_stocks.db
+2025-09-11 20:02:05,300 - INFO - Creating table 'test_tbl' if not exists.
+2025-09-11 20:02:05,313 - INFO - Table 'test_tbl' created.
+2025-09-11 20:02:05,314 - INFO - Starting bulk insert of 2 rows into 'test_tbl' with chunksize 900
+2025-09-11 20:02:05,316 - INFO - Upserting DataFrame into 'test_tbl' (2 rows) with unique columns: ['Ticker']
+2025-09-11 20:02:05,320 - INFO - Upsert query: INSERT OR REPLACE INTO test_tbl ("Ticker", "close_price", "Volume")
+                VALUES ('A.L', 100, 1000), ('B.L', 200, 1500)
+2025-09-11 20:02:05,320 - INFO - Executing upsert query...
+2025-09-11 20:02:05,327 - INFO - Upsert completed into 'test_tbl'
+2025-09-11 20:02:05,328 - INFO - Bulk insert completed in 0.01 seconds (144.5 rows/sec)
+2025-09-11 20:02:05,329 - INFO - Starting bulk insert of 2 rows into 'test_tbl' with chunksize 900
+2025-09-11 20:02:05,334 - INFO - Upserting DataFrame into 'test_tbl' (2 rows) with unique columns: ['Ticker']
+2025-09-11 20:02:05,334 - INFO - Upsert query: INSERT OR REPLACE INTO test_tbl ("Ticker", "close_price", "Volume")
+                VALUES ('A.L', 150, 1000), ('B.L', 200, 1500)
+2025-09-11 20:02:05,335 - INFO - Executing upsert query...
+2025-09-11 20:02:05,341 - INFO - Upsert completed into 'test_tbl'
+2025-09-11 20:02:05,341 - INFO - Bulk insert completed in 0.01 seconds (162.4 rows/sec)
+2025-09-11 20:02:05,343 - INFO - Closing database session.
+2025-09-11 20:02:05,344 - INFO - Disposing custom database engine.
+2025-09-11 20:02:05,349 - INFO - DBHelper initialized with database URL: sqlite://
+2025-09-11 20:02:05,356 - INFO - Creating table 'malicious; DROP TABLE safe_table;--' if not exists.
+2025-09-11 20:02:05,361 - INFO - Table 'malicious; DROP TABLE safe_table;--' created.
+2025-09-11 20:02:05,365 - INFO - Closing database session.
+2025-09-11 20:02:05,365 - INFO - Disposing custom database engine.
+2025-09-11 20:02:05,376 - INFO - DBHelper initialized with database URL: sqlite://
+2025-09-11 20:02:05,385 - INFO - Starting bulk insert of 2 rows into 'test_tbl' with chunksize 900
+2025-09-11 20:02:05,385 - INFO - Upserting DataFrame into 'test_tbl' (2 rows) with unique columns: ['Ticker']
+2025-09-11 20:02:05,386 - INFO - Upsert query: INSERT INTO test_tbl (`Ticker`, `Close`, `Volume`)
+                VALUES ('A.L', 100, 1000), ('B.L', 200, 1500)
+                ON DUPLICATE KEY UPDATE `Close` = VALUES(`Close`), `Volume` = VALUES(`Volume`)
+2025-09-11 20:02:05,386 - INFO - Executing upsert query...
+2025-09-11 20:02:05,395 - INFO - Upsert completed into 'test_tbl'
+2025-09-11 20:02:05,395 - INFO - Bulk insert completed in 0.01 seconds (195.1 rows/sec)
+2025-09-11 20:02:05,396 - INFO - Closing database session.
+2025-09-11 20:02:05,396 - INFO - Disposing custom database engine.
+2025-09-11 20:02:05,408 - INFO - DBHelper initialized with database URL: sqlite://
+2025-09-11 20:02:05,409 - INFO - Starting bulk insert of 2 rows into 'test_tbl' with chunksize 900
+2025-09-11 20:02:05,409 - INFO - Upserting DataFrame into 'test_tbl' (2 rows) with unique columns: ['Ticker']
+2025-09-11 20:02:05,413 - INFO - Upsert query: INSERT INTO test_tbl ("Ticker", "Close", "Volume")
+                VALUES ('A.L', 100, 1000), ('B.L', 200, 1500)
+                ON CONFLICT ("Ticker") DO UPDATE SET "Close" = EXCLUDED."Close", "Volume" = EXCLUDED."Volume"
+2025-09-11 20:02:05,413 - INFO - Executing upsert query...
+2025-09-11 20:02:05,414 - INFO - Upsert completed into 'test_tbl'
+2025-09-11 20:02:05,414 - INFO - Bulk insert completed in 0.00 seconds (407.3 rows/sec)
+2025-09-11 20:02:05,414 - INFO - Closing database session.
+2025-09-11 20:02:05,415 - INFO - Disposing custom database engine.
+2025-09-11 20:02:05,693 - INFO - DBHelper initialized with database URL: sqlite:///test_pipeline.db
+2025-09-11 20:02:05,693 - INFO - Creating table 'factors' if not exists.
+2025-09-11 20:02:05,714 - INFO - Table 'factors' created.
+2025-09-11 20:02:05,715 - INFO - Starting bulk insert of 4 rows into 'factors' with chunksize 900
+2025-09-11 20:02:05,721 - INFO - Appending DataFrame to 'factors' (4 rows)
+2025-09-11 20:02:05,721 - INFO - Starting pandas to_sql insert into 'factors' with 4 rows, chunksize 900
+2025-09-11 20:02:05,759 - INFO - Non-upsert insert into 'factors' completed in 0.04 seconds (104.7 rows/sec)
+2025-09-11 20:02:05,759 - INFO - Bulk insert completed in 0.04 seconds (89.9 rows/sec)
+2025-09-11 20:02:05,766 - INFO - Closing database session.
+2025-09-11 20:02:05,767 - INFO - Disposing custom database engine.

@@ -941,3 +941,26 @@ KeyError: 'Column not found: close_price'
 2025-09-11 17:52:36,740 - WARNING - Column 'dividendYield' missing; dividendYield set to NaN.
 2025-09-11 17:52:36,741 - WARNING - Column 'priceToSalesTrailing12Months' missing; price_to_sales set to NaN.
 2025-09-11 17:52:36,756 - INFO - Factor computation complete for 2 rows.
+2025-09-11 20:02:04,412 - INFO - compute_factors called for DataFrame with 25 rows
+2025-09-11 20:02:04,430 - WARNING - Renamed 'Close' to 'close_price' for factor computations
+2025-09-11 20:02:04,515 - WARNING - Column 'dividendYield' missing; dividendYield set to NaN.
+2025-09-11 20:02:04,519 - WARNING - Column 'priceToSalesTrailing12Months' missing; price_to_sales set to NaN.
+2025-09-11 20:02:04,611 - INFO - Factor computation complete for 25 rows.
+2025-09-11 20:02:04,690 - INFO - compute_factors called for DataFrame with 2 rows
+2025-09-11 20:02:04,692 - WARNING - Renamed 'Close' to 'close_price' for factor computations
+2025-09-11 20:02:04,797 - INFO - Factor computation complete for 2 rows.
+2025-09-11 20:02:04,990 - INFO - compute_factors called for DataFrame with 4 rows
+2025-09-11 20:02:05,071 - INFO - Factor computation complete for 4 rows.
+2025-09-11 20:02:05,093 - INFO - compute_factors called for DataFrame with 1 rows
+2025-09-11 20:02:05,208 - INFO - Factor computation complete for 1 rows.
+2025-09-11 20:02:05,488 - INFO - compute_factors called for DataFrame with 4 rows
+2025-09-11 20:02:05,493 - WARNING - Renamed 'Close' to 'close_price' for factor computations
+2025-09-11 20:02:05,577 - INFO - Factor computation complete for 4 rows.
+2025-09-11 20:02:05,599 - INFO - compute_factors called for DataFrame with 4 rows
+2025-09-11 20:02:05,605 - WARNING - Renamed 'Close' to 'close_price' for factor computations
+2025-09-11 20:02:05,691 - INFO - Factor computation complete for 4 rows.
+2025-09-11 20:02:05,813 - INFO - compute_factors called for DataFrame with 2 rows
+2025-09-11 20:02:05,816 - WARNING - Renamed 'Close' to 'close_price' for factor computations
+2025-09-11 20:02:05,877 - WARNING - Column 'dividendYield' missing; dividendYield set to NaN.
+2025-09-11 20:02:05,877 - WARNING - Column 'priceToSalesTrailing12Months' missing; price_to_sales set to NaN.
+2025-09-11 20:02:05,910 - INFO - Factor computation complete for 2 rows.
