@@ -1,13 +1,14 @@
+from data_pipeline.db_connection import SessionLocal
+import time
 from typing import Dict, Optional, Sequence
 
 import pandas as pd
-import time
 from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         Index, Integer, MetaData, String, Table, Text,
                         create_engine, inspect, text)
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import sessionmaker
 
 # Updated local imports to use fallback mechanism
 try:
@@ -81,47 +82,77 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
     retry_delay = 0.5  # Reduced initial delay for faster retries
 
     total_chunks = (len(df) + chunksize - 1) // chunksize
-    logger.info("Processing %d chunks of size %d (%d total rows)", total_chunks, chunksize, len(df))
+    logger.info(
+        "Processing %d chunks of size %d (%d total rows)",
+        total_chunks,
+        chunksize,
+        len(df),
+    )
 
     chunk_start_time = time.time()
     for chunk_idx, (_, chunk) in enumerate(df.groupby(df.index // chunksize)):
         chunk_time = time.time()
         data = _records(chunk)
-        logger.debug("Processing chunk %d/%d with %d records", chunk_idx + 1, total_chunks, len(data))
+        logger.debug(
+            "Processing chunk %d/%d with %d records",
+            chunk_idx + 1,
+            total_chunks,
+            len(data),
+        )
 
         for attempt in range(max_retries):
             try:
                 conn.execute(stmt, data)
                 chunk_elapsed = time.time() - chunk_time
-                logger.info("Chunk %d/%d inserted in %.2f seconds (%.1f rows/sec)",
-                          chunk_idx + 1, total_chunks, chunk_elapsed, len(data) / chunk_elapsed if chunk_elapsed > 0 else 0)
+                logger.info(
+                    "Chunk %d/%d inserted in %.2f seconds (%.1f rows/sec)",
+                    chunk_idx + 1,
+                    total_chunks,
+                    chunk_elapsed,
+                    len(data) / chunk_elapsed if chunk_elapsed > 0 else 0,
+                )
                 # Log progress every 5 chunks or for the last chunk
                 if chunk_idx % 5 == 0 or chunk_idx == total_chunks - 1:
                     elapsed = time.time() - chunk_start_time
                     rows_processed = (chunk_idx + 1) * chunksize
                     rate = rows_processed / elapsed if elapsed > 0 else 0
-                    logger.info("Inserted chunk %d/%d (%d/%d rows, %.1f rows/sec)",
-                              chunk_idx + 1, total_chunks, min(rows_processed, len(df)), len(df), rate)
+                    logger.info(
+                        "Inserted chunk %d/%d (%d/%d rows, %.1f rows/sec)",
+                        chunk_idx + 1,
+                        total_chunks,
+                        min(rows_processed, len(df)),
+                        len(df),
+                        rate,
+                    )
                 break  # Success, exit retry loop
             except OperationalError as e:
                 if "database is locked" in str(e).lower() and attempt < max_retries - 1:
                     logger.warning(
                         "Database locked, retrying insert in %s seconds (attempt %d/%d): %s",
-                        retry_delay, attempt + 1, max_retries, e
+                        retry_delay,
+                        attempt + 1,
+                        max_retries,
+                        e,
                     )
                     time.sleep(retry_delay)
-                    retry_delay = min(retry_delay * 1.5, 5.0)  # Capped exponential backoff
+                    retry_delay = min(
+                        retry_delay * 1.5, 5.0
+                    )  # Capped exponential backoff
                 else:
                     logger.error(
                         "Failed to insert chunk into '%s' after %d attempts: %s",
-                        getattr(stmt, "table", None) or getattr(stmt, "name", None),
-                        max_retries, e, exc_info=True
+                        getattr(stmt, "table", None) or getattr(
+                            stmt, "name", None),
+                        max_retries,
+                        e,
+                        exc_info=True,
                     )
                     raise
             except Exception as e:
                 logger.error(
                     "Failed to insert chunk into '%s': %s",
-                    getattr(stmt, "table", None) or getattr(stmt, "name", None),
+                    getattr(stmt, "table", None) or getattr(
+                        stmt, "name", None),
                     e,
                     exc_info=True,
                 )
@@ -129,7 +160,6 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
 
 
 # --- Main DBHelper ---
-from data_pipeline.db_connection import SessionLocal
 
 
 class DBHelper:
@@ -137,7 +167,10 @@ class DBHelper:
     Helper for GCP Cloud SQL (PostgreSQL) operations.
     Only PostgreSQL is supported.
     """
-    _population_running = False  # Class variable to prevent multiple population triggers
+
+    _population_running = (
+        False  # Class variable to prevent multiple population triggers
+    )
 
     def __init__(self, db_url: Optional[str] = None, engine=None):
         if engine:
@@ -145,16 +178,21 @@ class DBHelper:
             self.database_url = "using_provided_engine"
             self.engine = engine
             self._own_engine = False  # We don't own the provided engine
-            session_factory = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+            session_factory = sessionmaker(
+                autocommit=False, autoflush=False, bind=self.engine
+            )
         elif db_url:
             # Create dedicated engine for custom URL (used by API endpoints and tests)
             self.database_url = db_url
             self.engine = create_engine(db_url, pool_pre_ping=True)
             self._own_engine = True  # Track that we own this engine
-            session_factory = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+            session_factory = sessionmaker(
+                autocommit=False, autoflush=False, bind=self.engine
+            )
         else:
             # Use global engine (used by data pipeline)
-            from data_pipeline.db_connection import engine, SessionLocal
+            from data_pipeline.db_connection import SessionLocal, engine
+
             self.database_url = "using_global_engine"
             self.engine = engine
             self._own_engine = False  # We don't own the global engine
@@ -162,7 +200,8 @@ class DBHelper:
 
         self.inspector = inspect(self.engine)
         self.session = session_factory()
-        logger.info("DBHelper initialized with database URL: %s", self.database_url)
+        logger.info("DBHelper initialized with database URL: %s",
+                    self.database_url)
 
     def create_table(
         self,
@@ -178,7 +217,7 @@ class DBHelper:
         """
         table_created = False
         table_empty = False
-        
+
         try:
             # Use session for ORM-based operations
             with self.session.begin():
@@ -186,17 +225,26 @@ class DBHelper:
                 if self.inspector.has_table(table_name):
                     # Check if table is empty
                     try:
-                        count_result = pd.read_sql(f"SELECT COUNT(*) as count FROM {table_name}", self.engine)
-                        row_count = count_result['count'].iloc[0]
+                        count_result = pd.read_sql(
+                            f"SELECT COUNT(*) as count FROM {table_name}", self.engine
+                        )
+                        row_count = count_result["count"].iloc[0]
                         if row_count == 0:
                             table_empty = True
-                            logger.info("Table '%s' exists but is empty (%d rows).", table_name, row_count)
+                            logger.info(
+                                "Table '%s' exists but is empty (%d rows).",
+                                table_name,
+                                row_count,
+                            )
                     except Exception as e:
-                        logger.warning("Could not check if table '%s' is empty: %s", table_name, e)
-                    
+                        logger.warning(
+                            "Could not check if table '%s' is empty: %s", table_name, e
+                        )
+
                     # add only missing columns
-                    existing = {c["name"]
-                                for c in self.inspector.get_columns(table_name)}
+                    existing = {
+                        c["name"] for c in self.inspector.get_columns(table_name)
+                    }
                     for col in df.columns:
                         if col in existing:
                             continue
@@ -206,7 +254,8 @@ class DBHelper:
                         )
                         try:
                             self.session.execute(
-                                Table(table_name, MetaData(), autoload_with=self.engine)
+                                Table(table_name, MetaData(),
+                                      autoload_with=self.engine)
                                 .append_column(Column(col, col_type))
                                 .to_metadata(MetaData())
                             )
@@ -221,7 +270,8 @@ class DBHelper:
                     # ensure UNIQUE index for upsert if requested
                     if unique_cols:
                         self._ensure_unique_index(
-                            self.session, table_name, tuple(unique_cols))
+                            self.session, table_name, tuple(unique_cols)
+                        )
                 else:
                     # create new table
                     table_created = True
@@ -231,7 +281,8 @@ class DBHelper:
                             Column(
                                 col,
                                 _sa_type_for_series(df[col]),
-                                primary_key=(primary_keys and col in primary_keys),
+                                primary_key=(
+                                    primary_keys and col in primary_keys),
                             )
                         )
                     table = Table(table_name, MetaData(), *cols)
@@ -240,44 +291,68 @@ class DBHelper:
 
                     # add unique index if needed (for upsert)
                     if unique_cols:
-                        self._ensure_unique_index(self.session, table_name, tuple(unique_cols))
+                        self._ensure_unique_index(
+                            self.session, table_name, tuple(unique_cols)
+                        )
         except Exception as e:
-            logger.error("Failed to create table '%s': %s", table_name, e, exc_info=True)
+            logger.error(
+                "Failed to create table '%s': %s", table_name, e, exc_info=True
+            )
             self.session.rollback()
         finally:
             self.session.close()
-        
+
         # Trigger data population if table was created or is empty
-        if auto_populate and (table_created or table_empty) and table_name == "financial_tbl":
-            logger.info("Table '%s' is %s. Triggering data population...", 
-                       table_name, "newly created" if table_created else "empty")
+        if (
+            auto_populate
+            and (table_created or table_empty)
+            and table_name == "financial_tbl"
+        ):
+            logger.info(
+                "Table '%s' is %s. Triggering data population...",
+                table_name,
+                "newly created" if table_created else "empty",
+            )
             self._trigger_data_population()
 
     def _trigger_data_population(self):
         """Trigger the data population pipeline for financial data using default 10 years."""
         if DBHelper._population_running:
-            logger.info("Data population already running, skipping duplicate trigger.")
+            logger.info(
+                "Data population already running, skipping duplicate trigger.")
             return
 
         DBHelper._population_running = True
         try:
             from datetime import datetime, timedelta
+
             from data_pipeline.market_data import main as market_data_main
 
             # Use same default as update_financial_data.py: 10 years
             end_date = datetime.today()
-            start_date = end_date - timedelta(days=10 * 365)  # 10 years of data (default)
+            start_date = end_date - timedelta(
+                days=10 * 365
+            )  # 10 years of data (default)
 
-            logger.info("Starting automatic data population from %s to %s (10 years default)",
-                       start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+            logger.info(
+                "Starting automatic data population from %s to %s (10 years default)",
+                start_date.strftime("%Y-%m-%d"),
+                end_date.strftime("%Y-%m-%d"),
+            )
 
             # Call the market data pipeline
-            market_data_main(self.engine, start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
+            market_data_main(
+                self.engine,
+                start_date.strftime("%Y-%m-%d"),
+                end_date.strftime("%Y-%m-%d"),
+            )
 
             logger.info("Automatic data population completed successfully.")
 
         except Exception as e:
-            logger.error("Failed to trigger automatic data population: %s", e, exc_info=True)
+            logger.error(
+                "Failed to trigger automatic data population: %s", e, exc_info=True
+            )
             # Don't raise - this is a convenience feature, not critical
         finally:
             DBHelper._population_running = False
@@ -291,7 +366,7 @@ class DBHelper:
         if idx_name not in existing:
             tbl = Table(table_name, MetaData(), autoload_with=self.engine)
             Index(idx_name, *[tbl.c[c]
-                              for c in cols], unique=True).create(conn)
+                  for c in cols], unique=True).create(conn)
             logger.info("Created unique index '%s' on table '%s'",
                         idx_name, table_name)
 
@@ -327,8 +402,12 @@ class DBHelper:
             return
 
         start_time = time.time()
-        logger.info("Starting bulk insert of %d rows into '%s' with chunksize %d",
-                   len(df), table_name, chunksize)
+        logger.info(
+            "Starting bulk insert of %d rows into '%s' with chunksize %d",
+            len(df),
+            table_name,
+            chunksize,
+        )
 
         tbl = Table(table_name, MetaData(), autoload_with=self.engine)
 
@@ -345,25 +424,59 @@ class DBHelper:
             # Create new column objects for temp table to avoid "already assigned" error
             temp_columns = []
             for col in tbl.columns:
-                temp_columns.append(Column(col.name, col.type, nullable=col.nullable))
+                temp_columns.append(
+                    Column(col.name, col.type, nullable=col.nullable))
             temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
             temp_tbl.create(self.engine, checkfirst=True)
-            logger.info("Created temp table '%s' successfully", temp_table_name)
+            logger.info("Created temp table '%s' successfully",
+                        temp_table_name)
 
             # Insert into temp table
-            logger.info("Starting bulk insert into temp table '%s' with %d rows, chunksize %d", temp_table_name, len(df), chunksize)
+            logger.info(
+                "Starting bulk insert into temp table '%s' with %d rows, chunksize %d",
+                temp_table_name,
+                len(df),
+                chunksize,
+            )
             insert_start = time.time()
-            df.to_sql(temp_table_name, con=self.engine, if_exists='append', index=False, chunksize=chunksize, method='multi')
+            df.to_sql(
+                temp_table_name,
+                con=self.engine,
+                if_exists="append",
+                index=False,
+                chunksize=chunksize,
+                method="multi",
+            )
             insert_elapsed = time.time() - insert_start
-            logger.info("Inserted %d rows into temp table '%s' in %.2f seconds (%.1f rows/sec)", len(df), temp_table_name, insert_elapsed, len(df) / insert_elapsed if insert_elapsed > 0 else 0)
+            logger.info(
+                "Inserted %d rows into temp table '%s' in %.2f seconds (%.1f rows/sec)",
+                len(df),
+                temp_table_name,
+                insert_elapsed,
+                len(df) / insert_elapsed if insert_elapsed > 0 else 0,
+            )
 
             # Perform upsert from temp table
-            logger.info("Starting upsert from temp table '%s' to '%s'", temp_table_name, table_name)
+            logger.info(
+                "Starting upsert from temp table '%s' to '%s'",
+                temp_table_name,
+                table_name,
+            )
+
+            # Properly quote column names for PostgreSQL
+            def quote_column(col):
+                return f'"{col}"'
+
+            quoted_columns = [quote_column(col) for col in df.columns]
+            quoted_unique_cols = [quote_column(col) for col in unique_cols]
+            non_unique_cols = [
+                col for col in df.columns if col not in unique_cols]
+
             upsert_query = f"""
-            INSERT INTO {table_name} ({', '.join(df.columns)})
-            SELECT {', '.join(df.columns)} FROM {temp_table_name}
-            ON CONFLICT ({', '.join(unique_cols)}) DO UPDATE SET
-            {', '.join([f"{col} = EXCLUDED.{col}" for col in df.columns if col not in unique_cols])}
+            INSERT INTO {table_name} ({', '.join(quoted_columns)})
+            SELECT {', '.join(quoted_columns)} FROM {temp_table_name}
+            ON CONFLICT ({', '.join(quoted_unique_cols)}) DO UPDATE SET
+            {', '.join([f'{quote_column(col)} = EXCLUDED.{quote_column(col)}' for col in non_unique_cols])}
             """
             logger.info("Upsert query: %s", upsert_query.strip())
             upsert_start = time.time()
@@ -371,43 +484,78 @@ class DBHelper:
                 logger.info("Executing upsert query...")
                 result = conn.execute(text(upsert_query))
                 upsert_elapsed = time.time() - upsert_start
-                logger.info("Upsert query executed in %.2f seconds, affected rows: %s", upsert_elapsed, getattr(result, 'rowcount', 'unknown'))
-            logger.info("Upsert completed from temp table '%s' to '%s'", temp_table_name, table_name)
+                logger.info(
+                    "Upsert query executed in %.2f seconds, affected rows: %s",
+                    upsert_elapsed,
+                    getattr(result, "rowcount", "unknown"),
+                )
+            logger.info(
+                "Upsert completed from temp table '%s' to '%s'",
+                temp_table_name,
+                table_name,
+            )
 
             # Drop temp table
             logger.info("Dropping temp table '%s'", temp_table_name)
             temp_tbl.drop(self.engine)
-            logger.info("Dropped temp table '%s' successfully", temp_table_name)
+            logger.info("Dropped temp table '%s' successfully",
+                        temp_table_name)
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
             # Use pandas to_sql for faster non-upsert inserts
-            logger.info("Starting pandas to_sql insert into '%s' with %d rows, chunksize %d", table_name, len(df), chunksize)
+            logger.info(
+                "Starting pandas to_sql insert into '%s' with %d rows, chunksize %d",
+                table_name,
+                len(df),
+                chunksize,
+            )
             non_upsert_start = time.time()
-            df.to_sql(table_name, con=self.engine, if_exists='append', index=False, chunksize=chunksize, method='multi')
+            df.to_sql(
+                table_name,
+                con=self.engine,
+                if_exists="append",
+                index=False,
+                chunksize=chunksize,
+                method="multi",
+            )
             non_upsert_elapsed = time.time() - non_upsert_start
-            logger.info("Non-upsert insert into '%s' completed in %.2f seconds (%.1f rows/sec)", table_name, non_upsert_elapsed, len(df) / non_upsert_elapsed if non_upsert_elapsed > 0 else 0)
+            logger.info(
+                "Non-upsert insert into '%s' completed in %.2f seconds (%.1f rows/sec)",
+                table_name,
+                non_upsert_elapsed,
+                len(df) / non_upsert_elapsed if non_upsert_elapsed > 0 else 0,
+            )
 
         end_time = time.time()
-        logger.info("Bulk insert completed in %.2f seconds (%.1f rows/sec)",
-                   end_time - start_time, len(df) / (end_time - start_time))
+        logger.info(
+            "Bulk insert completed in %.2f seconds (%.1f rows/sec)",
+            end_time - start_time,
+            len(df) / (end_time - start_time),
+        )
 
     def close(self) -> None:
         """
         Dispose the session and optionally the engine if we own it.
         """
         logger.info("Closing database session.")
-        if hasattr(self, 'session') and self.session:
+        if hasattr(self, "session") and self.session:
             self.session.close()
-        
+
         # Only dispose engine if we created it (custom URL case)
-        if hasattr(self, '_own_engine') and self._own_engine and hasattr(self, 'engine'):
+        if (
+            hasattr(self, "_own_engine")
+            and self._own_engine
+            and hasattr(self, "engine")
+        ):
             logger.info("Disposing custom database engine.")
             self.engine.dispose()
 
     def get_secret_lazy():
         from data_pipeline.update_financial_data import get_secret
+
         return get_secret
+
 
 # Updated import for market_data to use fallback mechanism
 try:

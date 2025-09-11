@@ -24,6 +24,7 @@ import tempfile
 
 # Third-party imports
 from sqlalchemy import create_engine
+
 try:
     from google.cloud import secretmanager
 except ImportError:
@@ -60,7 +61,7 @@ CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join("data_pipeline", "cache"))
 LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
 
 
-#PROJECT_ID = "your-gcp-project-id"
+# PROJECT_ID = "your-gcp-project-id"
 GCP_PROJECT_ID = "equity-alpha-engine-alerts"
 
 
@@ -127,6 +128,11 @@ RATE_LIMIT_DELAY = 1.5
 # overridden via the ``MAX_THREADS`` environment variable.
 MAX_THREADS = int(os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5))
 CACHE_EXPIRY_MINUTES = 1440  # Cache expiry time in minutes (24 hours)
+
+# Yfinance configuration to prevent database lock issues
+YF_DISABLE_CACHE = os.environ.get("YF_DISABLE_CACHE", "true").lower() == "true"
+YF_CACHE_DIR = os.environ.get(
+    "YF_CACHE_DIR", os.path.join(CACHE_DIR, "yfinance"))
 
 
 # Logging configuration

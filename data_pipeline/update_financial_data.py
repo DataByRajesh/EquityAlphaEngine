@@ -18,10 +18,9 @@ from __future__ import annotations
 # Standard library imports
 import argparse
 import logging
-from datetime import datetime, timedelta
 import os
 import urllib.parse
-
+from datetime import datetime, timedelta
 
 # Third-party library imports
 import pandas as pd
@@ -29,10 +28,10 @@ from sqlalchemy import inspect
 
 # Local application imports
 import data_pipeline.config as config
+from data_pipeline.db_connection import engine, get_db, reinitialize_engine
+from data_pipeline.db_utils import DBHelper
 from data_pipeline.market_data import main as market_data_main
 from data_pipeline.utils import get_secret
-from data_pipeline.db_connection import get_db, engine, reinitialize_engine
-from data_pipeline.db_utils import DBHelper
 
 # Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
@@ -41,7 +40,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+formatter = logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
@@ -54,11 +54,15 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
     inspector = inspect(engine)
     try:
         if not inspector.has_table("financial_tbl"):
-            logger.error("Table 'financial_tbl' does not exist in the database.")
+            logger.error(
+                "Table 'financial_tbl' does not exist in the database.")
             return True
     except Exception as e:
-        logger.error(f"Error inspecting the database for 'financial_tbl': {e}", exc_info=True)
-        raise RuntimeError("Failed to inspect the database for 'financial_tbl'")
+        logger.error(
+            f"Error inspecting the database for 'financial_tbl': {e}", exc_info=True
+        )
+        raise RuntimeError(
+            "Failed to inspect the database for 'financial_tbl'")
 
     date_range = pd.read_sql(
         "SELECT MIN(Date) AS min_date, MAX(Date) AS max_date FROM financial_tbl",
@@ -80,7 +84,6 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
     )
 
 
-
 def fetch_data_if_needed(db_helper: DBHelper, start_date, end_date):
     """Check if data fetch is needed and perform the fetch."""
     try:
@@ -88,8 +91,10 @@ def fetch_data_if_needed(db_helper: DBHelper, start_date, end_date):
         market_data_main(db_helper.engine, start_date, end_date)
         logger.info("Market data processing completed successfully.")
     except Exception as e:
-        logger.error(f"Error during market data processing: {e}", exc_info=True)
-        raise RuntimeError("Market data processing failed due to an unexpected error.")
+        logger.error(
+            f"Error during market data processing: {e}", exc_info=True)
+        raise RuntimeError(
+            "Market data processing failed due to an unexpected error.")
 
 
 def main(start_date: str, end_date: str) -> None:
@@ -100,7 +105,9 @@ def main(start_date: str, end_date: str) -> None:
     try:
         fetch_data_if_needed(db_helper, start_date, end_date)
     except Exception as e:
-        logger.error(f"Critical error in update_financial_data script: {e}", exc_info=True)
+        logger.error(
+            f"Critical error in update_financial_data script: {e}", exc_info=True
+        )
         raise RuntimeError("Critical error in update_financial_data script")
     finally:
         db_helper.engine.dispose()
