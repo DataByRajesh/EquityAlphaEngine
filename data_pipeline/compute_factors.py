@@ -51,17 +51,19 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting momentum calculations")
     for period, label in zip([21, 63, 126, 252], ["1m", "3m", "6m", "12m"]):
         try:
-            df[f"return_{label}"] = df.groupby("Ticker", group_keys=False)["close_price"].pct_change(
-                periods=period, fill_method=None
+            df[f"return_{label}"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
+                lambda x: x.pct_change(periods=period)
             )
         except Exception as e:
             logger.warning(
                 f"Failed to compute return_{label}: %s", e, exc_info=True)
     # 12-1 momentum
     try:
-        g = df.groupby("Ticker", group_keys=False)["close_price"]
-        df["momentum_12_1"] = g.pct_change(
-            252, fill_method=None) - g.pct_change(21, fill_method=None)
+        df["momentum_12_1"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
+            lambda x: x.pct_change(252)
+        ) - df.groupby("Ticker", group_keys=False)["close_price"].transform(
+            lambda x: x.pct_change(21)
+        )
     except Exception as e:
         logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
 
@@ -70,7 +72,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     for window in [21, 63, 252]:
         try:
             df[f"vol_{window}d"] = df.groupby("Ticker", group_keys=False)["close_price"].transform(
-                lambda x: x.pct_change(fill_method=None).rolling(
+                lambda x: x.dropna().pct_change().rolling(
                     window, min_periods=max(2, window // 3)).std()
             )
         except Exception as e:
@@ -107,6 +109,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_macd called for series of length %d", len(series))
         try:
+            series = series.dropna()
+            if len(series) < 26:
+                return pd.DataFrame({"MACD": np.nan, "MACDh": np.nan}, index=series.index)
             m = ta.trend.MACD(series, window_slow=26,
                               window_fast=12, window_sign=9)
             return pd.DataFrame({"MACD": m.macd(), "MACDh": m.macd_diff()}, index=series.index)
@@ -131,6 +136,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_bb called for series of length %d", len(series))
         try:
+            series = series.dropna()
+            if len(series) < 20:
+                return pd.DataFrame({"BBU_20": np.nan, "BBL_20": np.nan}, index=series.index)
             bb = ta.volatility.BollingerBands(series, window=20, window_dev=2)
             return pd.DataFrame(
                 {"BBU_20": bb.bollinger_hband(), "BBL_20": bb.bollinger_lband()},
@@ -203,7 +211,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         df["avg_volume_21d"] = np.nan
     else:
         df["avg_volume_21d"] = df.groupby("Ticker", group_keys=False)["Volume"].transform(
-            lambda x: x.rolling(21, min_periods=5).mean()
+            lambda x: x.dropna().rolling(21, min_periods=5).mean()
         )
 
     # ---------- Amihud illiquidity ----------
@@ -216,7 +224,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_amihud called for group of length %d", len(grp))
         try:
-            ret = grp["close_price"].pct_change(fill_method=None).abs()
+            ret = grp["close_price"].pct_change().abs()
             vol = grp["Volume"].replace(0, np.nan)
             amt = vol * grp["close_price"]
             raw = ret / amt
