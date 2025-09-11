@@ -54,8 +54,7 @@ class TestFullPipeline(unittest.TestCase):
     def test_pipeline_to_db(self):
         # Merge, round, factor
         combined = market_data.combine_price_and_fundamentals(
-            self.price_df, self.fundamentals
-        )
+            self.price_df, self.fundamentals)
         rounded = market_data.round_financial_columns(combined)
         rounded["Date"] = rounded["Date"].astype(str)
         factors = compute_factors(rounded)
@@ -75,19 +74,14 @@ class TestFullPipeline(unittest.TestCase):
     def test_factor_composite_and_ranking(self):
         # Should rank and score correctly
         combined = market_data.combine_price_and_fundamentals(
-            self.price_df, self.fundamentals
-        )
+            self.price_df, self.fundamentals)
         rounded = market_data.round_financial_columns(combined)
         rounded["Date"] = rounded["Date"].astype(str)
         factors = compute_factors(rounded)
         self.assertIn("factor_composite", factors.columns)
         # Check values are finite or nan (no strings or infs)
-        self.assertTrue(
-            np.all(
-                np.isfinite(factors["factor_composite"])
-                | np.isnan(factors["factor_composite"])
-            )
-        )
+        self.assertTrue(np.all(np.isfinite(
+            factors["factor_composite"]) | np.isnan(factors["factor_composite"])))
 
 
 if __name__ == "__main__":

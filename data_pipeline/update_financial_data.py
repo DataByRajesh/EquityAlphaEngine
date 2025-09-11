@@ -55,8 +55,7 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
             return True
     except Exception as e:
         logger.error(
-            f"Error inspecting the database for 'financial_tbl': {e}", exc_info=True
-        )
+            f"Error inspecting the database for 'financial_tbl': {e}", exc_info=True)
         raise RuntimeError(
             "Failed to inspect the database for 'financial_tbl'")
 
@@ -74,10 +73,7 @@ def _needs_fetch(engine, start_date: str, end_date: str) -> bool:
         logger.warning("Table 'financial_tbl' contains invalid date range.")
         return True
 
-    return not (
-        min_date <= pd.to_datetime(
-            start_date) and max_date >= pd.to_datetime(end_date)
-    )
+    return not (min_date <= pd.to_datetime(start_date) and max_date >= pd.to_datetime(end_date))
 
 
 def fetch_data_if_needed(db_helper: DBHelper, start_date, end_date):
@@ -102,8 +98,7 @@ def main(start_date: str, end_date: str) -> None:
         fetch_data_if_needed(db_helper, start_date, end_date)
     except Exception as e:
         logger.error(
-            f"Critical error in update_financial_data script: {e}", exc_info=True
-        )
+            f"Critical error in update_financial_data script: {e}", exc_info=True)
         raise RuntimeError("Critical error in update_financial_data script")
     finally:
         db_helper.engine.dispose()

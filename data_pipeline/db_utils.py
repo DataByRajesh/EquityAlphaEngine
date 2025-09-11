@@ -48,9 +48,7 @@ def _sa_type_for_series(s: pd.Series):
         logger.debug("Inferring FLOAT type for column")
         return _SQL_FLOAT
     # Datetime columns
-    if pd.api.types.is_datetime64_any_dtype(s) or pd.api.types.is_datetime64_ns_dtype(
-        s
-    ):
+    if pd.api.types.is_datetime64_any_dtype(s) or pd.api.types.is_datetime64_ns_dtype(s):
         logger.debug("Inferring DATETIME type for column")
         return _SQL_DT
     # String columns
@@ -133,9 +131,8 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
                         e,
                     )
                     time.sleep(retry_delay)
-                    retry_delay = min(
-                        retry_delay * 1.5, 5.0
-                    )  # Capped exponential backoff
+                    # Capped exponential backoff
+                    retry_delay = min(retry_delay * 1.5, 5.0)
                 else:
                     logger.error(
                         "Failed to insert chunk into '%s' after %d attempts: %s",
@@ -166,9 +163,7 @@ class DBHelper:
     Only PostgreSQL is supported.
     """
 
-    _population_running = (
-        False  # Class variable to prevent multiple population triggers
-    )
+    _population_running = False  # Class variable to prevent multiple population triggers
 
     def __init__(self, db_url: Optional[str] = None, engine=None):
         if engine:
@@ -177,8 +172,7 @@ class DBHelper:
             self.engine = engine
             self._own_engine = False  # We don't own the provided engine
             session_factory = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
-            )
+                autocommit=False, autoflush=False, bind=self.engine)
         elif db_url:
             # Create dedicated engine for custom URL (used by API endpoints and
             # tests)
@@ -186,8 +180,7 @@ class DBHelper:
             self.engine = create_engine(db_url, pool_pre_ping=True)
             self._own_engine = True  # Track that we own this engine
             session_factory = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
-            )
+                autocommit=False, autoflush=False, bind=self.engine)
         else:
             # Use global engine (used by data pipeline)
             from data_pipeline.db_connection import SessionLocal, engine
@@ -225,8 +218,7 @@ class DBHelper:
                     # Check if table is empty
                     try:
                         count_result = pd.read_sql(
-                            f"SELECT COUNT(*) as count FROM {table_name}", self.engine
-                        )
+                            f"SELECT COUNT(*) as count FROM {table_name}", self.engine)
                         row_count = count_result["count"].iloc[0]
                         if row_count == 0:
                             table_empty = True
@@ -237,20 +229,17 @@ class DBHelper:
                             )
                     except Exception as e:
                         logger.warning(
-                            "Could not check if table '%s' is empty: %s", table_name, e
-                        )
+                            "Could not check if table '%s' is empty: %s", table_name, e)
 
                     # add only missing columns
-                    existing = {
-                        c["name"] for c in self.inspector.get_columns(table_name)
-                    }
+                    existing = {c["name"]
+                                for c in self.inspector.get_columns(table_name)}
                     for col in df.columns:
                         if col in existing:
                             continue
                         col_type = _sa_type_for_series(df[col])
                         logger.info(
-                            "Adding missing column '%s' to table '%s'", col, table_name
-                        )
+                            "Adding missing column '%s' to table '%s'", col, table_name)
                         try:
                             self.session.execute(
                                 Table(table_name, MetaData(),
@@ -269,8 +258,7 @@ class DBHelper:
                     # ensure UNIQUE index for upsert if requested
                     if unique_cols:
                         self._ensure_unique_index(
-                            self.session, table_name, tuple(unique_cols)
-                        )
+                            self.session, table_name, tuple(unique_cols))
                 else:
                     # create new table
                     table_created = True
@@ -291,22 +279,16 @@ class DBHelper:
                     # add unique index if needed (for upsert)
                     if unique_cols:
                         self._ensure_unique_index(
-                            self.session, table_name, tuple(unique_cols)
-                        )
+                            self.session, table_name, tuple(unique_cols))
         except Exception as e:
-            logger.error(
-                "Failed to create table '%s': %s", table_name, e, exc_info=True
-            )
+            logger.error("Failed to create table '%s': %s",
+                         table_name, e, exc_info=True)
             self.session.rollback()
         finally:
             self.session.close()
 
         # Trigger data population if table was created or is empty
-        if (
-            auto_populate
-            and (table_created or table_empty)
-            and table_name == "financial_tbl"
-        ):
+        if auto_populate and (table_created or table_empty) and table_name == "financial_tbl":
             logger.info(
                 "Table '%s' is %s. Triggering data population...",
                 table_name,
@@ -329,9 +311,8 @@ class DBHelper:
 
             # Use same default as update_financial_data.py: 10 years
             end_date = datetime.today()
-            start_date = end_date - timedelta(
-                days=10 * 365
-            )  # 10 years of data (default)
+            # 10 years of data (default)
+            start_date = end_date - timedelta(days=10 * 365)
 
             logger.info(
                 "Starting automatic data population from %s to %s (10 years default)",
@@ -350,8 +331,7 @@ class DBHelper:
 
         except Exception as e:
             logger.error(
-                "Failed to trigger automatic data population: %s", e, exc_info=True
-            )
+                "Failed to trigger automatic data population: %s", e, exc_info=True)
             # Don't raise - this is a convenience feature, not critical
         finally:
             DBHelper._population_running = False
@@ -379,9 +359,8 @@ class DBHelper:
             try:
                 conn.execute(tbl.insert(), [row_dict])
             except Exception as e:
-                logger.error(
-                    "Failed to insert row into '%s': %s", table_name, e, exc_info=True
-                )
+                logger.error("Failed to insert row into '%s': %s",
+                             table_name, e, exc_info=True)
 
     def insert_dataframe(
         self,
@@ -543,11 +522,7 @@ class DBHelper:
             self.session.close()
 
         # Only dispose engine if we created it (custom URL case)
-        if (
-            hasattr(self, "_own_engine")
-            and self._own_engine
-            and hasattr(self, "engine")
-        ):
+        if hasattr(self, "_own_engine") and self._own_engine and hasattr(self, "engine"):
             logger.info("Disposing custom database engine.")
             self.engine.dispose()
 

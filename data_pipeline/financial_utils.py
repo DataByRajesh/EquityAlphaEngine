@@ -11,11 +11,7 @@ def financial_round(value, places):
     try:
         if pd.isna(value):
             return float("nan")
-        return float(
-            Decimal(str(value)).quantize(
-                Decimal(f'1.{"0" * places}'), rounding=ROUND_HALF_UP
-            )
-        )
+        return float(Decimal(str(value)).quantize(Decimal(f'1.{"0" * places}'), rounding=ROUND_HALF_UP))
     except (InvalidOperation, TypeError, ValueError):
         return float("nan")
 
