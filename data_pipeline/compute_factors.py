@@ -69,12 +69,6 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
                 .fillna(0.0)
             )
             df[f"return_{label}"] = returns_series
-            returns_series = (
-                df.groupby("Ticker")["close_price"]
-                .pct_change(periods=period, fill_method=None)
-                .fillna(0.0)
-            )
-            df[f"return_{label}"] = returns_series
         except Exception as e:
             logger.warning(
                 f"Failed to compute return_{label}: %s", e, exc_info=True)
@@ -89,17 +83,8 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             df.groupby("Ticker")["close_price"]
             .pct_change(periods=21, fill_method=None)
             .fillna(0.0)
-        mom_252=(
-            df.groupby("Ticker")["close_price"]
-            .pct_change(periods=252, fill_method=None)
-            .fillna(0.0)
         )
-        mom_21=(
-            df.groupby("Ticker")["close_price"]
-            .pct_change(periods=21, fill_method=None)
-            .fillna(0.0)
-        )
-        df["momentum_12_1"]=mom_252 - mom_21
+        df["momentum_12_1"] = mom_252 - mom_21
     except Exception as e:
         logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
 
@@ -262,12 +247,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             df.groupby("Ticker")["Volume"]
             .transform(lambda s: s.rolling(21, min_periods=5).mean())
             .fillna(0.0)
-        df["avg_volume_21d"]=(
-            df.groupby("Ticker")["Volume"]
-            .transform(lambda s: s.rolling(21, min_periods=5).mean())
-            .fillna(0.0)
         )
 
+    # ---------- Amihud illiquidity ----------
+    logger.debug("Starting Amihud illiquidity calculation")
     try:
         returns_abs=df.groupby("Ticker")["close_price"].transform(
             lambda s: s.pct_change(fill_method=None).abs()
@@ -282,9 +265,6 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     except Exception as e:
         logger.warning(
             "Failed to compute amihud_illiquidity: %s", e, exc_info=True)
-    # ---------- Amihud illiquidity ----------
-    logger.debug("Starting Amihud illiquidity calculation")
-    try:
 
     # ---------- Clean infinities early ----------
     logger.debug("Cleaning infinities and NaNs")
