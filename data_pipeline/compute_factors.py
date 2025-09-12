@@ -62,31 +62,23 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting momentum calculations")
     for period, label in zip([21, 63, 126, 252], ["1m", "3m", "6m", "12m"]):
         try:
-<<<<<<< HEAD
-            df[f"return_{label}"] = (
-                df.groupby("Ticker")["close_price"]
-                .transform(lambda x: x.pct_change(periods=period, fill_method=None).fillna(0.0))
-            )
-=======
             returns_series = (
                 df.groupby("Ticker")["close_price"]
                 .pct_change(periods=period, fill_method=None)
                 .fillna(0.0)
             )
             df[f"return_{label}"] = returns_series
->>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
+            returns_series = (
+                df.groupby("Ticker")["close_price"]
+                .pct_change(periods=period, fill_method=None)
+                .fillna(0.0)
+            )
+            df[f"return_{label}"] = returns_series
         except Exception as e:
             logger.warning(
                 f"Failed to compute return_{label}: %s", e, exc_info=True)
     # 12-1 momentum
     try:
-<<<<<<< HEAD
-        mom_252 = df.groupby("Ticker")["close_price"].transform(
-            lambda x: x.pct_change(periods=252, fill_method=None).fillna(0.0)
-        )
-        mom_21 = df.groupby("Ticker")["close_price"].transform(
-            lambda x: x.pct_change(periods=21, fill_method=None).fillna(0.0)
-=======
         mom_252 = (
             df.groupby("Ticker")["close_price"]
             .pct_change(periods=252, fill_method=None)
@@ -96,7 +88,15 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             df.groupby("Ticker")["close_price"]
             .pct_change(periods=21, fill_method=None)
             .fillna(0.0)
->>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
+        mom_252 = (
+            df.groupby("Ticker")["close_price"]
+            .pct_change(periods=252, fill_method=None)
+            .fillna(0.0)
+        )
+        mom_21 = (
+            df.groupby("Ticker")["close_price"]
+            .pct_change(periods=21, fill_method=None)
+            .fillna(0.0)
         )
         df["momentum_12_1"] = mom_252 - mom_21
     except Exception as e:
@@ -106,12 +106,6 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting volatility calculations")
     for window in [21, 63, 252]:
         try:
-<<<<<<< HEAD
-            df[f"vol_{window}d"] = df.groupby("Ticker")["close_price"].transform(
-                lambda x: x.pct_change(periods=1, fill_method=None).rolling(
-                    window, min_periods=max(2, window // 3)).std().fillna(0.0)
-            )
-=======
             vol_series = (
                 df.groupby("Ticker")["close_price"]
                 .transform(
@@ -122,7 +116,16 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
                 .fillna(0.0)
             )
             df[f"vol_{window}d"] = vol_series
->>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
+            vol_series = (
+                df.groupby("Ticker")["close_price"]
+                .transform(
+                    lambda s: s.pct_change(fill_method=None)
+                    .rolling(window, min_periods=max(2, window // 3))
+                    .std()
+                )
+                .fillna(0.0)
+            )
+            df[f"vol_{window}d"] = vol_series
         except Exception as e:
             logger.warning(
                 f"Failed to compute vol_{window}d: %s", e, exc_info=True)
@@ -131,18 +134,18 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting moving averages calculations")
     for window in [20, 50, 200]:
         try:
-<<<<<<< HEAD
-            df[f"ma_{window}"] = df.groupby("Ticker")["close_price"].transform(
-                lambda x: ta.trend.sma_indicator(x, window=window).fillna(0.0)
-            )
-=======
             ma_series = (
                 df.groupby("Ticker")["close_price"]
                 .transform(lambda s: ta.trend.sma_indicator(s, window=window))
                 .fillna(0.0)
             )
             df[f"ma_{window}"] = ma_series
->>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
+            ma_series = (
+                df.groupby("Ticker")["close_price"]
+                .transform(lambda s: ta.trend.sma_indicator(s, window=window))
+                .fillna(0.0)
+            )
+            df[f"ma_{window}"] = ma_series
         except Exception as e:
             logger.warning(
                 f"Failed to compute ma_{window}: %s", e, exc_info=True)
@@ -150,18 +153,18 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- RSI ----------
     logger.debug("Starting RSI calculation")
     try:
-<<<<<<< HEAD
-        df["RSI_14"] = df.groupby("Ticker")["close_price"].transform(
-            lambda x: ta.momentum.rsi(x, window=14).fillna(0.0)
-        )
-=======
         rsi_series = (
             df.groupby("Ticker")["close_price"]
             .transform(lambda s: ta.momentum.rsi(s, window=14))
             .fillna(0.0)
         )
         df["RSI_14"] = rsi_series
->>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
+        rsi_series = (
+            df.groupby("Ticker")["close_price"]
+            .transform(lambda s: ta.momentum.rsi(s, window=14))
+            .fillna(0.0)
+        )
+        df["RSI_14"] = rsi_series
     except Exception as e:
         logger.warning("Failed to compute RSI_14: %s", e, exc_info=True)
 
@@ -276,39 +279,47 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning("Column 'Volume' missing; avg_volume_21d set to NaN.")
         df["avg_volume_21d"] = np.nan
     else:
-<<<<<<< HEAD
-        df["avg_volume_21d"] = df.groupby("Ticker")["Volume"].transform(
-            lambda x: x.dropna().rolling(21, min_periods=5).mean().fillna(0.0)
-=======
         df["avg_volume_21d"] = (
             df.groupby("Ticker")["Volume"]
             .transform(lambda s: s.rolling(21, min_periods=5).mean())
             .fillna(0.0)
->>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
+        df["avg_volume_21d"] = (
+            df.groupby("Ticker")["Volume"]
+            .transform(lambda s: s.rolling(21, min_periods=5).mean())
+            .fillna(0.0)
         )
 
+    try:
+        returns_abs = df.groupby("Ticker")["close_price"].transform(
+            lambda s: s.pct_change(fill_method=None).abs()
+        )
+        traded_amount = df["Volume"].replace(0, np.nan) * df["close_price"]
+        raw_impact = returns_abs / traded_amount
+        df["amihud_illiquidity"] = df.groupby("Ticker")["close_price"].transform(
+            lambda s: raw_impact.loc[s.index].rolling(21, min_periods=5).mean()
+        )
+        # Ensure zero-volume rows yield NaN as per expected behavior
+        df.loc[df["Volume"] == 0, "amihud_illiquidity"] = np.nan
+    except Exception as e:
+        logger.warning(
+            "Failed to compute amihud_illiquidity: %s", e, exc_info=True)
     # ---------- Amihud illiquidity ----------
     logger.debug("Starting Amihud illiquidity calculation")
-<<<<<<< HEAD
+    try:
+        returns_abs = df.groupby("Ticker")["close_price"].transform(
+            lambda s: s.pct_change(fill_method=None).abs()
+        )
+        traded_amount = df["Volume"].replace(0, np.nan) * df["close_price"]
+        raw_impact = returns_abs / traded_amount
+        df["amihud_illiquidity"] = df.groupby("Ticker")["close_price"].transform(
+            lambda s: raw_impact.loc[s.index].rolling(21, min_periods=5).mean()
+        )
+        # Ensure zero-volume rows yield NaN as per expected behavior
+        df.loc[df["Volume"] == 0, "amihud_illiquidity"] = np.nan
+    except Exception as e:
+        logger.warning(
+            "Failed to compute amihud_illiquidity: %s", e, exc_info=True)
 
-    def _amihud(grp: pd.DataFrame) -> pd.Series:
-        """
-        Compute Amihud illiquidity for a ticker group.
-        Logs entry and errors.
-        """
-        logger.debug("_amihud called for group of length %d", len(grp))
-        try:
-            ret = grp["close_price"].pct_change(periods=1, fill_method=None).abs().squeeze()
-            vol = grp["Volume"].replace(0, np.nan)
-            amt = vol * grp["close_price"]
-            raw = ret / amt
-            return raw.rolling(21, min_periods=5).mean()
-        except Exception as e:
-            logger.warning("Amihud calculation failed: %s", e, exc_info=True)
-            return pd.Series(np.nan, index=grp.index)
-
-=======
->>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
     try:
         returns_abs = df.groupby("Ticker")["close_price"].transform(
             lambda s: s.pct_change(fill_method=None).abs()
