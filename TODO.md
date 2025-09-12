@@ -7,6 +7,8 @@
 4. **Multiple Data Population Triggers**: Pipeline runs multiple times due to empty table checks.
 5. **Long Runtime**: Script runs for 19+ minutes before cancellation.
 6. **Cloud Run Deployment Failure**: ImportError in uvicorn due to missing dependencies and incorrect import paths.
+7. **GCS Bucket Missing**: GCS bucket 'equity-alpha-engine-cache' does not exist; falling back to in-memory cache only.
+8. **yfinance HTTP 401 Errors**: Multiple HTTP Error 401 from yfinance, likely due to Yahoo blocking automated requests.
 
 ## Planned Fixes
 - [x] Update pct_change calls in compute_factors.py to use fill_method=None
@@ -18,6 +20,8 @@
 - [x] Fix yfinance "database is locked" error with cache management and retry logic
 - [x] Fix pct_change DataFrame assignment errors in compute_factors.py by using transform instead of apply/reset_index
 - [x] Set CACHE_GCS_BUCKET default in config.py
+- [x] Modify cache_utils.py to attempt creating GCS bucket if it doesn't exist
+- [x] Add user-agent headers to yfinance calls in market_data.py to avoid 401 errors
 
 ## Implementation Steps
 1. Fix pct_change deprecation warnings
@@ -26,6 +30,8 @@
 4. Prevent duplicate data population
 5. Enhance error handling in market data fetch
 6. Test the fixes with a smaller dataset
+7. Modify cache_utils.py to attempt creating GCS bucket if it doesn't exist
+8. Add user-agent headers to yfinance calls in market_data.py to avoid 401 errors
 
 ## Bulk Insert Optimization
 - [x] Increase default chunksize from 15000 to 50000 in insert_dataframe
@@ -52,6 +58,7 @@
 - [x] Codebase verified: syntax checks passed, modules import successfully
 - [ ] Test optimized pipeline performance
 - [ ] Monitor execution time improvements
+- [x] Fix GCS bucket creation and yfinance 401 errors
 
 ## Cloud Run Deployment Fixes
 - [x] Install missing dependencies (fastapi, uvicorn) via requirements.txt
