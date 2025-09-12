@@ -43,6 +43,8 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("compute_factors called for DataFrame with %d rows", len(df))
     try:
         df = df.sort_values(["Ticker", "Date"]).copy()
+        # Drop duplicate columns to avoid DataFrame assignment errors
+        df = df.loc[:, ~df.columns.duplicated()]
     except Exception as e:
         logger.error("Failed to sort DataFrame: %s", e, exc_info=True)
         raise
