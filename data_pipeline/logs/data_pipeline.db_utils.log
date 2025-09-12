@@ -272,3 +272,13 @@
 2025-09-11 17:52:36,695 - INFO - Closing database session.
 2025-09-11 17:52:36,695 - INFO - Disposing custom database engine.
 >>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
+2025-09-12 12:25:38,594 - INFO - DBHelper initialized with database URL: sqlite:///test_pipeline.db
+2025-09-12 12:25:38,595 - INFO - Creating table 'factors' if not exists.
+2025-09-12 12:25:38,605 - INFO - Table 'factors' created.
+2025-09-12 12:25:38,606 - INFO - Starting bulk insert of 4 rows into 'factors' with chunksize 900
+2025-09-12 12:25:38,610 - INFO - Appending DataFrame to 'factors' (4 rows)
+2025-09-12 12:25:38,611 - INFO - Starting pandas to_sql insert into 'factors' with 4 rows, chunksize 900
+2025-09-12 12:25:38,625 - INFO - Non-upsert insert into 'factors' completed in 0.01 seconds (290.2 rows/sec)
+2025-09-12 12:25:38,626 - INFO - Bulk insert completed in 0.02 seconds (200.3 rows/sec)
+2025-09-12 12:25:38,628 - INFO - Closing database session.
+2025-09-12 12:25:38,629 - INFO - Disposing custom database engine.
