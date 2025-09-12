@@ -16,7 +16,8 @@ import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
 import requests  # For HTTP requests
 import yfinance as yf  # For fetching financial data
-from yfinance.exceptions import YFPricesMissingError  # For handling missing price data
+from yfinance.exceptions import \
+    YFPricesMissingError  # For handling missing price data
 
 # Local imports
 try:
@@ -42,7 +43,8 @@ except ImportError:
 try:
     from .db_utils import DBHelper as DBHelper  # noqa: F401
 except ImportError:
-    from data_pipeline.db_utils import DBHelper as DBHelper  # type: ignore # noqa: F401
+    from data_pipeline.db_utils import \
+        DBHelper as DBHelper  # type: ignore # noqa: F401
 
 # Set up logging for debugging
 logger = logging.getLogger(__name__)
@@ -166,7 +168,9 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
 
             # Create session with user-agent to avoid 401 errors
             session = requests.Session()
-            session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            session.headers["User-Agent"] = (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            )
 
             # Download tickers sequentially to avoid database lock issues
             all_data = []
@@ -385,7 +389,9 @@ def fetch_fundamental_data(
     async def _fetch_all() -> list[dict]:
         """Fetch fundamentals for the remaining tickers asynchronously."""
         session = requests.Session()
-        session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        session.headers["User-Agent"] = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        )
         tickers_obj = yf.Tickers(" ".join(remaining), session=session)
         tasks = [
             _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout) for t in remaining
@@ -496,11 +502,12 @@ def main(engine, start_date, end_date):
         raise TimeoutError("Pipeline execution exceeded timeout")
 
     # Use signal timeout only if SIGALRM is available (Unix systems)
-    if hasattr(signal, 'SIGALRM'):
+    if hasattr(signal, "SIGALRM"):
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(timeout_seconds)
     else:
-        logger.warning("Signal timeout not available on this platform, proceeding without timeout")
+        logger.warning(
+            "Signal timeout not available on this platform, proceeding without timeout")
 
     try:
         start_time = time.time()
@@ -546,7 +553,8 @@ def main(engine, start_date, end_date):
         if financial_df is not None:
             financial_tbl = "financial_tbl"
             # Use module-level DBHelper (monkeypatchable in tests)
-            db_helper = DBHelper(engine)  # Pass engine/url positionally for test DummyDB
+            # Pass engine/url positionally for test DummyDB
+            db_helper = DBHelper(engine)
             try:
                 db_helper.create_table(
                     financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
@@ -598,5 +606,5 @@ def main(engine, start_date, end_date):
         logger.error("Pipeline failed with error: %s", e, exc_info=True)
         raise
     finally:
-        if hasattr(signal, 'SIGALRM'):
+        if hasattr(signal, "SIGALRM"):
             signal.alarm(0)  # Cancel the alarm
