@@ -65,8 +65,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         try:
             returns_series = (
                 df.groupby("Ticker")["close_price"]
-                .pct_change(periods=period, fill_method=None)
-                .fillna(0.0)
+                .transform(lambda s: s.pct_change(periods=period).fillna(0.0).squeeze())
             )
             df[f"return_{label}"] = returns_series
         except Exception as e:
@@ -76,13 +75,11 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     try:
         mom_252 = (
             df.groupby("Ticker")["close_price"]
-            .pct_change(periods=252, fill_method=None)
-            .fillna(0.0)
+            .transform(lambda s: s.pct_change(periods=252).fillna(0.0).squeeze())
         )
         mom_21 = (
             df.groupby("Ticker")["close_price"]
-            .pct_change(periods=21, fill_method=None)
-            .fillna(0.0)
+            .transform(lambda s: s.pct_change(periods=21).fillna(0.0).squeeze())
         )
         df["momentum_12_1"] = mom_252 - mom_21
     except Exception as e:
@@ -95,7 +92,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             vol_series=(
                 df.groupby("Ticker")["close_price"]
                 .transform(
-                    lambda s: s.pct_change(fill_method=None)
+                    lambda s: s.pct_change()
                     .rolling(window, min_periods=max(2, window // 3))
                     .std()
                 )
@@ -253,7 +250,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting Amihud illiquidity calculation")
     try:
         returns_abs=df.groupby("Ticker")["close_price"].transform(
-            lambda s: s.pct_change(fill_method=None).abs()
+            lambda s: s.pct_change().abs()
         )
         traded_amount=df["Volume"].replace(0, np.nan) * df["close_price"]
         raw_impact=returns_abs / traded_amount
