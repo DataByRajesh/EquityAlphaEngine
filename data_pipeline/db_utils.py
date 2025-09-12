@@ -28,11 +28,15 @@ _SQL_DATE = Date  # For date columns
 _SQL_DT = DateTime  # For datetime columns
 
 
-def _sa_type_for_series(s: pd.Series):
+def _sa_type_for_series(s: pd.Series, col_name: str = None):
     """
     Infer the appropriate SQLAlchemy type for a pandas Series.
     Used for automatic schema inference when creating tables.
     """
+    # Special case for Date column
+    if col_name == "Date":
+        logger.debug("Inferring DATE type for Date column")
+        return _SQL_DATE
     # Boolean columns
     if pd.api.types.is_bool_dtype(s):
         logger.debug("Inferring BOOL type for column")
@@ -237,16 +241,12 @@ class DBHelper:
                     for col in df.columns:
                         if col in existing:
                             continue
-                        col_type = _sa_type_for_series(df[col])
+                        col_type = _sa_type_for_series(df[col], col)
                         logger.info(
                             "Adding missing column '%s' to table '%s'", col, table_name)
                         try:
-                            self.session.execute(
-                                Table(table_name, MetaData(),
-                                      autoload_with=self.engine)
-                                .append_column(Column(col, col_type))
-                                .to_metadata(MetaData())
-                            )
+                            alter_stmt = text(f"ALTER TABLE \"{table_name}\" ADD COLUMN \"{col}\" {col_type.compile(self.engine.dialect)}")
+                            self.session.execute(alter_stmt)
                         except Exception as e:
                             logger.error(
                                 "Failed to add column '%s' to table '%s': %s",
@@ -267,7 +267,7 @@ class DBHelper:
                         cols.append(
                             Column(
                                 col,
-                                _sa_type_for_series(df[col]),
+                                _sa_type_for_series(df[col], col),
                                 primary_key=(
                                     primary_keys and col in primary_keys),
                             )
@@ -387,6 +387,11 @@ class DBHelper:
             chunksize,
         )
 
+        # Convert Date column to date if it's datetime
+        if 'Date' in df.columns and pd.api.types.is_datetime64_any_dtype(df['Date']):
+            df = df.copy()
+            df['Date'] = df['Date'].dt.date
+
         tbl = Table(table_name, MetaData(), autoload_with=self.engine)
 
         if unique_cols:
@@ -414,11 +419,16 @@ class DBHelper:
             # Helper to render SQL literals safely for basic types
             def _sql_literal(val):
                 import pandas as _pd
+                import datetime
 
                 if val is None or (_pd.isna(val) if hasattr(_pd, "isna") else False):
                     return "NULL"
                 if isinstance(val, str):
                     return "'" + val.replace("'", "''") + "'"
+                if isinstance(val, datetime.date) and not isinstance(val, datetime.datetime):
+                    return "'" + val.strftime('%Y-%m-%d') + "'"
+                if isinstance(val, (_pd.Timestamp, _pd.Timedelta, datetime.datetime)) or hasattr(val, 'strftime'):
+                    return "'" + val.strftime('%Y-%m-%d %H:%M:%S') + "'"
                 return str(val)
 
             rows_sql = []
