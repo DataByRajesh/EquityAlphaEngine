@@ -93,7 +93,7 @@ def _get_cloud_sql_instance_name():
         from data_pipeline import config
 
         project = config.GCP_PROJECT_ID
-        region = os.environ.get("GCP_REGION", "us-central1")  # Default region
+        region = os.environ.get("GCP_REGION", "europe-west2")  # Default region
         instance = "equity-db"  # Assumed instance name
         return f"{project}:{region}:{instance}"
     except BaseException:
