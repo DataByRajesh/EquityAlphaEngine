@@ -52,7 +52,8 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     if "close_price" not in df.columns and "Close" in df.columns:
         try:
             df = df.rename(columns={"Close": "close_price"})
-            logger.warning("Renamed 'Close' to 'close_price' for factor computations")
+            logger.warning(
+                "Renamed 'Close' to 'close_price' for factor computations")
         except Exception as e:
             logger.warning(
                 "Failed to rename 'Close' to 'close_price': %s", e, exc_info=True
@@ -88,17 +89,17 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             df.groupby("Ticker")["close_price"]
             .pct_change(periods=21, fill_method=None)
             .fillna(0.0)
-        mom_252 = (
+        mom_252=(
             df.groupby("Ticker")["close_price"]
             .pct_change(periods=252, fill_method=None)
             .fillna(0.0)
         )
-        mom_21 = (
+        mom_21=(
             df.groupby("Ticker")["close_price"]
             .pct_change(periods=21, fill_method=None)
             .fillna(0.0)
         )
-        df["momentum_12_1"] = mom_252 - mom_21
+        df["momentum_12_1"]=mom_252 - mom_21
     except Exception as e:
         logger.warning("Failed to compute momentum_12_1: %s", e, exc_info=True)
 
@@ -106,7 +107,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting volatility calculations")
     for window in [21, 63, 252]:
         try:
-            vol_series = (
+            vol_series=(
                 df.groupby("Ticker")["close_price"]
                 .transform(
                     lambda s: s.pct_change(fill_method=None)
@@ -115,17 +116,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
                 )
                 .fillna(0.0)
             )
-            df[f"vol_{window}d"] = vol_series
-            vol_series = (
-                df.groupby("Ticker")["close_price"]
-                .transform(
-                    lambda s: s.pct_change(fill_method=None)
-                    .rolling(window, min_periods=max(2, window // 3))
-                    .std()
-                )
-                .fillna(0.0)
-            )
-            df[f"vol_{window}d"] = vol_series
+            df[f"vol_{window}d"]=vol_series
         except Exception as e:
             logger.warning(
                 f"Failed to compute vol_{window}d: %s", e, exc_info=True)
@@ -134,18 +125,12 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting moving averages calculations")
     for window in [20, 50, 200]:
         try:
-            ma_series = (
+            ma_series=(
                 df.groupby("Ticker")["close_price"]
                 .transform(lambda s: ta.trend.sma_indicator(s, window=window))
                 .fillna(0.0)
             )
-            df[f"ma_{window}"] = ma_series
-            ma_series = (
-                df.groupby("Ticker")["close_price"]
-                .transform(lambda s: ta.trend.sma_indicator(s, window=window))
-                .fillna(0.0)
-            )
-            df[f"ma_{window}"] = ma_series
+            df[f"ma_{window}"]=ma_series
         except Exception as e:
             logger.warning(
                 f"Failed to compute ma_{window}: %s", e, exc_info=True)
@@ -153,18 +138,12 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # ---------- RSI ----------
     logger.debug("Starting RSI calculation")
     try:
-        rsi_series = (
+        rsi_series=(
             df.groupby("Ticker")["close_price"]
             .transform(lambda s: ta.momentum.rsi(s, window=14))
             .fillna(0.0)
         )
-        df["RSI_14"] = rsi_series
-        rsi_series = (
-            df.groupby("Ticker")["close_price"]
-            .transform(lambda s: ta.momentum.rsi(s, window=14))
-            .fillna(0.0)
-        )
-        df["RSI_14"] = rsi_series
+        df["RSI_14"]=rsi_series
     except Exception as e:
         logger.warning("Failed to compute RSI_14: %s", e, exc_info=True)
 
@@ -178,10 +157,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_macd called for series of length %d", len(series))
         try:
-            series = series.dropna()
+            series=series.dropna()
             if len(series) < 26:
                 return pd.DataFrame({"MACD": np.nan, "MACDh": np.nan}, index=series.index)
-            m = ta.trend.MACD(series, window_slow=26,
+            m=ta.trend.MACD(series, window_slow=26,
                               window_fast=12, window_sign=9)
             return pd.DataFrame({"MACD": m.macd(), "MACDh": m.macd_diff()}, index=series.index)
         except Exception as e:
@@ -189,9 +168,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             return pd.DataFrame({"MACD": np.nan, "MACDh": np.nan}, index=series.index)
 
     try:
-        macd_df = df.groupby("Ticker", group_keys=False)["close_price"].apply(
+        macd_df=df.groupby("Ticker", group_keys=False)["close_price"].apply(
             lambda x: _macd(x)).reset_index(level=0, drop=True)
-        df[["MACD", "MACDh"]] = macd_df
+        df[["MACD", "MACDh"]]=macd_df
     except Exception as e:
         logger.warning("Failed to compute MACD/MACDh: %s", e, exc_info=True)
 
@@ -205,10 +184,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_bb called for series of length %d", len(series))
         try:
-            series = series.dropna()
+            series=series.dropna()
             if len(series) < 20:
                 return pd.DataFrame({"BBU_20": np.nan, "BBL_20": np.nan}, index=series.index)
-            bb = ta.volatility.BollingerBands(series, window=20, window_dev=2)
+            bb=ta.volatility.BollingerBands(series, window=20, window_dev=2)
             return pd.DataFrame(
                 {"BBU_20": bb.bollinger_hband(), "BBL_20": bb.bollinger_lband()},
                 index=series.index,
@@ -219,9 +198,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
             return pd.DataFrame({"BBU_20": np.nan, "BBL_20": np.nan}, index=series.index)
 
     try:
-        bb_df = df.groupby("Ticker", group_keys=False)["close_price"].apply(
+        bb_df=df.groupby("Ticker", group_keys=False)["close_price"].apply(
             lambda x: _bb(x)).reset_index(level=0, drop=True)
-        df[["BBU_20", "BBL_20"]] = bb_df
+        df[["BBU_20", "BBL_20"]]=bb_df
     except Exception as e:
         logger.warning("Failed to compute Bollinger Bands: %s",
                        e, exc_info=True)
@@ -230,27 +209,27 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting value factor calculations")
     # Earnings yield (handle zero/NaN/neg PE safely)
     if "trailingPE" in df.columns:
-        pe = pd.to_numeric(df["trailingPE"], errors="coerce")
-        df["earnings_yield"] = 1.0 / pe.replace(0, np.nan)
+        pe=pd.to_numeric(df["trailingPE"], errors="coerce")
+        df["earnings_yield"]=1.0 / pe.replace(0, np.nan)
     else:
         logger.warning(
             "Column 'trailingPE' missing; earnings_yield set to NaN.")
-        df["earnings_yield"] = np.nan
+        df["earnings_yield"]=np.nan
 
-    pb = pd.to_numeric(df.get("priceToBook", np.nan), errors="coerce")
+    pb=pd.to_numeric(df.get("priceToBook", np.nan), errors="coerce")
     if "priceToBook" not in df.columns:
         logger.warning(
             "Column 'priceToBook' missing; book_to_price set to NaN.")
-    df["book_to_price"] = 1.0 / pb.replace(0, np.nan)
+    df["book_to_price"]=1.0 / pb.replace(0, np.nan)
     if "dividendYield" not in df.columns:
         logger.warning(
             "Column 'dividendYield' missing; dividendYield set to NaN.")
-    df["dividendYield"] = pd.to_numeric(
+    df["dividendYield"]=pd.to_numeric(
         df.get("dividendYield", np.nan), errors="coerce")
     if "priceToSalesTrailing12Months" not in df.columns:
         logger.warning(
             "Column 'priceToSalesTrailing12Months' missing; price_to_sales set to NaN.")
-    df["price_to_sales"] = pd.to_numeric(
+    df["price_to_sales"]=pd.to_numeric(
         df.get("priceToSalesTrailing12Months", np.nan), errors="coerce")
 
     # ---------- Quality ----------
@@ -261,79 +240,51 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     if "profitMargins" not in df.columns:
         logger.warning(
             "Column 'profitMargins' missing; quality_score may be inaccurate.")
-    df["quality_score"] = (
+    df["quality_score"]=(
         pd.to_numeric(df.get("returnOnEquity", np.nan), errors="coerce")
         + pd.to_numeric(df.get("profitMargins", np.nan), errors="coerce")
     ) / 2.0
-    df["norm_quality_score"] = df.groupby("Date", group_keys=False)[
+    df["norm_quality_score"]=df.groupby("Date", group_keys=False)[
         "quality_score"].transform(_safe_zscore)
 
     # ---------- Size / Liquidity ----------
     logger.debug("Starting size/liquidity calculations")
-    mc = pd.to_numeric(df.get("marketCap", np.nan), errors="coerce")
+    mc=pd.to_numeric(df.get("marketCap", np.nan), errors="coerce")
     if "marketCap" not in df.columns:
         logger.warning("Column 'marketCap' missing; log_marketCap set to NaN.")
-    df["log_marketCap"] = np.where(mc > 0, np.log(mc), np.nan)
+    df["log_marketCap"]=np.where(mc > 0, np.log(mc), np.nan)
 
     if "Volume" not in df.columns:
         logger.warning("Column 'Volume' missing; avg_volume_21d set to NaN.")
-        df["avg_volume_21d"] = np.nan
+        df["avg_volume_21d"]=np.nan
     else:
-        df["avg_volume_21d"] = (
+        df["avg_volume_21d"]=(
             df.groupby("Ticker")["Volume"]
             .transform(lambda s: s.rolling(21, min_periods=5).mean())
             .fillna(0.0)
-        df["avg_volume_21d"] = (
+        df["avg_volume_21d"]=(
             df.groupby("Ticker")["Volume"]
             .transform(lambda s: s.rolling(21, min_periods=5).mean())
             .fillna(0.0)
         )
 
     try:
-        returns_abs = df.groupby("Ticker")["close_price"].transform(
+        returns_abs=df.groupby("Ticker")["close_price"].transform(
             lambda s: s.pct_change(fill_method=None).abs()
         )
-        traded_amount = df["Volume"].replace(0, np.nan) * df["close_price"]
-        raw_impact = returns_abs / traded_amount
-        df["amihud_illiquidity"] = df.groupby("Ticker")["close_price"].transform(
+        traded_amount=df["Volume"].replace(0, np.nan) * df["close_price"]
+        raw_impact=returns_abs / traded_amount
+        df["amihud_illiquidity"]=df.groupby("Ticker")["close_price"].transform(
             lambda s: raw_impact.loc[s.index].rolling(21, min_periods=5).mean()
         )
         # Ensure zero-volume rows yield NaN as per expected behavior
-        df.loc[df["Volume"] == 0, "amihud_illiquidity"] = np.nan
+        df.loc[df["Volume"] == 0, "amihud_illiquidity"]=np.nan
     except Exception as e:
         logger.warning(
             "Failed to compute amihud_illiquidity: %s", e, exc_info=True)
     # ---------- Amihud illiquidity ----------
     logger.debug("Starting Amihud illiquidity calculation")
     try:
-        returns_abs = df.groupby("Ticker")["close_price"].transform(
-            lambda s: s.pct_change(fill_method=None).abs()
-        )
-        traded_amount = df["Volume"].replace(0, np.nan) * df["close_price"]
-        raw_impact = returns_abs / traded_amount
-        df["amihud_illiquidity"] = df.groupby("Ticker")["close_price"].transform(
-            lambda s: raw_impact.loc[s.index].rolling(21, min_periods=5).mean()
-        )
-        # Ensure zero-volume rows yield NaN as per expected behavior
-        df.loc[df["Volume"] == 0, "amihud_illiquidity"] = np.nan
-    except Exception as e:
-        logger.warning(
-            "Failed to compute amihud_illiquidity: %s", e, exc_info=True)
-
-    try:
-        returns_abs = df.groupby("Ticker")["close_price"].transform(
-            lambda s: s.pct_change(fill_method=None).abs()
-        )
-        traded_amount = df["Volume"].replace(0, np.nan) * df["close_price"]
-        raw_impact = returns_abs / traded_amount
-        df["amihud_illiquidity"] = df.groupby("Ticker")["close_price"].transform(
-            lambda s: raw_impact.loc[s.index].rolling(21, min_periods=5).mean()
-        )
-        # Ensure zero-volume rows yield NaN as per expected behavior
-        df.loc[df["Volume"] == 0, "amihud_illiquidity"] = np.nan
-    except Exception as e:
-        logger.warning(
-            "Failed to compute amihud_illiquidity: %s", e, exc_info=True)
 
     # ---------- Clean infinities early ----------
     logger.debug("Cleaning infinities and NaNs")
@@ -341,20 +292,20 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
 
     # ---------- Composite factor ----------
     logger.debug("Starting composite factor calculation")
-    factor_cols = ["return_12m", "earnings_yield", "norm_quality_score"]
+    factor_cols=["return_12m", "earnings_yield", "norm_quality_score"]
 
     for col in factor_cols:
         if col in df.columns:
             try:
-                df[f"z_{col}"] = df.groupby("Date", group_keys=False)[
+                df[f"z_{col}"]=df.groupby("Date", group_keys=False)[
                     col].transform(_safe_zscore)
             except Exception as e:
                 logger.warning(
                     f"Failed to z-score {col}: %s", e, exc_info=True)
 
-    z_cols = [f"z_{c}" for c in factor_cols if f"z_{c}" in df.columns]
+    z_cols=[f"z_{c}" for c in factor_cols if f"z_{c}" in df.columns]
     try:
-        df["factor_composite"] = df[z_cols].mean(axis=1) if z_cols else np.nan
+        df["factor_composite"]=df[z_cols].mean(axis=1) if z_cols else np.nan
     except Exception as e:
         logger.warning("Failed to compute factor_composite: %s",
                        e, exc_info=True)

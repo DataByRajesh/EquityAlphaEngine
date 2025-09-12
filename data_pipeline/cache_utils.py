@@ -51,11 +51,17 @@ def _ensure_gcs():
                 logger.info("Created GCS bucket '%s'", config.CACHE_GCS_BUCKET)
             except Exception as e:
                 logger.warning(
-                    "Failed to create GCS bucket '%s': %s; falling back to in-memory cache only.", config.CACHE_GCS_BUCKET, e)
+                    "Failed to create GCS bucket '%s': %s; falling back to in-memory cache only.",
+                    config.CACHE_GCS_BUCKET,
+                    e,
+                )
                 return False
         except Exception as e:
             logger.warning(
-                "Failed to access GCS bucket '%s': %s; falling back to in-memory cache only.", config.CACHE_GCS_BUCKET, e)
+                "Failed to access GCS bucket '%s': %s; falling back to in-memory cache only.",
+                config.CACHE_GCS_BUCKET,
+                e,
+            )
             return False
     return True
 
