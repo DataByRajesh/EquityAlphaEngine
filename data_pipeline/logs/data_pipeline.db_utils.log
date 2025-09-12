@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+2025-09-11 21:12:39,151 - INFO - DBHelper initialized with database URL: using_global_engine
+2025-09-11 21:13:43,511 - INFO - DBHelper initialized with database URL: using_global_engine
+=======
 2025-09-11 17:44:41,705 - INFO - DBHelper initialized with database URL: sqlite:///test_stocks.db
 2025-09-11 17:44:41,707 - INFO - Creating table 'test_tbl' if not exists.
 2025-09-11 17:44:41,718 - INFO - Table 'test_tbl' created.
@@ -267,3 +271,4 @@
 2025-09-11 17:52:36,691 - INFO - Bulk insert completed in 0.02 seconds (254.1 rows/sec)
 2025-09-11 17:52:36,695 - INFO - Closing database session.
 2025-09-11 17:52:36,695 - INFO - Disposing custom database engine.
+>>>>>>> 7cc0abde5ddd3cb38097418a6e0f54f396a54651
