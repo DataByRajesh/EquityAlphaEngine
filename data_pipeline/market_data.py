@@ -38,11 +38,11 @@ except ImportError:
                                            send_message)
     from data_pipeline.Macro_data import FiveYearMacroDataLoader
 
-# Updated import for market_data to use fallback mechanism
+# Re-export DBHelper at module level for tests to monkeypatch
 try:
-    pass
+    from .db_utils import DBHelper as DBHelper  # noqa: F401
 except ImportError:
-    pass
+    from data_pipeline.db_utils import DBHelper as DBHelper  # type: ignore # noqa: F401
 
 # Set up logging for debugging
 logger = logging.getLogger(__name__)
@@ -218,13 +218,13 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
             if "Volume" in data.columns:
                 data["Volume"] = data["Volume"].fillna(0).astype(int)
 
-            # Ensure Adj Close column exists - if not, use close_price as
-            # fallback
+            # Ensure Adj Close column exists - if not, use close_price as fallback
             if "Adj Close" not in data.columns and "close_price" in data.columns:
                 data["Adj Close"] = data["close_price"]
                 logger.warning(
                     "Adj Close column missing, using close_price as fallback")
 
+            # Validate required columns strictly; if any are missing, return empty
             required_cols = {
                 "Date",
                 "Open",
@@ -235,12 +235,6 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                 "Volume",
                 "Ticker",
             }
-            # Add missing required columns with NaN values to prevent errors
-            for col in required_cols:
-                if col not in data.columns:
-                    data[col] = np.nan
-                    logger.warning(f"Added missing column {col} with NaN values")
-
             missing_cols = required_cols - set(data.columns)
             if missing_cols:
                 logger.error(
@@ -551,9 +545,8 @@ def main(engine, start_date, end_date):
         # Save computed factors to DB
         if financial_df is not None:
             financial_tbl = "financial_tbl"
-            from data_pipeline.db_utils import DBHelper
-
-            db_helper = DBHelper(engine=engine)  # Use provided engine
+            # Use module-level DBHelper (monkeypatchable in tests)
+            db_helper = DBHelper(engine)  # Pass engine/url positionally for test DummyDB
             try:
                 db_helper.create_table(
                     financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
