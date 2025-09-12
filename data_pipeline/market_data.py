@@ -166,12 +166,6 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                 # Note: yfinance doesn't have a direct way to disable all caching,
                 # but we can minimize it by using unique directories
 
-            # Create session with user-agent to avoid 401 errors
-            session = requests.Session()
-            session.headers["User-Agent"] = (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            )
-
             # Download tickers sequentially to avoid database lock issues
             all_data = []
             for ticker in tickers:
@@ -184,7 +178,6 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                         progress=False,
                         auto_adjust=False,
                         timeout=timeout,
-                        session=session,
                     )
                     if not ticker_data.empty:
                         ticker_data["Ticker"] = ticker
@@ -388,11 +381,7 @@ def fetch_fundamental_data(
 
     async def _fetch_all() -> list[dict]:
         """Fetch fundamentals for the remaining tickers asynchronously."""
-        session = requests.Session()
-        session.headers["User-Agent"] = (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        )
-        tickers_obj = yf.Tickers(" ".join(remaining), session=session)
+        tickers_obj = yf.Tickers(" ".join(remaining))
         tasks = [
             _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout) for t in remaining
         ]
