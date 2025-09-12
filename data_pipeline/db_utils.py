@@ -396,6 +396,7 @@ class DBHelper:
                 len(df),
                 unique_cols,
             )
+
             # Properly quote column names
             def quote_ident(col: str) -> str:
                 if getattr(self.engine.dialect, "name", "") == "mysql":
@@ -404,7 +405,8 @@ class DBHelper:
 
             quoted_columns = [quote_ident(col) for col in df.columns]
             quoted_unique_cols = [quote_ident(col) for col in unique_cols]
-            non_unique_cols = [col for col in df.columns if col not in unique_cols]
+            non_unique_cols = [
+                col for col in df.columns if col not in unique_cols]
 
             dialect_name = getattr(self.engine, "dialect", None)
             dialect_name = getattr(dialect_name, "name", "")
@@ -421,7 +423,7 @@ class DBHelper:
 
             rows_sql = []
             for _, row in df.iterrows():
-                values = [ _sql_literal(row[col]) for col in df.columns ]
+                values = [_sql_literal(row[col]) for col in df.columns]
                 rows_sql.append("(" + ", ".join(values) + ")")
 
             if dialect_name == "sqlite":
@@ -432,7 +434,9 @@ class DBHelper:
                 """
             elif dialect_name == "mysql":
                 # MySQL: ON DUPLICATE KEY UPDATE
-                update_clause = ", ".join([f"{quote_ident(col)} = VALUES({quote_ident(col)})" for col in non_unique_cols])
+                update_clause = ", ".join(
+                    [f"{quote_ident(col)} = VALUES({quote_ident(col)})" for col in non_unique_cols]
+                )
                 upsert_query = f"""
                 INSERT INTO {table_name} ({', '.join(quoted_columns)})
                 VALUES {', '.join(rows_sql)}
@@ -440,8 +444,11 @@ class DBHelper:
                 """
             elif dialect_name == "postgresql":
                 # PostgreSQL: ON CONFLICT DO UPDATE
-                update_clause = ", ".join([f"{quote_ident(col)} = EXCLUDED.{quote_ident(col)}" for col in non_unique_cols])
-                cols_alias = ", ".join([quote_ident(col) for col in df.columns])
+                update_clause = ", ".join(
+                    [f"{quote_ident(col)} = EXCLUDED.{quote_ident(col)}" for col in non_unique_cols]
+                )
+                cols_alias = ", ".join([quote_ident(col)
+                                       for col in df.columns])
                 upsert_query = f"""
                 INSERT INTO {table_name} ({', '.join(quoted_columns)})
                 VALUES {', '.join(rows_sql)}
@@ -450,14 +457,23 @@ class DBHelper:
             else:
                 # Fallback: create temp table, then upsert if supported by DB, else replace
                 temp_table_name = f"temp_{table_name}_{int(time.time())}"
-                logger.info("Creating temp table '%s' for upsert", temp_table_name)
+                logger.info("Creating temp table '%s' for upsert",
+                            temp_table_name)
                 temp_columns = []
                 for col in tbl.columns:
-                    temp_columns.append(Column(col.name, col.type, nullable=col.nullable))
+                    temp_columns.append(
+                        Column(col.name, col.type, nullable=col.nullable))
                 temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
                 temp_tbl.create(self.engine, checkfirst=True)
 
-                df.to_sql(temp_table_name, con=self.engine, if_exists="append", index=False, chunksize=chunksize, method="multi")
+                df.to_sql(
+                    temp_table_name,
+                    con=self.engine,
+                    if_exists="append",
+                    index=False,
+                    chunksize=chunksize,
+                    method="multi",
+                )
 
                 upsert_query = f"""
                 INSERT INTO {table_name} ({', '.join(quoted_columns)})
