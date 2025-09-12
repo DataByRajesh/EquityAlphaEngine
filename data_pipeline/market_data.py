@@ -543,7 +543,7 @@ def main(engine, start_date, end_date):
             financial_tbl = "financial_tbl"
             # Use module-level DBHelper (monkeypatchable in tests)
             # Pass engine/url positionally for test DummyDB
-            db_helper = DBHelper(engine)
+            db_helper = DBHelper(engine=engine)
             try:
                 db_helper.create_table(
                     financial_tbl, financial_df, primary_keys=["Date", "Ticker"])
