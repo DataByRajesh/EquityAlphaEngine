@@ -51,8 +51,9 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     logger.debug("Starting momentum calculations")
     for period, label in zip([21, 63, 126, 252], ["1m", "3m", "6m", "12m"]):
         try:
-            df[f"return_{label}"] = df.groupby("Ticker")["close_price"].transform(
-                lambda x: x.pct_change(period, fill_method=None).fillna(0.0)
+            df[f"return_{label}"] = (
+                df.groupby("Ticker")["close_price"]
+                .transform(lambda x: x.pct_change(periods=period, fill_method=None).fillna(0.0))
             )
         except Exception as e:
             logger.warning(
@@ -60,10 +61,10 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     # 12-1 momentum
     try:
         mom_252 = df.groupby("Ticker")["close_price"].transform(
-            lambda x: x.pct_change(252, fill_method=None).fillna(0.0)
+            lambda x: x.pct_change(periods=252, fill_method=None).fillna(0.0)
         )
         mom_21 = df.groupby("Ticker")["close_price"].transform(
-            lambda x: x.pct_change(21, fill_method=None).fillna(0.0)
+            lambda x: x.pct_change(periods=21, fill_method=None).fillna(0.0)
         )
         df["momentum_12_1"] = mom_252 - mom_21
     except Exception as e:
@@ -74,7 +75,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
     for window in [21, 63, 252]:
         try:
             df[f"vol_{window}d"] = df.groupby("Ticker")["close_price"].transform(
-                lambda x: x.pct_change(fill_method=None).rolling(
+                lambda x: x.pct_change(periods=1, fill_method=None).rolling(
                     window, min_periods=max(2, window // 3)).std().fillna(0.0)
             )
         except Exception as e:
@@ -226,7 +227,7 @@ def compute_factors(df: pd.DataFrame) -> pd.DataFrame:
         """
         logger.debug("_amihud called for group of length %d", len(grp))
         try:
-            ret = grp["close_price"].pct_change(fill_method=None).abs().squeeze()
+            ret = grp["close_price"].pct_change(periods=1, fill_method=None).abs().squeeze()
             vol = grp["Volume"].replace(0, np.nan)
             amt = vol * grp["close_price"]
             raw = ret / amt
