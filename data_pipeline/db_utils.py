@@ -245,7 +245,7 @@ class DBHelper:
                         logger.info(
                             "Adding missing column '%s' to table '%s'", col, table_name)
                         try:
-                            alter_stmt = text(f"ALTER TABLE \"{table_name}\" ADD COLUMN \"{col}\" {col_type.compile(self.engine.dialect)}")
+                            alter_stmt = text(f"ALTER TABLE \"{table_name}\" ADD COLUMN \"{col}\" {str(col_type).upper()}")
                             self.session.execute(alter_stmt)
                         except Exception as e:
                             logger.error(
