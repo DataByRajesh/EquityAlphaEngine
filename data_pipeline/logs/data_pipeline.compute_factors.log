@@ -947,3 +947,7 @@ KeyError: 'Column not found: close_price'
 2025-09-12 12:25:38,526 - INFO - compute_factors called for DataFrame with 4 rows
 2025-09-12 12:25:38,527 - WARNING - Renamed 'Close' to 'close_price' for factor computations
 2025-09-12 12:25:38,546 - INFO - Factor computation complete for 4 rows.
+2025-09-13 13:15:00,389 - INFO - compute_factors called for DataFrame with 200 rows
+2025-09-13 13:15:01,648 - INFO - Factor computation complete for 200 rows.
+2025-09-13 13:15:46,803 - INFO - compute_factors called for DataFrame with 246615 rows
+2025-09-13 13:16:01,299 - INFO - Factor computation complete for 246615 rows.
