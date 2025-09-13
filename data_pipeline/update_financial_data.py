@@ -25,9 +25,12 @@ import pandas as pd
 from sqlalchemy import inspect
 
 # Local application imports
-from data_pipeline.db_connection import engine
+from data_pipeline.db_connection import engine, reinitialize_engine
 from data_pipeline.db_utils import DBHelper
 from data_pipeline.market_data import main as market_data_main
+
+# Reinitialize engine to apply updated timeout
+reinitialize_engine()
 
 # Use the config helper to create a file logger
 logger = logging.getLogger(__name__)
