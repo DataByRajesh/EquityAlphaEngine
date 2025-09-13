@@ -6,6 +6,7 @@ from sqlalchemy import (BigInteger, Boolean, Column, Date, DateTime, Float,
                         Index, Integer, MetaData, String, Table, Text,
                         create_engine, inspect, text)
 from sqlalchemy.exc import OperationalError
+from pg8000.exceptions import InterfaceError
 from sqlalchemy.orm import sessionmaker
 
 # Updated local imports to use fallback mechanism
@@ -491,10 +492,35 @@ class DBHelper:
                 """
 
             logger.info("Upsert query: %s", upsert_query.strip())
-            with self.engine.begin() as conn:
-                logger.info("Executing upsert query...")
-                conn.execute(text(upsert_query))
-            logger.info("Upsert completed into '%s'", table_name)
+            max_retries = 3
+            retry_delay = 2.0
+            for attempt in range(max_retries):
+                try:
+                    with self.engine.begin() as conn:
+                        logger.info("Executing upsert query...")
+                        conn.execute(text(upsert_query))
+                    logger.info("Upsert completed into '%s'", table_name)
+                    break
+                except InterfaceError as e:
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            "Network error during upsert, retrying in %s seconds (attempt %d/%d): %s",
+                            retry_delay,
+                            attempt + 1,
+                            max_retries,
+                            e,
+                        )
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        logger.error(
+                            "Failed to upsert into '%s' after %d attempts due to network error: %s",
+                            table_name,
+                            max_retries,
+                            e,
+                            exc_info=True,
+                        )
+                        raise
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
