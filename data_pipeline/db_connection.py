@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Constants
-DEFAULT_TIMEOUT = 60  # seconds
+DEFAULT_TIMEOUT = 300  # seconds, increased for large queries
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
 
