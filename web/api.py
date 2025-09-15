@@ -135,7 +135,7 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int):
     query = text(
         f"""
         SELECT * FROM financial_tbl
-        WHERE marketCap >= :min_mktcap
+        WHERE "marketCap" >= :min_mktcap
         ORDER BY {order_by}
         LIMIT :top_n
         """
@@ -148,7 +148,7 @@ def _query_combined_stocks(min_mktcap: int, top_n: int):
     query = text(
         """
         SELECT * FROM financial_tbl
-        WHERE marketCap >= :min_mktcap
+        WHERE "marketCap" >= :min_mktcap
         AND factor_composite > 0.5
         AND norm_quality_score > 0.5
         AND return_12m > 0.1
@@ -186,7 +186,7 @@ def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_top_market_cap_stocks")
 def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"top_market_cap_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("marketCap DESC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks('"marketCap" DESC', min_mktcap, top_n))
 
 
 @app.get("/get_low_beta_stocks")
@@ -198,7 +198,7 @@ def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_high_dividend_yield_stocks")
 def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"high_dividend_yield_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("dividendYield DESC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC', min_mktcap, top_n))
 
 
 @app.get("/get_high_momentum_stocks")
@@ -222,7 +222,7 @@ def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_high_dividend_low_beta_stocks")
 def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"high_dividend_low_beta_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("dividendYield DESC, beta ASC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC, beta ASC', min_mktcap, top_n))
 
 
 @app.get("/get_top_factor_composite_stocks")
