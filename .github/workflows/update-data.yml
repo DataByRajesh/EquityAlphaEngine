@@ -14,6 +14,7 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       QUANDL_API_KEY: ${{ secrets.QUANDL_API_KEY }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      CLIENT_SECRET_JSON: ${{ secrets.CLIENT_SECRET_JSON }}
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +22,10 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ env.GCP_SA_KEY }}
+
+      - name: Create or update Gmail client secret in Secret Manager
+        run: |
+          echo "$CLIENT_SECRET_JSON" | gcloud secrets create GMAIL_CLIENT_SECRET --data-file=- || gcloud secrets versions add GMAIL_CLIENT_SECRET --data-file=-
 
       - name: Debug Environment Variables
         run: |
@@ -44,5 +49,6 @@ jobs:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           QUANDL_API_KEY: ${{ env.QUANDL_API_KEY }}
           GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+          GMAIL_CREDENTIALS_SECRET_NAME: GMAIL_CLIENT_SECRET
         run: |
           python -m data_pipeline.update_financial_data --years 10
