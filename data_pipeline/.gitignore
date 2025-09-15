@@ -1,0 +1,4 @@
+# Data and cache directories
+data/
+cache/
+logs/
