@@ -116,7 +116,13 @@ def get_gmail_service(
             headless = os.environ.get("HEADLESS", "").lower() in {
                 "1", "true", "yes"}
             if headless or not os.environ.get("DISPLAY"):
-                creds = flow.run_console()
+                # Use run_console for headless environments
+                try:
+                    creds = flow.run_console()
+                except AttributeError:
+                    # Fallback for older versions of google-auth-oauthlib
+                    logger.warning("run_console not available, using run_local_server")
+                    creds = flow.run_local_server(port=0)
             else:
                 creds = flow.run_local_server(port=0)
         # Save credentials for next run
