@@ -35,7 +35,7 @@ jobs:
 
       - name: Create or update Gmail client secret in Secret Manager
         run: |
-          echo "$CLIENT_SECRET_JSON" | gcloud secrets create GMAIL_CLIENT_SECRET --data-file=- || gcloud secrets versions add GMAIL_CLIENT_SECRET --data-file=-
+          echo "$CLIENT_SECRET_JSON" | (gcloud secrets describe GMAIL_CLIENT_SECRET >/dev/null 2>&1 && gcloud secrets versions add GMAIL_CLIENT_SECRET --data-file=- || gcloud secrets create GMAIL_CLIENT_SECRET --data-file=-)
 
       - name: Build Docker image
         run: |
