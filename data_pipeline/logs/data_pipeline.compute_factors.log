@@ -947,3 +947,7 @@ KeyError: 'Column not found: close_price'
 2025-09-12 12:25:38,526 - INFO - compute_factors called for DataFrame with 4 rows
 2025-09-12 12:25:38,527 - WARNING - Renamed 'Close' to 'close_price' for factor computations
 2025-09-12 12:25:38,546 - INFO - Factor computation complete for 4 rows.
+2025-09-15 18:19:18,760 - INFO - compute_factors called for DataFrame with 1 rows
+2025-09-15 18:19:18,784 - WARNING - Column 'dividendYield' missing; dividendYield set to NaN.
+2025-09-15 18:19:18,784 - WARNING - Column 'priceToSalesTrailing12Months' missing; price_to_sales set to NaN.
+2025-09-15 18:19:18,794 - INFO - Factor computation complete for 1 rows.
