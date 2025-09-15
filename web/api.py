@@ -106,74 +106,254 @@ def get_undervalued_stocks(min_mktcap: int = 0, top_n: int = 10):
 
 @app.get("/get_overvalued_stocks")
 def get_overvalued_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"overvalued_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("factor_composite DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY factor_composite DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_high_quality_stocks")
 def get_high_quality_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"high_quality_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("norm_quality_score DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY norm_quality_score DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_high_earnings_yield_stocks")
 def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"high_earnings_yield_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("earnings_yield DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY earnings_yield DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_top_market_cap_stocks")
 def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"top_market_cap_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("marketCap DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY marketCap DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_low_beta_stocks")
 def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"low_beta_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("beta ASC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY beta ASC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_high_dividend_yield_stocks")
 def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"high_dividend_yield_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("dividendYield DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY dividendYield DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_high_momentum_stocks")
 def get_high_momentum_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"high_momentum_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("return_12m DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY return_12m DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_low_volatility_stocks")
 def get_low_volatility_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"low_volatility_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("volatility ASC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY volatility ASC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_top_short_term_momentum_stocks")
 def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"top_short_term_momentum_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("return_3m DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY return_3m DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_high_dividend_low_beta_stocks")
 def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"high_dividend_low_beta_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("dividendYield DESC, beta ASC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY dividendYield DESC, beta ASC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_top_factor_composite_stocks")
 def get_top_factor_composite_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"top_factor_composite_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("factor_composite DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY factor_composite DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_high_risk_stocks")
 def get_high_risk_stocks(min_mktcap: int = 0, top_n: int = 10):
+<<<<<<< HEAD
     key = f"high_risk_{min_mktcap}_{top_n}"
     return get_cached_or_compute(key, lambda: _query_stocks("risk_score DESC", min_mktcap, top_n))
+=======
+    with get_db_context() as db:
+        query = text(
+            """
+            SELECT * FROM financial_tbl
+            WHERE marketCap >= :min_mktcap
+            ORDER BY risk_score DESC
+            LIMIT :top_n
+        """
+        )
+        df = pd.read_sql(query, db.engine, params={
+                         "min_mktcap": min_mktcap, "top_n": top_n})
+        return df.to_dict(orient="records")
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 @app.get("/get_top_combined_screen_limited")

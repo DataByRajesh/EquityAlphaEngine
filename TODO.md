@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Cross-Check and Deployment Updates
 
 ## Completed Tasks
@@ -17,3 +18,11 @@
 - VPC connector name: projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector
 - All deployment methods (CLI and YAML) now include VPC access
 - Streamlit app also updated for VPC access since it connects to database
+=======
+# TODO: Fix Data Pipeline Errors
+
+## Tasks
+- [x] Fix pandas FutureWarning in Macro_data.py: change freq="Y" to "YE"
+- [x] Add mock GDP data fallback in Macro_data.py fetch_gdp_growth on Quandl failure
+- [x] Make Gmail notification optional in market_data.py: continue pipeline without exiting if credentials missing
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93

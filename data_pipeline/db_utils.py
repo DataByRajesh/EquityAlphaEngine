@@ -148,6 +148,28 @@ def _chunked_insert(conn, stmt, df: pd.DataFrame, chunksize: int = 900) -> None:
                         exc_info=True,
                     )
                     raise
+            except InterfaceError as e:
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        "Network error during insert, retrying in %s seconds (attempt %d/%d): %s",
+                        retry_delay,
+                        attempt + 1,
+                        max_retries,
+                        e,
+                    )
+                    time.sleep(retry_delay)
+                    # Exponential backoff for network issues, increased max delay
+                    retry_delay = min(retry_delay * 2, 30.0)
+                else:
+                    logger.error(
+                        "Failed to insert chunk into '%s' after %d attempts due to network error: %s",
+                        getattr(stmt, "table", None) or getattr(
+                            stmt, "name", None),
+                        max_retries,
+                        e,
+                        exc_info=True,
+                    )
+                    raise
             except Exception as e:
                 logger.error(
                     "Failed to insert chunk into '%s': %s",
@@ -432,6 +454,7 @@ class DBHelper:
                     return "'" + val.strftime('%Y-%m-%d %H:%M:%S') + "'"
                 return str(val)
 
+<<<<<<< HEAD
             rows_sql = []
             for _, row in df.iterrows():
                 values = [_sql_literal(row[col]) for col in df.columns]
@@ -521,6 +544,98 @@ class DBHelper:
                             exc_info=True,
                         )
                         raise
+=======
+            # Chunk the DataFrame for upsert to avoid large queries and network errors
+            upsert_chunksize = 1000  # Larger chunks for better performance
+            total_chunks = (len(df) + upsert_chunksize - 1) // upsert_chunksize
+            logger.info("Processing upsert in %d chunks of size %d", total_chunks, upsert_chunksize)
+
+            for chunk_idx in range(total_chunks):
+                start_idx = chunk_idx * upsert_chunksize
+                end_idx = min((chunk_idx + 1) * upsert_chunksize, len(df))
+                chunk = df.iloc[start_idx:end_idx]
+
+                rows_sql = []
+                for _, row in chunk.iterrows():
+                    values = [_sql_literal(row[col]) for col in df.columns]
+                    rows_sql.append("(" + ", ".join(values) + ")")
+
+                if dialect_name == "sqlite":
+                    # SQLite: INSERT OR REPLACE with VALUES
+                    upsert_query = f"""
+                    INSERT OR REPLACE INTO {table_name} ({', '.join(quoted_columns)})
+                    VALUES {', '.join(rows_sql)}
+                    """
+                elif dialect_name == "mysql":
+                    # MySQL: ON DUPLICATE KEY UPDATE
+                    update_clause = ", ".join(
+                        [f"{quote_ident(col)} = VALUES({quote_ident(col)})" for col in non_unique_cols]
+                    )
+                    upsert_query = f"""
+                    INSERT INTO {table_name} ({', '.join(quoted_columns)})
+                    VALUES {', '.join(rows_sql)}
+                    ON DUPLICATE KEY UPDATE {update_clause}
+                    """
+                elif dialect_name == "postgresql":
+                    # PostgreSQL: ON CONFLICT DO UPDATE
+                    update_clause = ", ".join(
+                        [f"{quote_ident(col)} = EXCLUDED.{quote_ident(col)}" for col in non_unique_cols]
+                    )
+                    upsert_query = f"""
+                    INSERT INTO {table_name} ({', '.join(quoted_columns)})
+                    VALUES {', '.join(rows_sql)}
+                    ON CONFLICT ({', '.join(quoted_unique_cols)}) DO UPDATE SET {update_clause}
+                    """
+                else:
+                    # Fallback: create temp table, then upsert if supported by DB, else replace
+                    temp_table_name = f"temp_{table_name}_{int(time.time())}_{chunk_idx}"
+                    logger.info("Creating temp table '%s' for upsert chunk %d", temp_table_name, chunk_idx + 1)
+                    temp_columns = []
+                    for col in tbl.columns:
+                        temp_columns.append(
+                            Column(col.name, col.type, nullable=col.nullable))
+                    temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
+                    temp_tbl.create(self.engine, checkfirst=True)
+
+                    chunk.to_sql(
+                        temp_table_name,
+                        con=self.engine,
+                        if_exists="append",
+                        index=False,
+                        chunksize=chunksize,
+                        method="multi",
+                    )
+
+                    upsert_query = f"""
+                    INSERT INTO {table_name} ({', '.join(quoted_columns)})
+                    SELECT {', '.join(quoted_columns)} FROM {temp_table_name}
+                    """
+
+                logger.debug("Upsert query for chunk %d: %s", chunk_idx + 1, upsert_query.strip())
+                max_retries = 5  # Increased retries for network resilience
+                retry_delay = 2.0
+                for attempt in range(max_retries):
+                    try:
+                        with self.engine.begin() as conn:
+                            logger.info("Executing upsert query for chunk %d/%d...", chunk_idx + 1, total_chunks)
+                            conn.execute(text(upsert_query))
+                        logger.info("Upsert chunk %d/%d completed into '%s'", chunk_idx + 1, total_chunks, table_name)
+                        break
+                    except InterfaceError as e:
+                        if attempt < max_retries - 1:
+                            logger.warning(
+                                "Network error during upsert chunk %d/%d, retrying in %s seconds (attempt %d/%d): %s",
+                                chunk_idx + 1, total_chunks, retry_delay, attempt + 1, max_retries, e,
+                            )
+                            time.sleep(retry_delay)
+                            retry_delay = min(retry_delay * 2, 30.0)  # Exponential backoff with higher max delay
+                        else:
+                            logger.error(
+                                "Failed to upsert chunk %d/%d into '%s' after %d attempts due to network error: %s",
+                                chunk_idx + 1, total_chunks, table_name, max_retries, e, exc_info=True,
+                            )
+                            raise
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
@@ -532,21 +647,46 @@ class DBHelper:
                 chunksize,
             )
             non_upsert_start = time.time()
-            df.to_sql(
-                table_name,
-                con=self.engine,
-                if_exists="append",
-                index=False,
-                chunksize=chunksize,
-                method="multi",
-            )
-            non_upsert_elapsed = time.time() - non_upsert_start
-            logger.info(
-                "Non-upsert insert into '%s' completed in %.2f seconds (%.1f rows/sec)",
-                table_name,
-                non_upsert_elapsed,
-                len(df) / non_upsert_elapsed if non_upsert_elapsed > 0 else 0,
-            )
+            max_retries = 3
+            retry_delay = 2.0
+            for attempt in range(max_retries):
+                try:
+                    df.to_sql(
+                        table_name,
+                        con=self.engine,
+                        if_exists="append",
+                        index=False,
+                        chunksize=chunksize,
+                        method="multi",
+                    )
+                    non_upsert_elapsed = time.time() - non_upsert_start
+                    logger.info(
+                        "Non-upsert insert into '%s' completed in %.2f seconds (%.1f rows/sec)",
+                        table_name,
+                        non_upsert_elapsed,
+                        len(df) / non_upsert_elapsed if non_upsert_elapsed > 0 else 0,
+                    )
+                    break
+                except InterfaceError as e:
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            "Network error during non-upsert insert, retrying in %s seconds (attempt %d/%d): %s",
+                            retry_delay,
+                            attempt + 1,
+                            max_retries,
+                            e,
+                        )
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        logger.error(
+                            "Failed to insert into '%s' after %d attempts due to network error: %s",
+                            table_name,
+                            max_retries,
+                            e,
+                            exc_info=True,
+                        )
+                        raise
 
         end_time = time.time()
         logger.info(

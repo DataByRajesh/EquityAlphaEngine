@@ -27,6 +27,7 @@ env:
   GCP_SA_KEY:    ${{ secrets.GCP_SA_KEY }}
   GMAIL_CREDENTIALS_FILE: ${{ secrets.GMAIL_CREDENTIALS_FILE }}
   QUANDL_API_KEY: ${{ secrets.QUANDL_API_KEY }}
+  CLIENT_SECRET_JSON: ${{ secrets.CLIENT_SECRET_JSON }}
 
 jobs:
   build-and-deploy:
@@ -55,6 +56,10 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Create or update Gmail client secret in Secret Manager
+        run: |
+          echo "$CLIENT_SECRET_JSON" | (gcloud secrets describe GMAIL_CLIENT_SECRET >/dev/null 2>&1 && gcloud secrets versions add GMAIL_CLIENT_SECRET --data-file=- || gcloud secrets create GMAIL_CLIENT_SECRET --data-file=-)
 
       # Ensure AR repo exists (first run safety)
       - name: Ensure Artifact Registry repo
@@ -104,7 +109,7 @@ jobs:
             --max-instances=1 \
             --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
-            --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},GCP_REGION=${GCP_REGION},REPO=${REPO},GCP_PROJECT_ID=${GCP_PROJECT_ID}" \
+            --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},GCP_REGION=${GCP_REGION},REPO=${REPO},GCP_PROJECT_ID=${GCP_PROJECT_ID},GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET" \
             --timeout=600 \
             --allow-unauthenticated
 

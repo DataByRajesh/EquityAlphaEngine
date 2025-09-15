@@ -20,9 +20,15 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Constants
+<<<<<<< HEAD
 DEFAULT_TIMEOUT = 300  # seconds, increased for large queries
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
+=======
+DEFAULT_TIMEOUT = 600  # seconds, increased for large queries and network issues
+MAX_RETRIES = 5
+RETRY_DELAY = 10  # seconds
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 
 
 def _get_driver_specific_connect_args(database_url: str) -> dict:
@@ -38,7 +44,7 @@ def _get_driver_specific_connect_args(database_url: str) -> dict:
     # Detect driver from URL
     if "+psycopg2" in database_url or ("+pg" not in database_url and "postgresql://" in database_url):
         # psycopg2 driver (default for postgresql://)
-        connect_args["connect_timeout"] = 10
+        connect_args["connect_timeout"] = 30  # Increased from 10 to 30 seconds for better network tolerance
         logger.debug("Using psycopg2 driver connection arguments")
     elif "+pg8000" in database_url:
         # pg8000 driver - doesn't support connect_timeout
@@ -110,8 +116,10 @@ def _create_engine_with_retry(
 ):
     """Create engine with retry logic for transient failures."""
     last_exception = None
+    logger.info(f"Starting engine creation with retry logic (max {MAX_RETRIES} attempts)")
 
     for attempt in range(MAX_RETRIES):
+        logger.debug(f"Engine creation attempt {attempt + 1}/{MAX_RETRIES}")
         try:
             if use_connector and instance_name:
 

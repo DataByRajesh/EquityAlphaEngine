@@ -89,7 +89,15 @@ If DATABASE_URL is not set, the application will raise an error and stop.
 # Gmail API configuration
 #
 """
-Gmail API configuration (GitHub Secrets for individuals)
+Gmail API configuration
+
+For local development, set GMAIL_CREDENTIALS_FILE to the path of your credentials.json.
+
+For GCP deployments, you can store the credentials in GCS or Secret Manager:
+- Set GMAIL_CREDENTIALS_GCS_PATH to "bucket-name/path/to/credentials.json" to fetch from GCS.
+- Set GMAIL_CREDENTIALS_SECRET_NAME to the secret name in Secret Manager.
+
+If neither is set, defaults to local file.
 
 Store your Gmail OAuth credentials file as a GitHub repository secret (e.g., GMAIL_CREDENTIALS_FILE).
 Inject it into your CI/CD pipeline as an environment variable and write it to a file before running your app.
@@ -128,6 +136,13 @@ RATE_LIMIT_DELAY = 1.5
 # overridden via the ``MAX_THREADS`` environment variable.
 MAX_THREADS = int(os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5))
 CACHE_EXPIRY_MINUTES = 1440  # Cache expiry time in minutes (24 hours)
+
+# Network timeout improvements
+HISTORICAL_DATA_TIMEOUT = int(os.environ.get("HISTORICAL_DATA_TIMEOUT", 600))  # 10 minutes
+FUNDAMENTAL_REQUEST_TIMEOUT = int(os.environ.get("FUNDAMENTAL_REQUEST_TIMEOUT", 30))  # 30 seconds
+MAX_CONCURRENT_REQUESTS = int(os.environ.get("MAX_CONCURRENT_REQUESTS", 10))  # Limit concurrent requests
+CIRCUIT_BREAKER_FAILURE_THRESHOLD = int(os.environ.get("CIRCUIT_BREAKER_FAILURE_THRESHOLD", 20))  # Failures before circuit opens
+CIRCUIT_BREAKER_TIMEOUT = int(os.environ.get("CIRCUIT_BREAKER_TIMEOUT", 300))  # 5 minutes before retry
 
 # Yfinance configuration to prevent database lock issues
 YF_DISABLE_CACHE = os.environ.get("YF_DISABLE_CACHE", "true").lower() == "true"
