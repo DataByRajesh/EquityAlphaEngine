@@ -51,6 +51,7 @@ jobs:
             --image=$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$IMAGE_NAME:latest \
             --region=$GCP_REGION \
             --platform=managed \
+            --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
             --allow-unauthenticated \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
             --set-env-vars=API_URL=${{ vars.API_URL }}

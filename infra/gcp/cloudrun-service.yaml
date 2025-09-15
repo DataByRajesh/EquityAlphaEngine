@@ -8,6 +8,8 @@ metadata:
 spec:
   template:
     spec:
+      vpcAccess:
+        connectorName: projects/${PROJECT_ID}/locations/${REGION}/connectors/equity-vpc-connector
       containers:
         - image: REGION-docker.pkg.dev/PROJECT_ID/AR_REPO/equity-alpha-engine:latest
           ports:

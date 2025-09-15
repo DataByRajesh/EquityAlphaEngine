@@ -57,6 +57,7 @@ gcloud run deploy "$CLOUD_RUN_SERVICE" \
   --memory=256Mi \
   --min-instances=0 \
   --max-instances=1 \
+  --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
   --set-env-vars "GCP_PROJECT_ID=${GCP_PROJECT_ID},GCP_REGION=${GCP_REGION},CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},REPO=${REPO},IMAGE_TAG=${IMAGE_TAG},IMAGE_URI=${IMAGE_URI},DATABASE_URL=${DATABASE_URL},GCP_SA_KEY=${GCP_SA_KEY},GMAIL_CREDENTIALS_FILE=${GMAIL_CREDENTIALS_FILE},QUANDL_API_KEY=${QUANDL_API_KEY},BUILD_SHA=${BUILD_SHA}" \
   --allow-unauthenticated \
   --quiet

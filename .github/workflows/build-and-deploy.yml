@@ -93,6 +93,7 @@ jobs:
           # - max-instances=1 (prevents scaling beyond free tier)
           # - cpu=1, memory=256Mi (lowest free tier config)
           # - allow-unauthenticated: remove if not needed (public access may incur cost if abused)
+          # - vpc-connector: enables access to VPC resources like databases
           gcloud run deploy "$CLOUD_RUN_SERVICE" \
             --image "$IMAGE_URI:$IMAGE_TAG" \
             --region "$GCP_REGION" \
@@ -101,6 +102,7 @@ jobs:
             --memory=256Mi \
             --min-instances=0 \
             --max-instances=1 \
+            --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
             --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},GCP_REGION=${GCP_REGION},REPO=${REPO},GCP_PROJECT_ID=${GCP_PROJECT_ID}" \
             --timeout=600 \
