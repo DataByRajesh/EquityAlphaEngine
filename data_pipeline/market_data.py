@@ -619,22 +619,23 @@ def main(engine, start_date, end_date):
             # Prepare and send email notification
             try:
                 gmail_service = get_gmail_service()
+                if gmail_service is None:
+                    logger.warning(
+                        "Gmail service not available. Email notification will not be sent.")
+                else:
+                    sender = "raj.analystdata@gmail.com"
+                    recipient = "raj.analystdata@gmail.com"
+                    subject = "Data Fetch Success"
+                    body = "Financial data computed and saved to DB."
+
+                    msg = create_message(sender, recipient, subject, body)
+                    send_message(gmail_service, "me", msg)
+                    logger.info("Email notification sent successfully.")
             except FileNotFoundError as e:
-                logger.error(e)
-                gmail_service = None
+                logger.warning(f"Gmail credentials not found: {e}. Continuing without email notification.")
+            except Exception as e:
+                logger.warning(f"Failed to send email notification: {e}. Continuing pipeline execution.")
 
-            if gmail_service is None:
-                logger.error(
-                    "Failed to initialize Gmail service. Email notification will not be sent.")
-            else:
-                sender = "raj.analystdata@gmail.com"
-                recipient = "raj.analystdata@gmail.com"
-                subject = "Data Fetch Success"
-                body = "Financial data computed and saved to DB."
-
-                msg = create_message(sender, recipient, subject, body)
-                send_message(gmail_service, "me", msg)
-                logger.info("Email notification sent successfully.")
             logger.info("Financial data computed and saved to DB.")
         else:
             logger.error("Failed to compute and not saved to DB. Exiting.")

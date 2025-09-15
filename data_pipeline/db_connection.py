@@ -19,10 +19,15 @@ from data_pipeline.utils import get_secret
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Constants
+# Constants - Optimized for Cloud SQL and network resilience
 DEFAULT_TIMEOUT = 600  # seconds, increased for large queries and network issues
+CONNECTION_TIMEOUT = 30  # seconds, connection establishment timeout
 MAX_RETRIES = 5
-RETRY_DELAY = 10  # seconds
+RETRY_DELAY = 10  # seconds, initial retry delay
+POOL_SIZE = 20  # Increased pool size for concurrent API requests
+MAX_OVERFLOW = 30  # Higher overflow for peak loads
+POOL_TIMEOUT = 60  # seconds, time to wait for connection from pool
+POOL_RECYCLE = 1800  # seconds, recycle connections every 30 minutes
 
 
 def _get_driver_specific_connect_args(database_url: str) -> dict:
@@ -38,16 +43,14 @@ def _get_driver_specific_connect_args(database_url: str) -> dict:
     # Detect driver from URL
     if "+psycopg2" in database_url or ("+pg" not in database_url and "postgresql://" in database_url):
         # psycopg2 driver (default for postgresql://)
-        connect_args["connect_timeout"] = 30  # Increased from 10 to 30 seconds for better network tolerance
+        connect_args["connect_timeout"] = CONNECTION_TIMEOUT
         logger.debug("Using psycopg2 driver connection arguments")
     elif "+pg8000" in database_url:
         # pg8000 driver - doesn't support connect_timeout
-        logger.debug(
-            "Using pg8000 driver connection arguments (no connect_timeout)")
+        logger.debug("Using pg8000 driver connection arguments (no connect_timeout)")
     else:
         # Unknown driver - use safe defaults (no connect_timeout)
-        logger.warning(
-            "Unknown PostgreSQL driver detected, using safe connection arguments")
+        logger.warning("Unknown PostgreSQL driver detected, using safe connection arguments")
 
     return connect_args
 
@@ -130,14 +133,13 @@ def _create_engine_with_retry(
                     "postgresql+pg8000://",
                     creator=getconn,
                     pool_pre_ping=True,
-                    pool_size=10,
-                    max_overflow=20,
-                    pool_timeout=30,
-                    pool_recycle=3600,
+                    pool_size=POOL_SIZE,
+                    max_overflow=MAX_OVERFLOW,
+                    pool_timeout=POOL_TIMEOUT,
+                    pool_recycle=POOL_RECYCLE,
                     echo=False,
                 )
-                logger.info(
-                    "SQLAlchemy engine created successfully with Cloud SQL connector.")
+                logger.info("SQLAlchemy engine created successfully with Cloud SQL connector.")
                 return engine
             else:
                 connect_args = _get_driver_specific_connect_args(database_url)
@@ -145,22 +147,22 @@ def _create_engine_with_retry(
                     database_url,
                     connect_args=connect_args,
                     pool_pre_ping=True,
-                    pool_size=10,
-                    max_overflow=20,
-                    pool_timeout=30,
-                    pool_recycle=3600,
+                    pool_size=POOL_SIZE,
+                    max_overflow=MAX_OVERFLOW,
+                    pool_timeout=POOL_TIMEOUT,
+                    pool_recycle=POOL_RECYCLE,
                     echo=False,
                 )
-                logger.info(
-                    "SQLAlchemy engine created successfully with direct connection.")
+                logger.info("SQLAlchemy engine created successfully with direct connection.")
                 return engine
         except Exception as e:
             last_exception = e
             if attempt < MAX_RETRIES - 1:
+                wait_time = RETRY_DELAY * (2 ** attempt)  # Exponential backoff
                 logger.warning(
-                    f"Engine creation attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds..."
+                    f"Engine creation attempt {attempt + 1} failed: {e}. Retrying in {wait_time} seconds..."
                 )
-                time.sleep(RETRY_DELAY)
+                time.sleep(wait_time)
             else:
                 logger.error(
                     f"All {MAX_RETRIES} engine creation attempts failed. Last error: {e}")
@@ -172,8 +174,7 @@ def _create_engine_with_retry(
 # Initialize the SQLAlchemy engine
 def initialize_engine():
     """Initialize and return the SQLAlchemy engine with connection pooling."""
-    logger.info(
-        "Creating SQLAlchemy engine with connection pooling and timeout.")
+    logger.info("Creating SQLAlchemy engine with connection pooling and timeout.")
 
     # Fetch and validate the DATABASE_URL
     database_url = get_secret("DATABASE_URL")
@@ -185,8 +186,7 @@ def initialize_engine():
 
     # Check if we should use Cloud SQL connector
     if _is_cloud_sql_host(host):
-        logger.info(
-            "Detected Cloud SQL host, attempting to use Cloud SQL connector")
+        logger.info("Detected Cloud SQL host, attempting to use Cloud SQL connector")
         instance_name = _get_cloud_sql_instance_name()
         if instance_name:
             try:
@@ -227,8 +227,7 @@ def reinitialize_engine(new_database_url=None):
     global engine, SessionLocal
 
     # Determine which database URL to use
-    database_url = new_database_url if new_database_url else get_secret(
-        "DATABASE_URL")
+    database_url = new_database_url if new_database_url else get_secret("DATABASE_URL")
 
     if new_database_url:
         logger.info("Reinitializing engine with a new database URL.")
@@ -251,10 +250,8 @@ def reinitialize_engine(new_database_url=None):
                     use_connector=True,
                     instance_name=instance_name,
                 )
-                SessionLocal = sessionmaker(
-                    autocommit=False, autoflush=False, bind=engine)
-                logger.info(
-                    "Engine reinitialized successfully with Cloud SQL connector.")
+                SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+                logger.info("Engine reinitialized successfully with Cloud SQL connector.")
                 return
             except Exception as e:
                 logger.warning(
@@ -263,7 +260,6 @@ def reinitialize_engine(new_database_url=None):
 
     # Fallback to direct connection
     logger.info("Reinitializing with direct database connection")
-    engine = _create_engine_with_retry(
-        database_url, parsed, use_connector=False)
+    engine = _create_engine_with_retry(database_url, parsed, use_connector=False)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     logger.info("Engine reinitialized successfully with direct connection.")
