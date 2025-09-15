@@ -14,6 +14,7 @@ from typing import Optional, Union  # For type hinting
 # Third-party imports
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
+import quandl  # For macroeconomic data
 import requests  # For HTTP requests
 import yfinance as yf  # For fetching financial data
 from yfinance.exceptions import \
