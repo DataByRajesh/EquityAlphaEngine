@@ -1,36 +1,67 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-# Cross-Check and Deployment Updates
+# Database Connection Timeout Fix - TODO
 
-## Completed Tasks
-- [x] Reviewed VPC changes in cloudrun-service.yaml
-- [x] Updated build-and-deploy.yml workflow to include --vpc-connector
-- [x] Updated deploy-cloud-run.sh script to include --vpc-connector
-- [x] Updated build-and-deploy-streamlit.yml workflow to include --vpc-connector
-- [x] Updated cloudrun-service.yaml to use variables for connector name
+## Problem
+API endpoints are experiencing database connection timeouts with `TimeoutError: [Errno 110] Connection timed out` errors.
 
-## Next Steps
-- [ ] Test deployment with VPC connector
-- [ ] Verify VPC connector exists in GCP project
-- [ ] Ensure database connectivity works with VPC access
-- [ ] Update README.md if needed with VPC deployment notes
+## Root Causes
+1. Each API request creates new DBHelper instances with separate connections
+2. API endpoints not using the global connection pool properly
+3. Inefficient connection management leading to timeouts
+4. Missing retry logic for transient network failures
 
-## Notes
-- VPC connector name: projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector
-- All deployment methods (CLI and YAML) now include VPC access
-- Streamlit app also updated for VPC access since it connects to database
-=======
-# TODO: Fix Data Pipeline Errors
+## Tasks to Complete
 
-=======
-# TODO: Fix Data Pipeline Errors
+### 1. Fix API Connection Management ✅
+- [x] Update web/api.py to use global engine from db_connection.py
+- [x] Remove individual DBHelper creation per request
+- [x] Implement proper connection context management
 
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
-## Tasks
-- [x] Fix pandas FutureWarning in Macro_data.py: change freq="Y" to "YE"
-- [x] Add mock GDP data fallback in Macro_data.py fetch_gdp_growth on Quandl failure
-- [x] Make Gmail notification optional in market_data.py: continue pipeline without exiting if credentials missing
-<<<<<<< HEAD
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
-=======
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
+### 2. Improve Connection Pool Settings ✅
+- [x] Update data_pipeline/db_connection.py with better pool settings
+- [x] Add connection timeout and retry configurations
+- [x] Optimize pool size and overflow settings
+
+### 3. Add Connection Retry Logic ✅
+- [x] Implement retry logic in API endpoints for transient failures
+- [x] Add exponential backoff for connection attempts
+- [x] Better error handling and logging
+
+### 4. Optimize Database Queries ✅
+- [x] Add query timeouts to prevent hanging connections
+- [x] Update execute_query_with_retry function with better timeout handling
+- [x] Implement connection health checks
+
+### 5. Testing and Validation ✅
+- [ ] Test API endpoints after changes
+- [ ] Monitor connection pool usage
+- [ ] Verify timeout handling works properly
+
+## Progress
+- [x] Analysis completed
+- [x] Implementation completed
+- [ ] Testing pending
+- [ ] Deployment pending
+
+## Changes Made
+
+### 1. Database Connection Improvements (data_pipeline/db_connection.py)
+- Increased pool size from 10 to 20 for better concurrent request handling
+- Increased max overflow from 20 to 30 for peak load handling
+- Added CONNECTION_TIMEOUT constant (30 seconds)
+- Improved pool timeout to 60 seconds
+- Added pool recycle every 30 minutes (1800 seconds)
+- Implemented exponential backoff in retry logic
+
+### 2. API Connection Management (web/api.py)
+- Replaced individual DBHelper instances with global engine usage
+- Added execute_query_with_retry function with robust error handling
+- Implemented proper exception handling for connection timeouts
+- Added enhanced health check endpoint with database connectivity test
+- Improved logging for better debugging
+- Added caching with proper error handling
+
+### 3. Error Handling and Resilience
+- Added specific exception handling for OperationalError, SQLTimeoutError, InterfaceError
+- Implemented exponential backoff retry strategy
+- Added proper HTTP status codes (503 for temporary unavailability)
+- Enhanced logging with detailed error messages
