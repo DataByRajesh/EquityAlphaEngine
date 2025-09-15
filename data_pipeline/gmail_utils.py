@@ -1,13 +1,20 @@
 import base64  # Gmail API requires base64 encoding for messages
 import logging
 import os
+import tempfile
 from email.mime.text import MIMEText
 from typing import Optional
 
 from google.auth.transport.requests import Request
+from google.cloud import storage
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+
+try:
+    from google.cloud import secretmanager
+except ImportError:
+    secretmanager = None
 
 # Updated local imports to use fallback mechanism
 try:
@@ -19,6 +26,46 @@ logger = logging.getLogger(__name__)
 
 # If modifying these SCOPES, delete token.json.
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
+
+def _get_credentials_path():
+    """Get the path to the Gmail credentials file, fetching from GCS or Secret Manager if configured."""
+    # Check for GCS path
+    gcs_path = os.environ.get("GMAIL_CREDENTIALS_GCS_PATH")
+    if gcs_path:
+        logger.info("Fetching Gmail credentials from GCS.")
+        try:
+            client = storage.Client()
+            bucket_name, blob_name = gcs_path.split("/", 1)
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+            blob.download_to_file(temp_file)
+            temp_file.close()
+            return temp_file.name
+        except Exception as e:
+            logger.error(f"Failed to fetch credentials from GCS: {e}")
+            raise
+
+    # Check for Secret Manager
+    secret_name = os.environ.get("GMAIL_CREDENTIALS_SECRET_NAME")
+    if secret_name and secretmanager:
+        logger.info("Fetching Gmail credentials from Secret Manager.")
+        try:
+            client = secretmanager.SecretManagerServiceClient()
+            name = f"projects/{config.GCP_PROJECT_ID}/secrets/{secret_name}/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            payload = response.payload.data.decode("UTF-8")
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w")
+            temp_file.write(payload)
+            temp_file.close()
+            return temp_file.name
+        except Exception as e:
+            logger.error(f"Failed to fetch credentials from Secret Manager: {e}")
+            raise
+
+    # Default to local file
+    return config.GMAIL_CREDENTIALS_FILE
 
 
 def get_gmail_service(
@@ -46,7 +93,7 @@ def get_gmail_service(
         If the credentials file does not exist.
     """
 
-    credentials_path = credentials_path or config.GMAIL_CREDENTIALS_FILE
+    credentials_path = credentials_path or _get_credentials_path()
     token_path = token_path or config.GMAIL_TOKEN_FILE
 
     if not os.path.exists(credentials_path):

@@ -89,7 +89,15 @@ If DATABASE_URL is not set, the application will raise an error and stop.
 # Gmail API configuration
 #
 """
-Gmail API configuration (GitHub Secrets for individuals)
+Gmail API configuration
+
+For local development, set GMAIL_CREDENTIALS_FILE to the path of your credentials.json.
+
+For GCP deployments, you can store the credentials in GCS or Secret Manager:
+- Set GMAIL_CREDENTIALS_GCS_PATH to "bucket-name/path/to/credentials.json" to fetch from GCS.
+- Set GMAIL_CREDENTIALS_SECRET_NAME to the secret name in Secret Manager.
+
+If neither is set, defaults to local file.
 
 Store your Gmail OAuth credentials file as a GitHub repository secret (e.g., GMAIL_CREDENTIALS_FILE).
 Inject it into your CI/CD pipeline as an environment variable and write it to a file before running your app.
