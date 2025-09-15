@@ -1,10 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-<<<<<<< HEAD
 *.pyc
-=======
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 *$py.class
 
 # C extensions
@@ -164,10 +161,6 @@ logs/
 *.tmp
 *.temp
 
-<<<<<<< HEAD
-
-=======
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 # Flake8 report
 flake8_report.txt
 

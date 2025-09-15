@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Constants - Optimized for Cloud SQL and network resilience
-DEFAULT_TIMEOUT = 300  # seconds, balanced for queries and network stability
+DEFAULT_TIMEOUT = 600  # seconds, increased for large queries and network issues
 CONNECTION_TIMEOUT = 30  # seconds, connection establishment timeout
 MAX_RETRIES = 5
-RETRY_DELAY = 2  # seconds, initial retry delay
+RETRY_DELAY = 10  # seconds, initial retry delay
 POOL_SIZE = 20  # Increased pool size for concurrent API requests
 MAX_OVERFLOW = 30  # Higher overflow for peak loads
 POOL_TIMEOUT = 60  # seconds, time to wait for connection from pool

@@ -454,100 +454,6 @@ class DBHelper:
                     return "'" + val.strftime('%Y-%m-%d %H:%M:%S') + "'"
                 return str(val)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-            rows_sql = []
-            for _, row in df.iterrows():
-                values = [_sql_literal(row[col]) for col in df.columns]
-                rows_sql.append("(" + ", ".join(values) + ")")
-
-            if dialect_name == "sqlite":
-                # SQLite: INSERT OR REPLACE with VALUES
-                upsert_query = f"""
-                INSERT OR REPLACE INTO {table_name} ({', '.join(quoted_columns)})
-                VALUES {', '.join(rows_sql)}
-                """
-            elif dialect_name == "mysql":
-                # MySQL: ON DUPLICATE KEY UPDATE
-                update_clause = ", ".join(
-                    [f"{quote_ident(col)} = VALUES({quote_ident(col)})" for col in non_unique_cols]
-                )
-                upsert_query = f"""
-                INSERT INTO {table_name} ({', '.join(quoted_columns)})
-                VALUES {', '.join(rows_sql)}
-                ON DUPLICATE KEY UPDATE {update_clause}
-                """
-            elif dialect_name == "postgresql":
-                # PostgreSQL: ON CONFLICT DO UPDATE
-                update_clause = ", ".join(
-                    [f"{quote_ident(col)} = EXCLUDED.{quote_ident(col)}" for col in non_unique_cols]
-                )
-                cols_alias = ", ".join([quote_ident(col)
-                                       for col in df.columns])
-                upsert_query = f"""
-                INSERT INTO {table_name} ({', '.join(quoted_columns)})
-                VALUES {', '.join(rows_sql)}
-                ON CONFLICT ({', '.join(quoted_unique_cols)}) DO UPDATE SET {update_clause}
-                """
-            else:
-                # Fallback: create temp table, then upsert if supported by DB, else replace
-                temp_table_name = f"temp_{table_name}_{int(time.time())}"
-                logger.info("Creating temp table '%s' for upsert",
-                            temp_table_name)
-                temp_columns = []
-                for col in tbl.columns:
-                    temp_columns.append(
-                        Column(col.name, col.type, nullable=col.nullable))
-                temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
-                temp_tbl.create(self.engine, checkfirst=True)
-
-                df.to_sql(
-                    temp_table_name,
-                    con=self.engine,
-                    if_exists="append",
-                    index=False,
-                    chunksize=chunksize,
-                    method="multi",
-                )
-
-                upsert_query = f"""
-                INSERT INTO {table_name} ({', '.join(quoted_columns)})
-                SELECT {', '.join(quoted_columns)} FROM {temp_table_name}
-                """
-
-            logger.info("Upsert query: %s", upsert_query.strip())
-            max_retries = 3
-            retry_delay = 2.0
-            for attempt in range(max_retries):
-                try:
-                    with self.engine.begin() as conn:
-                        logger.info("Executing upsert query...")
-                        conn.execute(text(upsert_query))
-                    logger.info("Upsert completed into '%s'", table_name)
-                    break
-                except InterfaceError as e:
-                    if attempt < max_retries - 1:
-                        logger.warning(
-                            "Network error during upsert, retrying in %s seconds (attempt %d/%d): %s",
-                            retry_delay,
-                            attempt + 1,
-                            max_retries,
-                            e,
-                        )
-                        time.sleep(retry_delay)
-                        retry_delay *= 2  # Exponential backoff
-                    else:
-                        logger.error(
-                            "Failed to upsert into '%s' after %d attempts due to network error: %s",
-                            table_name,
-                            max_retries,
-                            e,
-                            exc_info=True,
-                        )
-                        raise
-=======
-=======
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
             # Chunk the DataFrame for upsert to avoid large queries and network errors
             upsert_chunksize = 1000  # Larger chunks for better performance
             total_chunks = (len(df) + upsert_chunksize - 1) // upsert_chunksize
@@ -638,10 +544,6 @@ class DBHelper:
                                 chunk_idx + 1, total_chunks, table_name, max_retries, e, exc_info=True,
                             )
                             raise
-<<<<<<< HEAD
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
-=======
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",
                         table_name, len(df))
