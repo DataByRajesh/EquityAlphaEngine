@@ -31,6 +31,11 @@ CACHE_TTL = timedelta(minutes=10)  # Cache for 10 minutes
 MAX_DB_RETRIES = 3
 DB_RETRY_DELAY = 1  # seconds
 
+# Query optimization settings
+QUERY_TIMEOUT = 30  # seconds
+CONNECTION_POOL_SIZE = 10
+MAX_OVERFLOW = 20
+
 
 def get_cached_or_compute(key: str, compute_func):
     """Get from cache or compute and cache the result."""
@@ -135,7 +140,7 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int):
     query = text(
         f"""
         SELECT * FROM financial_tbl
-        WHERE marketCap >= :min_mktcap
+        WHERE "marketCap" >= :min_mktcap
         ORDER BY {order_by}
         LIMIT :top_n
         """
@@ -148,7 +153,7 @@ def _query_combined_stocks(min_mktcap: int, top_n: int):
     query = text(
         """
         SELECT * FROM financial_tbl
-        WHERE marketCap >= :min_mktcap
+        WHERE "marketCap" >= :min_mktcap
         AND factor_composite > 0.5
         AND norm_quality_score > 0.5
         AND return_12m > 0.1
@@ -186,7 +191,7 @@ def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_top_market_cap_stocks")
 def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"top_market_cap_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("marketCap DESC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks('"marketCap" DESC', min_mktcap, top_n))
 
 
 @app.get("/get_low_beta_stocks")
@@ -198,7 +203,7 @@ def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_high_dividend_yield_stocks")
 def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"high_dividend_yield_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("dividendYield DESC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC', min_mktcap, top_n))
 
 
 @app.get("/get_high_momentum_stocks")
@@ -210,7 +215,7 @@ def get_high_momentum_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_low_volatility_stocks")
 def get_low_volatility_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"low_volatility_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("volatility ASC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks("vol_21d ASC", min_mktcap, top_n))
 
 
 @app.get("/get_top_short_term_momentum_stocks")
@@ -222,7 +227,7 @@ def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_high_dividend_low_beta_stocks")
 def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"high_dividend_low_beta_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("dividendYield DESC, beta ASC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC, beta ASC', min_mktcap, top_n))
 
 
 @app.get("/get_top_factor_composite_stocks")
@@ -234,7 +239,7 @@ def get_top_factor_composite_stocks(min_mktcap: int = 0, top_n: int = 10):
 @app.get("/get_high_risk_stocks")
 def get_high_risk_stocks(min_mktcap: int = 0, top_n: int = 10):
     key = f"high_risk_{min_mktcap}_{top_n}"
-    return get_cached_or_compute(key, lambda: _query_stocks("risk_score DESC", min_mktcap, top_n))
+    return get_cached_or_compute(key, lambda: _query_stocks("vol_252d DESC", min_mktcap, top_n))
 
 
 @app.get("/get_top_combined_screen_limited")
