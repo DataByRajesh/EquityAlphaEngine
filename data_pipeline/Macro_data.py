@@ -2,7 +2,7 @@ import logging
 import os
 
 import pandas as pd
-import quandl
+import requests
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
