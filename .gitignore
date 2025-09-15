@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 
 # C extensions
@@ -160,13 +161,11 @@ logs/
 *.tmp
 *.temp
 
+
 # Flake8 report
 flake8_report.txt
-<<<<<<< HEAD
-=======
 
 # Data and cache directories
 data_pipeline/data/
 data_pipeline/cache/
 data_pipeline/logs/
->>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
