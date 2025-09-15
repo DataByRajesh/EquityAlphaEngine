@@ -9,6 +9,7 @@ processing in the equity pipeline.
 import asyncio  # For asynchronous operations
 import logging
 import os  # For file and directory operations
+import time  # For timing and circuit breaker
 from typing import Optional, Union  # For type hinting
 
 # Third-party imports
@@ -143,14 +144,16 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
         logger.error("No tickers provided.")
         return pd.DataFrame()
 
-    max_retries = 5  # Increased retries for better reliability
-    timeout = 300  # 5 minutes timeout per attempt
-    base_delay = 2  # Base delay for exponential backoff
+    max_retries = config.MAX_RETRIES  # Configurable retries
+    timeout = config.HISTORICAL_DATA_TIMEOUT  # Configurable timeout
+    base_delay = config.INITIAL_DELAY  # Configurable base delay
 
     for attempt in range(max_retries):
         try:
             logger.info(
                 f"Attempt {attempt + 1}/{max_retries} to download data...")
+            logger.debug(f"Using timeout: {timeout}s, base_delay: {base_delay}s")
+            logger.debug(f"Processing {len(tickers)} tickers: {tickers[:5]}...")  # Log first 5 tickers
 
             # Configure yfinance to prevent database lock issues
             if config.YF_DISABLE_CACHE:
@@ -300,11 +303,18 @@ async def _fetch_single_info(
     is empty on failure. Includes special handling for database lock issues.
     """
     delay = config.INITIAL_DELAY
+    logger.debug(f"Starting _fetch_single_info for {ticker} with {retries} retries, timeout {request_timeout}s")
     for attempt in range(retries):
         try:
+            logger.debug(f"Attempt {attempt + 1} for {ticker}, current delay: {delay}s")
+            start_time = time.time()
             info = await asyncio.wait_for(asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout)
+            elapsed = time.time() - start_time
+            logger.debug(f"Successfully fetched info for {ticker} in {elapsed:.2f}s")
             return ticker, info
         except Exception as exc:  # pragma: no cover - network errors are non-deterministic
+            elapsed = time.time() - start_time if 'start_time' in locals() else 0
+            logger.debug(f"Attempt {attempt + 1} failed for {ticker} after {elapsed:.2f}s: {exc}")
             error_msg = str(exc).lower()
             if "database is locked" in error_msg:
                 logger.warning(
@@ -336,6 +346,7 @@ async def _fetch_single_info(
                     continue
 
             # If we reach here, all retries are exhausted
+            logger.debug(f"All {retries} attempts exhausted for {ticker}")
             return ticker, {}
     return ticker, {}
 
@@ -346,7 +357,7 @@ def fetch_fundamental_data(
     backoff_factor: int = config.BACKOFF_FACTOR,
     use_cache: bool = True,
     cache_expiry_minutes: int = config.CACHE_EXPIRY_MINUTES,
-    request_timeout: int = 10,
+    request_timeout: int = config.FUNDAMENTAL_REQUEST_TIMEOUT,
 ) -> Union[list[dict], "asyncio.Task[list[dict]]"]:
     """Fetch fundamental data for multiple tickers concurrently.
 
@@ -380,15 +391,60 @@ def fetch_fundamental_data(
         return results
 
     async def _fetch_all() -> list[dict]:
-        """Fetch fundamentals for the remaining tickers asynchronously."""
+        """Fetch fundamentals for the remaining tickers asynchronously with concurrency control and circuit breaker."""
+        # Circuit breaker state
+        circuit_open = False
+        failure_count = 0
+        last_failure_time = 0
+
+        semaphore = asyncio.Semaphore(config.MAX_CONCURRENT_REQUESTS)  # Limit concurrent requests
+
+        async def _fetch_with_semaphore(ticker: str) -> tuple[str, dict]:
+            nonlocal failure_count, circuit_open, last_failure_time
+            logger.debug(f"Acquiring semaphore for {ticker}, current failure_count: {failure_count}, circuit_open: {circuit_open}")
+            async with semaphore:
+                logger.debug(f"Semaphore acquired for {ticker}")
+                # Check circuit breaker
+                if circuit_open:
+                    if time.time() - last_failure_time < config.CIRCUIT_BREAKER_TIMEOUT:
+                        logger.warning(f"Circuit breaker open for {ticker}, skipping. Time since last failure: {time.time() - last_failure_time:.2f}s")
+                        return ticker, {}
+                    else:
+                        circuit_open = False
+                        failure_count = 0
+                        logger.info("Circuit breaker reset, retrying requests")
+
+                try:
+                    logger.debug(f"Starting fetch for {ticker} with timeout {request_timeout}s")
+                    start_time = time.time()
+                    result = await _fetch_single_info(tickers_obj.tickers[ticker], ticker, retries, backoff_factor, request_timeout)
+                    elapsed = time.time() - start_time
+                    logger.debug(f"Successfully fetched {ticker} in {elapsed:.2f}s")
+                    # Reset failure count on success
+                    failure_count = 0
+                    return result
+                except Exception as e:
+                    elapsed = time.time() - start_time if 'start_time' in locals() else 0
+                    logger.debug(f"Failed to fetch {ticker} after {elapsed:.2f}s: {e}")
+                    failure_count += 1
+                    last_failure_time = time.time()
+                    logger.debug(f"Failure count now: {failure_count}, last_failure_time updated")
+                    if failure_count >= config.CIRCUIT_BREAKER_FAILURE_THRESHOLD:
+                        circuit_open = True
+                        logger.error(f"Circuit breaker opened after {failure_count} failures at {time.ctime(last_failure_time)}")
+                    raise e
+
         tickers_obj = yf.Tickers(" ".join(remaining))
-        tasks = [
-            _fetch_single_info(tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout) for t in remaining
-        ]
+        tasks = [_fetch_with_semaphore(t) for t in remaining]
 
         fetched: list[tuple[str, dict]] = []
         try:
-            fetched = await asyncio.gather(*tasks)
+            fetched = await asyncio.gather(*tasks, return_exceptions=True)
+            # Filter out exceptions and log them
+            for i, result in enumerate(fetched):
+                if isinstance(result, Exception):
+                    logger.error(f"Task for {remaining[i]} failed with exception: {result}")
+                    fetched[i] = (remaining[i], {})
         except Exception as e:  # pragma: no cover - best effort logging
             logger.error(
                 f"Asynchronous fetch failed, falling back to sequential execution: {e}",

@@ -129,6 +129,13 @@ RATE_LIMIT_DELAY = 1.5
 MAX_THREADS = int(os.environ.get("MAX_THREADS", (os.cpu_count() or 1) * 5))
 CACHE_EXPIRY_MINUTES = 1440  # Cache expiry time in minutes (24 hours)
 
+# Network timeout improvements
+HISTORICAL_DATA_TIMEOUT = int(os.environ.get("HISTORICAL_DATA_TIMEOUT", 600))  # 10 minutes
+FUNDAMENTAL_REQUEST_TIMEOUT = int(os.environ.get("FUNDAMENTAL_REQUEST_TIMEOUT", 30))  # 30 seconds
+MAX_CONCURRENT_REQUESTS = int(os.environ.get("MAX_CONCURRENT_REQUESTS", 10))  # Limit concurrent requests
+CIRCUIT_BREAKER_FAILURE_THRESHOLD = int(os.environ.get("CIRCUIT_BREAKER_FAILURE_THRESHOLD", 20))  # Failures before circuit opens
+CIRCUIT_BREAKER_TIMEOUT = int(os.environ.get("CIRCUIT_BREAKER_TIMEOUT", 300))  # 5 minutes before retry
+
 # Yfinance configuration to prevent database lock issues
 YF_DISABLE_CACHE = os.environ.get("YF_DISABLE_CACHE", "true").lower() == "true"
 YF_CACHE_DIR = os.environ.get(

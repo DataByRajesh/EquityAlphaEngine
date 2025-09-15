@@ -162,3 +162,8 @@ logs/
 
 # Flake8 report
 flake8_report.txt
+
+# Data and cache directories
+data_pipeline/data/
+data_pipeline/cache/
+data_pipeline/logs/
