@@ -455,6 +455,7 @@ class DBHelper:
                 return str(val)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             rows_sql = []
             for _, row in df.iterrows():
                 values = [_sql_literal(row[col]) for col in df.columns]
@@ -545,6 +546,8 @@ class DBHelper:
                         )
                         raise
 =======
+=======
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
             # Chunk the DataFrame for upsert to avoid large queries and network errors
             upsert_chunksize = 1000  # Larger chunks for better performance
             total_chunks = (len(df) + upsert_chunksize - 1) // upsert_chunksize
@@ -635,6 +638,9 @@ class DBHelper:
                                 chunk_idx + 1, total_chunks, table_name, max_retries, e, exc_info=True,
                             )
                             raise
+<<<<<<< HEAD
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
+=======
 >>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
         else:
             logger.info("Appending DataFrame to '%s' (%d rows)",

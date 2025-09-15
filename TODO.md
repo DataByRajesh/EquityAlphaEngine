@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Cross-Check and Deployment Updates
 
 ## Completed Tasks
@@ -21,8 +22,15 @@
 =======
 # TODO: Fix Data Pipeline Errors
 
+=======
+# TODO: Fix Data Pipeline Errors
+
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 ## Tasks
 - [x] Fix pandas FutureWarning in Macro_data.py: change freq="Y" to "YE"
 - [x] Add mock GDP data fallback in Macro_data.py fetch_gdp_growth on Quandl failure
 - [x] Make Gmail notification optional in market_data.py: continue pipeline without exiting if credentials missing
+<<<<<<< HEAD
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
+=======
 >>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93

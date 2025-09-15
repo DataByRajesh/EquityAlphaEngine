@@ -15,6 +15,7 @@ from typing import Optional, Union  # For type hinting
 # Third-party imports
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
+import requests  # For HTTP requests
 import yfinance as yf  # For fetching financial data
 from yfinance.exceptions import \
     YFPricesMissingError  # For handling missing price data
@@ -305,13 +306,15 @@ async def _fetch_single_info(
     logger.debug(f"Starting _fetch_single_info for {ticker} with {retries} retries, timeout {request_timeout}s")
     for attempt in range(retries):
         try:
-            info = await asyncio.wait_for(
-                asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout
-            )
+            logger.debug(f"Attempt {attempt + 1} for {ticker}, current delay: {delay}s")
+            start_time = time.time()
+            info = await asyncio.wait_for(asyncio.to_thread(lambda: ticker_obj.info), timeout=request_timeout)
+            elapsed = time.time() - start_time
+            logger.debug(f"Successfully fetched info for {ticker} in {elapsed:.2f}s")
             return ticker, info
-        except (
-            Exception
-        ) as exc:  # pragma: no cover - network errors are non-deterministic
+        except Exception as exc:  # pragma: no cover - network errors are non-deterministic
+            elapsed = time.time() - start_time if 'start_time' in locals() else 0
+            logger.debug(f"Attempt {attempt + 1} failed for {ticker} after {elapsed:.2f}s: {exc}")
             error_msg = str(exc).lower()
             if "database is locked" in error_msg:
                 logger.warning(
@@ -432,12 +435,7 @@ def fetch_fundamental_data(
                     raise e
 
         tickers_obj = yf.Tickers(" ".join(remaining))
-        tasks = [
-            _fetch_single_info(
-                tickers_obj.tickers[t], t, retries, backoff_factor, request_timeout
-            )
-            for t in remaining
-        ]
+        tasks = [_fetch_with_semaphore(t) for t in remaining]
 
         fetched: list[tuple[str, dict]] = []
         try:
@@ -627,15 +625,21 @@ def main(engine, start_date, end_date):
 
             if gmail_service is None:
                 logger.error(
-                    "Failed to initialize Gmail service. Email notification will not be sent."
-                )
-                return
+                    "Failed to initialize Gmail service. Email notification will not be sent.")
+            else:
+                sender = "raj.analystdata@gmail.com"
+                recipient = "raj.analystdata@gmail.com"
+                subject = "Data Fetch Success"
+                body = "Financial data computed and saved to DB."
 
+<<<<<<< HEAD
             sender = "raj.analystdata@gmail.com"
             recipient = "raj.analystdata@gmail.com"
             subject = "Data Fetch Success"
             body = "Financial data computed and saved to DB."
 
+=======
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
                 msg = create_message(sender, recipient, subject, body)
                 send_message(gmail_service, "me", msg)
                 logger.info("Email notification sent successfully.")

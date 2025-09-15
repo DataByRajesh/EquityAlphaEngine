@@ -21,9 +21,15 @@ logger.setLevel(logging.DEBUG)
 
 # Constants
 <<<<<<< HEAD
+<<<<<<< HEAD
 DEFAULT_TIMEOUT = 300  # seconds, increased for large queries
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
+=======
+DEFAULT_TIMEOUT = 600  # seconds, increased for large queries and network issues
+MAX_RETRIES = 5
+RETRY_DELAY = 10  # seconds
+>>>>>>> cf3849efaa1e4d896d51a3e39da94a6b5f886e93
 =======
 DEFAULT_TIMEOUT = 600  # seconds, increased for large queries and network issues
 MAX_RETRIES = 5
