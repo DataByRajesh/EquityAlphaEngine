@@ -626,16 +626,15 @@ def main(engine, start_date, end_date):
             if gmail_service is None:
                 logger.error(
                     "Failed to initialize Gmail service. Email notification will not be sent.")
-                return
+            else:
+                sender = "raj.analystdata@gmail.com"
+                recipient = "raj.analystdata@gmail.com"
+                subject = "Data Fetch Success"
+                body = "Financial data computed and saved to DB."
 
-            sender = "raj.analystdata@gmail.com"
-            recipient = "raj.analystdata@gmail.com"
-            subject = "Data Fetch Success"
-            body = "Financial data computed and saved to DB."
-
-            msg = create_message(sender, recipient, subject, body)
-            send_message(gmail_service, "me", msg)
-            logger.info("Email notification sent successfully.")
+                msg = create_message(sender, recipient, subject, body)
+                send_message(gmail_service, "me", msg)
+                logger.info("Email notification sent successfully.")
             logger.info("Financial data computed and saved to DB.")
         else:
             logger.error("Failed to compute and not saved to DB. Exiting.")
