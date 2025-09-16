@@ -29,6 +29,8 @@ try:
     min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
     top_n = st.sidebar.slider("Number of Top Stocks",
                               min_value=5, max_value=50, value=10)
+    company_filter = st.sidebar.text_input("Company Name Filter (optional)", "")
+    sector_filter = st.sidebar.text_input("Sector Filter (optional)", "")
 
     # Define Tabs
     TABS = [
@@ -46,110 +48,240 @@ try:
         "Top Factor Composite",
         "High Risk Stocks",
         "Top Combined Screener",
+        "Macro Data Visualization",
     ]
     tabs = st.tabs(TABS)
 
     with tabs[0]:
         st.header("💰 Undervalued Stocks")
-        df_undervalued = get_data("get_undervalued_stocks", params={
-                                  "min_mktcap": min_mktcap, "top_n": top_n})
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_undervalued = get_data("get_undervalued_stocks", params=params)
         st.dataframe(df_undervalued)
+        if not df_undervalued.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_undervalued.to_csv(index=False),
+                file_name="undervalued_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[1]:
         st.header("📉 Overvalued Stocks")
-        df_overvalued = get_data("get_overvalued_stocks", params={
-                                 "min_mktcap": min_mktcap, "top_n": top_n})
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_overvalued = get_data("get_overvalued_stocks", params=params)
         st.dataframe(df_overvalued)
+        if not df_overvalued.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_overvalued.to_csv(index=False),
+                file_name="overvalued_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[2]:
         st.header("🏅 High Quality Stocks")
-        df_quality = get_data("get_high_quality_stocks", params={
-                              "min_mktcap": min_mktcap, "top_n": top_n})
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_quality = get_data("get_high_quality_stocks", params=params)
         st.dataframe(df_quality)
+        if not df_quality.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_quality.to_csv(index=False),
+                file_name="high_quality_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[3]:
         st.header("💵 High Earnings Yield Stocks")
-        df_ey = get_data(
-            "get_high_earnings_yield_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_ey = get_data("get_high_earnings_yield_stocks", params=params)
         st.dataframe(df_ey)
+        if not df_ey.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_ey.to_csv(index=False),
+                file_name="high_earnings_yield_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[4]:
         st.header("🏦 Top Market Cap Stocks")
-        df_mktcap = get_data(
-            "get_top_market_cap_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_mktcap = get_data("get_top_market_cap_stocks", params=params)
         st.dataframe(df_mktcap)
+        if not df_mktcap.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_mktcap.to_csv(index=False),
+                file_name="top_market_cap_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[5]:
         st.header("🛡️ Low Beta Stocks")
-        df_lowbeta = get_data("get_low_beta_stocks", params={
-                              "min_mktcap": min_mktcap, "top_n": top_n})
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_lowbeta = get_data("get_low_beta_stocks", params=params)
         st.dataframe(df_lowbeta)
+        if not df_lowbeta.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_lowbeta.to_csv(index=False),
+                file_name="low_beta_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[6]:
         st.header("💸 High Dividend Yield Stocks")
-        df_div = get_data(
-            "get_high_dividend_yield_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_div = get_data("get_high_dividend_yield_stocks", params=params)
         st.dataframe(df_div)
+        if not df_div.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_div.to_csv(index=False),
+                file_name="high_dividend_yield_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[7]:
         st.header("🚀 High Momentum Stocks")
-        df_mom = get_data(
-            "get_high_momentum_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_mom = get_data("get_high_momentum_stocks", params=params)
         st.dataframe(df_mom)
+        if not df_mom.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_mom.to_csv(index=False),
+                file_name="high_momentum_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[8]:
         st.header("🛡️ Low Volatility Stocks")
-        df_lowvol = get_data(
-            "get_low_volatility_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_lowvol = get_data("get_low_volatility_stocks", params=params)
         st.dataframe(df_lowvol)
+        if not df_lowvol.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_lowvol.to_csv(index=False),
+                file_name="low_volatility_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[9]:
         st.header("⚡ Short-Term Momentum Stocks")
-        df_stmom = get_data(
-            "get_top_short_term_momentum_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_stmom = get_data("get_top_short_term_momentum_stocks", params=params)
         st.dataframe(df_stmom)
+        if not df_stmom.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_stmom.to_csv(index=False),
+                file_name="short_term_momentum_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[10]:
         st.header("💰 High Dividend + Low Beta Stocks")
-        df_div_lowbeta = get_data(
-            "get_high_dividend_low_beta_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_div_lowbeta = get_data("get_high_dividend_low_beta_stocks", params=params)
         st.dataframe(df_div_lowbeta)
+        if not df_div_lowbeta.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_div_lowbeta.to_csv(index=False),
+                file_name="high_dividend_low_beta_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[11]:
         st.header("🏅 Top Factor Composite Scores")
-        df_factor = get_data(
-            "get_top_factor_composite_stocks",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_factor = get_data("get_top_factor_composite_stocks", params=params)
         st.dataframe(df_factor)
+        if not df_factor.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_factor.to_csv(index=False),
+                file_name="top_factor_composite_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[12]:
         st.header("🚩 High Risk Warning Stocks")
-        df_risk = get_data("get_high_risk_stocks", params={
-                           "min_mktcap": min_mktcap, "top_n": top_n})
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_risk = get_data("get_high_risk_stocks", params=params)
         st.dataframe(df_risk)
+        if not df_risk.empty:
+            st.download_button(
+                label="Download as CSV",
+                data=df_risk.to_csv(index=False),
+                file_name="high_risk_stocks.csv",
+                mime="text/csv",
+            )
 
     with tabs[13]:
         st.header(
             "🏆 Top Combined Screener (Undervalued + High Quality + High Momentum)")
-        df_combined = get_data(
-            "get_top_combined_screen_limited",
-            params={"min_mktcap": min_mktcap, "top_n": top_n},
-        )
+        params = {"min_mktcap": min_mktcap, "top_n": top_n}
+        if company_filter:
+            params["company"] = company_filter
+        if sector_filter:
+            params["sector"] = sector_filter
+        df_combined = get_data("get_top_combined_screen_limited", params=params)
         if not df_combined.empty:
             st.dataframe(df_combined)
             st.download_button(
@@ -161,6 +293,38 @@ try:
         else:
             st.warning(
                 "No combined results found based on current filter criteria.")
+
+    with tabs[14]:
+        st.header("📈 Macro Data Visualization")
+        df_macro = get_data("get_macro_data")
+        if not df_macro.empty:
+            # Convert Date column to datetime for proper plotting
+            df_macro['Date'] = pd.to_datetime(df_macro['Date'])
+
+            # Create two columns for charts
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("GDP Growth (YoY %)")
+                st.line_chart(df_macro.set_index('Date')['GDP_Growth_YoY'])
+
+            with col2:
+                st.subheader("Inflation Rate (YoY %)")
+                st.line_chart(df_macro.set_index('Date')['Inflation_YoY'])
+
+            # Display the data table
+            st.subheader("Macro Data Table")
+            st.dataframe(df_macro)
+
+            # Download button for macro data
+            st.download_button(
+                label="Download Macro Data as CSV",
+                data=df_macro.to_csv(index=False),
+                file_name="macro_data.csv",
+                mime="text/csv",
+            )
+        else:
+            st.warning("No macro data available.")
 
     st.success("Dashboard Loaded Successfully!")
 

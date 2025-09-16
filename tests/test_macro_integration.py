@@ -7,7 +7,7 @@ def test_main_stores_macro_data(monkeypatch):
     calls = []
 
     class DummyDB:
-        def __init__(self, url):
+        def __init__(self, url=None, engine=None):
             pass
 
         def create_table(self, name, df, primary_keys):
