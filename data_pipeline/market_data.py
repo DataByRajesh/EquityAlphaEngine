@@ -466,6 +466,7 @@ def fetch_fundamental_data(
             key_ratios = {
                 "Ticker": symbol,
                 "CompanyName": info.get("longName"),
+                "sector": info.get("sector"),
                 "returnOnEquity": info.get("returnOnEquity"),
                 "grossMargins": info.get("grossMargins"),
                 "operatingMargins": info.get("operatingMargins"),
@@ -509,6 +510,7 @@ def combine_price_and_fundamentals(price_df: pd.DataFrame, fundamentals_list: li
     # data.  This prevents downstream operations from failing when a field is
     # absent in the source response.
     required_cols = [
+        "sector",
         "returnOnEquity",
         "grossMargins",
         "operatingMargins",
