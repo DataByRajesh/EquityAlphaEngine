@@ -85,8 +85,8 @@ def execute_query_with_retry(query: text, params: dict = None, max_retries: int 
                 logger.error(f"All {max_retries} query attempts failed. Last error: {e}")
                 
         except Exception as e:
-            logger.error(f"Unexpected error during query execution: {e}")
-            raise HTTPException(status_code=500, detail="Database query failed")
+            logger.error(f"Unexpected error during query execution: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)[:100]}")
     
     # If we get here, all retries failed
     error_msg = f"Database query failed after {max_retries} attempts: {str(last_exception)}"
@@ -139,6 +139,12 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
     """Query stocks with improved error handling and connection management.
     Selects only the latest data per ticker.
     """
+    # Input validation
+    if top_n <= 0 or top_n > 100:
+        raise HTTPException(status_code=400, detail="top_n must be between 1 and 100")
+    if min_mktcap < 0:
+        raise HTTPException(status_code=400, detail="min_mktcap cannot be negative")
+
     base_query = """
         SELECT
             f."Ticker",
@@ -182,8 +188,16 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
     """
 
     if company:
+        # Sanitize company input to prevent SQL injection
+        company_clean = company.replace("'", "''").strip()
+        if len(company_clean) > 100:
+            raise HTTPException(status_code=400, detail="Company name too long")
         base_query += ' AND LOWER(f."CompanyName") LIKE LOWER(:company)'
     if sector:
+        # Sanitize sector input
+        sector_clean = sector.replace("'", "''").strip()
+        if len(sector_clean) > 100:
+            raise HTTPException(status_code=400, detail="Sector name too long")
         if '%' in sector:
             base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
         else:
@@ -193,9 +207,9 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
 
     params = {"min_mktcap": min_mktcap, "top_n": top_n}
     if company:
-        params["company"] = f"%{company}%"
+        params["company"] = f"%{company_clean}%"
     if sector:
-        params["sector"] = sector
+        params["sector"] = sector_clean
 
     query = text(base_query)
     return execute_query_with_retry(query, params)
@@ -205,6 +219,12 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
     """Query combined stocks with specific criteria.
     Selects only the latest data per ticker.
     """
+    # Input validation
+    if top_n <= 0 or top_n > 100:
+        raise HTTPException(status_code=400, detail="top_n must be between 1 and 100")
+    if min_mktcap < 0:
+        raise HTTPException(status_code=400, detail="min_mktcap cannot be negative")
+
     base_query = """
         SELECT
             f."Ticker",
@@ -245,26 +265,34 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
             GROUP BY "Ticker"
         ) m ON f."Ticker" = m."Ticker" AND f."Date" = m.max_date
         WHERE f."marketCap" >= :min_mktcap
-        AND f.factor_composite > 0.5
-        AND f.norm_quality_score > 0.5
-        AND f.return_12m > 0.1
+        AND f."factor_composite" > 0.5
+        AND f."norm_quality_score" > 0.5
+        AND f."return_12m" > 0.1
     """
 
     if company:
+        # Sanitize company input to prevent SQL injection
+        company_clean = company.replace("'", "''").strip()
+        if len(company_clean) > 100:
+            raise HTTPException(status_code=400, detail="Company name too long")
         base_query += ' AND LOWER(f."CompanyName") LIKE LOWER(:company)'
     if sector:
+        # Sanitize sector input
+        sector_clean = sector.replace("'", "''").strip()
+        if len(sector_clean) > 100:
+            raise HTTPException(status_code=400, detail="Sector name too long")
         if '%' in sector:
             base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
         else:
             base_query += ' AND LOWER(f."sector") = LOWER(:sector)'
 
-    base_query += " ORDER BY f.factor_composite DESC, f.norm_quality_score DESC, f.return_12m DESC LIMIT :top_n"
+    base_query += " ORDER BY f.\"factor_composite\" DESC, f.\"norm_quality_score\" DESC, f.\"return_12m\" DESC LIMIT :top_n"
 
     params = {"min_mktcap": min_mktcap, "top_n": top_n}
     if company:
-        params["company"] = f"%{company}%"
+        params["company"] = f"%{company_clean}%"
     if sector:
-        params["sector"] = sector
+        params["sector"] = sector_clean
 
     query = text(base_query)
     return execute_query_with_retry(query, params)
@@ -273,25 +301,25 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
 @app.get("/get_undervalued_stocks")
 def get_undervalued_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"undervalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("factor_composite ASC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" ASC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_overvalued_stocks")
 def get_overvalued_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"overvalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("factor_composite DESC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_high_quality_stocks")
 def get_high_quality_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"high_quality_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("norm_quality_score DESC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"norm_quality_score" DESC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_high_earnings_yield_stocks")
 def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"high_earnings_yield_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("earnings_yield DESC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"earnings_yield" DESC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_top_market_cap_stocks")
@@ -303,7 +331,7 @@ def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10, company: str
 @app.get("/get_low_beta_stocks")
 def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("beta ASC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"beta" ASC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_high_dividend_yield_stocks")
@@ -315,37 +343,37 @@ def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company
 @app.get("/get_high_momentum_stocks")
 def get_high_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"high_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("return_12m DESC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"return_12m" DESC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_low_volatility_stocks")
 def get_low_volatility_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"low_volatility_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("vol_21d ASC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"vol_21d" ASC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_top_short_term_momentum_stocks")
 def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"top_short_term_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("return_3m DESC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"return_3m" DESC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_high_dividend_low_beta_stocks")
 def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"high_dividend_low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC, beta ASC', min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC, "beta" ASC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_top_factor_composite_stocks")
 def get_top_factor_composite_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"top_factor_composite_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("factor_composite DESC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_high_risk_stocks")
 def get_high_risk_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"high_risk_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks("vol_252d DESC", min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"vol_252d" DESC', min_mktcap, top_n, company, sector))
 
 
 @app.get("/get_top_combined_screen_limited")

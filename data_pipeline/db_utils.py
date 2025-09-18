@@ -300,6 +300,7 @@ class DBHelper:
                                 _sa_type_for_series(df[col], col),
                                 primary_key=(
                                     primary_keys and col in primary_keys),
+                                quote=True,
                             )
                         )
                     table = Table(table_name, MetaData(), *cols)
@@ -509,7 +510,7 @@ class DBHelper:
                     temp_columns = []
                     for col in tbl.columns:
                         temp_columns.append(
-                            Column(col.name, col.type, nullable=col.nullable))
+                            Column(col.name, col.type, nullable=col.nullable, quote=True))
                     temp_tbl = Table(temp_table_name, MetaData(), *temp_columns)
                     temp_tbl.create(self.engine, checkfirst=True)
 
