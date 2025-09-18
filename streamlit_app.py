@@ -11,21 +11,59 @@ API_URL = os.getenv(
 
 
 def get_data(endpoint, params=None):
-    response = requests.get(f"{API_URL}/{endpoint}", params=params)
-    if response.status_code == 200:
-        return pd.DataFrame(response.json())
-    else:
-        st.error(f"API error: {response.status_code}")
+    try:
+        response = requests.get(f"{API_URL}/{endpoint}", params=params, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list) and len(data) > 0:
+                return pd.DataFrame(data)
+            else:
+                return pd.DataFrame()
+        elif response.status_code == 400:
+            st.warning(f"Invalid request parameters: {response.text}")
+            return pd.DataFrame()
+        elif response.status_code == 503:
+            st.warning("Database temporarily unavailable. Please try again later.")
+            return pd.DataFrame()
+        else:
+            st.error(f"API error: {response.status_code} - {response.text}")
+            return pd.DataFrame()
+    except requests.exceptions.Timeout:
+        st.error("Request timed out. Please try again.")
+        return pd.DataFrame()
+    except requests.exceptions.ConnectionError:
+        st.error("Connection error. Please check your internet connection.")
+        return pd.DataFrame()
+    except ValueError as e:
+        st.error(f"Error parsing response data: {e}")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Unexpected error: {e}")
         return pd.DataFrame()
 
 
 def get_sectors():
-    response = requests.get(f"{API_URL}/get_unique_sectors")
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error(f"Failed to fetch sectors: {response.status_code}")
-        return []
+    try:
+        response = requests.get(f"{API_URL}/get_unique_sectors", timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list):
+                return data
+            else:
+                st.warning("Invalid sectors data format")
+                return []
+        else:
+            st.warning(f"Failed to fetch sectors: {response.status_code}")
+            return []
+    except requests.exceptions.Timeout:
+        st.warning("Timeout fetching sectors. Using default list.")
+        return ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
+    except requests.exceptions.ConnectionError:
+        st.warning("Connection error fetching sectors. Using default list.")
+        return ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
+    except Exception as e:
+        st.warning(f"Error fetching sectors: {e}. Using default list.")
+        return ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
 
 
 def format_market_cap(x):
@@ -82,21 +120,24 @@ try:
 
     with tabs[0]:
         st.header("💰 Undervalued Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_undervalued = get_data("get_undervalued_stocks", params=params)
-        df_display = format_dataframe(df_undervalued.copy())
-        st.dataframe(df_display)
-        if not df_undervalued.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_undervalued.to_csv(index=False),
-                file_name="undervalued_stocks.csv",
-                mime="text/csv",
-            )
+        with st.spinner("Loading undervalued stocks..."):
+            params = {"min_mktcap": min_mktcap, "top_n": top_n}
+            if company_filter:
+                params["company"] = company_filter
+            if sector_filter != "All":
+                params["sector"] = sector_filter
+            df_undervalued = get_data("get_undervalued_stocks", params=params)
+            if not df_undervalued.empty:
+                df_display = format_dataframe(df_undervalued.copy())
+                st.dataframe(df_display)
+                st.download_button(
+                    label="Download as CSV",
+                    data=df_undervalued.to_csv(index=False),
+                    file_name="undervalued_stocks.csv",
+                    mime="text/csv",
+                )
+            else:
+                st.info("No undervalued stocks found with current filters.")
 
     with tabs[1]:
         st.header("📉 Overvalued Stocks")
@@ -106,7 +147,8 @@ try:
         if sector_filter != "All":
             params["sector"] = sector_filter
         df_overvalued = get_data("get_overvalued_stocks", params=params)
-        st.dataframe(df_overvalued)
+        df_display = format_dataframe(df_overvalued.copy())
+        st.dataframe(df_display)
         if not df_overvalued.empty:
             st.download_button(
                 label="Download as CSV",
@@ -123,7 +165,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_quality = get_data("get_high_quality_stocks", params=params)
-        st.dataframe(df_quality)
+        df_display = format_dataframe(df_quality.copy())
+        st.dataframe(df_display)
         if not df_quality.empty:
             st.download_button(
                 label="Download as CSV",
@@ -140,7 +183,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_ey = get_data("get_high_earnings_yield_stocks", params=params)
-        st.dataframe(df_ey)
+        df_display = format_dataframe(df_ey.copy())
+        st.dataframe(df_display)
         if not df_ey.empty:
             st.download_button(
                 label="Download as CSV",
@@ -157,7 +201,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_mktcap = get_data("get_top_market_cap_stocks", params=params)
-        st.dataframe(df_mktcap)
+        df_display = format_dataframe(df_mktcap.copy())
+        st.dataframe(df_display)
         if not df_mktcap.empty:
             st.download_button(
                 label="Download as CSV",
@@ -174,7 +219,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_lowbeta = get_data("get_low_beta_stocks", params=params)
-        st.dataframe(df_lowbeta)
+        df_display = format_dataframe(df_lowbeta.copy())
+        st.dataframe(df_display)
         if not df_lowbeta.empty:
             st.download_button(
                 label="Download as CSV",
@@ -191,7 +237,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_div = get_data("get_high_dividend_yield_stocks", params=params)
-        st.dataframe(df_div)
+        df_display = format_dataframe(df_div.copy())
+        st.dataframe(df_display)
         if not df_div.empty:
             st.download_button(
                 label="Download as CSV",
@@ -208,7 +255,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_mom = get_data("get_high_momentum_stocks", params=params)
-        st.dataframe(df_mom)
+        df_display = format_dataframe(df_mom.copy())
+        st.dataframe(df_display)
         if not df_mom.empty:
             st.download_button(
                 label="Download as CSV",
@@ -225,7 +273,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_lowvol = get_data("get_low_volatility_stocks", params=params)
-        st.dataframe(df_lowvol)
+        df_display = format_dataframe(df_lowvol.copy())
+        st.dataframe(df_display)
         if not df_lowvol.empty:
             st.download_button(
                 label="Download as CSV",
@@ -242,7 +291,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_stmom = get_data("get_top_short_term_momentum_stocks", params=params)
-        st.dataframe(df_stmom)
+        df_display = format_dataframe(df_stmom.copy())
+        st.dataframe(df_display)
         if not df_stmom.empty:
             st.download_button(
                 label="Download as CSV",
@@ -259,7 +309,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_div_lowbeta = get_data("get_high_dividend_low_beta_stocks", params=params)
-        st.dataframe(df_div_lowbeta)
+        df_display = format_dataframe(df_div_lowbeta.copy())
+        st.dataframe(df_display)
         if not df_div_lowbeta.empty:
             st.download_button(
                 label="Download as CSV",
@@ -276,7 +327,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_factor = get_data("get_top_factor_composite_stocks", params=params)
-        st.dataframe(df_factor)
+        df_display = format_dataframe(df_factor.copy())
+        st.dataframe(df_display)
         if not df_factor.empty:
             st.download_button(
                 label="Download as CSV",
@@ -293,7 +345,8 @@ try:
         if sector_filter:
             params["sector"] = sector_filter
         df_risk = get_data("get_high_risk_stocks", params=params)
-        st.dataframe(df_risk)
+        df_display = format_dataframe(df_risk.copy())
+        st.dataframe(df_display)
         if not df_risk.empty:
             st.download_button(
                 label="Download as CSV",
@@ -312,7 +365,8 @@ try:
             params["sector"] = sector_filter
         df_combined = get_data("get_top_combined_screen_limited", params=params)
         if not df_combined.empty:
-            st.dataframe(df_combined)
+            df_display = format_dataframe(df_combined.copy())
+            st.dataframe(df_display)
             st.download_button(
                 label="Download Combined Screener as CSV",
                 data=df_combined.to_csv(index=False),
