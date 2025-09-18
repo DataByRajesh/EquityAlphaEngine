@@ -19,6 +19,32 @@ def get_data(endpoint, params=None):
         return pd.DataFrame()
 
 
+def get_sectors():
+    response = requests.get(f"{API_URL}/get_unique_sectors")
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error(f"Failed to fetch sectors: {response.status_code}")
+        return []
+
+
+def format_market_cap(x):
+    if pd.isna(x):
+        return x
+    if x >= 1e9:
+        return f"${x/1e9:.1f}B"
+    elif x >= 1e6:
+        return f"${x/1e6:.1f}M"
+    else:
+        return f"${x:,.0f}"
+
+
+def format_dataframe(df):
+    if 'marketCap' in df.columns:
+        df['marketCap'] = df['marketCap'].apply(format_market_cap)
+    return df
+
+
 # Ensure proper session handling using `get_db()`
 session = next(get_db())
 try:
@@ -29,8 +55,10 @@ try:
     min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
     top_n = st.sidebar.slider("Number of Top Stocks",
                               min_value=5, max_value=50, value=10)
-    company_filter = st.sidebar.text_input("Company Name Filter (optional)", "")
-    sector_filter = st.sidebar.text_input("Sector Filter (optional)", "")
+    company_filter = st.sidebar.text_input("Company Name", "")
+    sectors = get_sectors()
+    sector_options = ["All"] + sectors
+    sector_filter = st.sidebar.selectbox("Sector", sector_options)
 
     # Define Tabs
     TABS = [
@@ -57,10 +85,11 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_undervalued = get_data("get_undervalued_stocks", params=params)
-        st.dataframe(df_undervalued)
+        df_display = format_dataframe(df_undervalued.copy())
+        st.dataframe(df_display)
         if not df_undervalued.empty:
             st.download_button(
                 label="Download as CSV",
@@ -74,7 +103,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_overvalued = get_data("get_overvalued_stocks", params=params)
         st.dataframe(df_overvalued)
@@ -328,8 +357,5 @@ try:
 
     st.success("Dashboard Loaded Successfully!")
 
-    st.info(
-        "Uses InvestWiseUK analytics engine pipeline. Replace with your real factor output for production if demoing."
-    )
 finally:
     session.close()

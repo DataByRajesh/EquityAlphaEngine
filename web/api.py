@@ -144,34 +144,34 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
             f."Ticker",
             f."CompanyName",
             f."sector",
-            CASE WHEN f."Open" IS NULL OR f."Open" != f."Open" THEN 0 ELSE f."Open" END as "Open",
-            CASE WHEN f."High" IS NULL OR f."High" != f."High" THEN 0 ELSE f."High" END as "High",
-            CASE WHEN f."Low" IS NULL OR f."Low" != f."Low" THEN 0 ELSE f."Low" END as "Low",
-            CASE WHEN f."close_price" IS NULL OR f."close_price" != f."close_price" THEN 0 ELSE f."close_price" END as "Close",
-            CASE WHEN f."Adj Close" IS NULL OR f."Adj Close" != f."Adj Close" THEN 0 ELSE f."Adj Close" END as "Adj Close",
-            CASE WHEN f."Volume" IS NULL OR f."Volume" != f."Volume" THEN 0 ELSE f."Volume" END as "Volume",
-            CASE WHEN f."marketCap" IS NULL OR f."marketCap" != f."marketCap" THEN 0 ELSE f."marketCap" END as "marketCap",
-            CASE WHEN f."beta" IS NULL OR f."beta" != f."beta" THEN 0 ELSE f."beta" END as "beta",
-            CASE WHEN f."dividendYield" IS NULL OR f."dividendYield" != f."dividendYield" THEN 0 ELSE f."dividendYield" END as "dividendYield",
-            CASE WHEN f."returnOnEquity" IS NULL OR f."returnOnEquity" != f."returnOnEquity" THEN 0 ELSE f."returnOnEquity" END as "returnOnEquity",
-            CASE WHEN f."grossMargins" IS NULL OR f."grossMargins" != f."grossMargins" THEN 0 ELSE f."grossMargins" END as "grossMargins",
-            CASE WHEN f."operatingMargins" IS NULL OR f."operatingMargins" != f."operatingMargins" THEN 0 ELSE f."operatingMargins" END as "operatingMargins",
-            CASE WHEN f."profitMargins" IS NULL OR f."profitMargins" != f."profitMargins" THEN 0 ELSE f."profitMargins" END as "profitMargins",
-            CASE WHEN f."priceToBook" IS NULL OR f."priceToBook" != f."priceToBook" THEN 0 ELSE f."priceToBook" END as "priceToBook",
-            CASE WHEN f."trailingPE" IS NULL OR f."trailingPE" != f."trailingPE" THEN 0 ELSE f."trailingPE" END as "trailingPE",
-            CASE WHEN f."forwardPE" IS NULL OR f."forwardPE" != f."forwardPE" THEN 0 ELSE f."forwardPE" END as "forwardPE",
-            CASE WHEN f."priceToSalesTrailing12Months" IS NULL OR f."priceToSalesTrailing12Months" != f."priceToSalesTrailing12Months" THEN 0 ELSE f."priceToSalesTrailing12Months" END as "priceToSalesTrailing12Months",
-            CASE WHEN f."debtToEquity" IS NULL OR f."debtToEquity" != f."debtToEquity" THEN 0 ELSE f."debtToEquity" END as "debtToEquity",
-            CASE WHEN f."currentRatio" IS NULL OR f."currentRatio" != f."currentRatio" THEN 0 ELSE f."currentRatio" END as "currentRatio",
-            CASE WHEN f."quickRatio" IS NULL OR f."quickRatio" != f."quickRatio" THEN 0 ELSE f."quickRatio" END as "quickRatio",
-            CASE WHEN f."averageVolume" IS NULL OR f."averageVolume" != f."averageVolume" THEN 0 ELSE f."averageVolume" END as "averageVolume",
-            CASE WHEN f."earnings_yield" IS NULL OR f."earnings_yield" != f."earnings_yield" THEN 0 ELSE f."earnings_yield" END as "earnings_yield",
-            CASE WHEN f."return_12m" IS NULL OR f."return_12m" != f."return_12m" THEN 0 ELSE f."return_12m" END as "return_12m",
-            CASE WHEN f."return_3m" IS NULL OR f."return_3m" != f."return_3m" THEN 0 ELSE f."return_3m" END as "return_3m",
-            CASE WHEN f."vol_21d" IS NULL OR f."vol_21d" != f."vol_21d" THEN 0 ELSE f."vol_21d" END as "vol_21d",
-            CASE WHEN f."vol_252d" IS NULL OR f."vol_252d" != f."vol_252d" THEN 0 ELSE f."vol_252d" END as "vol_252d",
-            CASE WHEN f."factor_composite" IS NULL OR f."factor_composite" != f."factor_composite" THEN 0 ELSE f."factor_composite" END as "factor_composite",
-            CASE WHEN f."norm_quality_score" IS NULL OR f."norm_quality_score" != f."norm_quality_score" THEN 0 ELSE f."norm_quality_score" END as "norm_quality_score"
+            f."Open",
+            f."High",
+            f."Low",
+            f."close_price" as "Close",
+            f."Adj Close",
+            f."Volume",
+            f."marketCap",
+            f."beta",
+            f."dividendYield",
+            f."returnOnEquity",
+            f."grossMargins",
+            f."operatingMargins",
+            f."profitMargins",
+            f."priceToBook",
+            f."trailingPE",
+            f."forwardPE",
+            f."priceToSalesTrailing12Months",
+            f."debtToEquity",
+            f."currentRatio",
+            f."quickRatio",
+            f."averageVolume",
+            f."earnings_yield",
+            f."return_12m",
+            f."return_3m",
+            f."vol_21d",
+            f."vol_252d",
+            f."factor_composite",
+            f."norm_quality_score"
         FROM financial_tbl f
         INNER JOIN (
             SELECT "Ticker", MAX("Date") as max_date
@@ -184,7 +184,10 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
     if company:
         base_query += ' AND LOWER(f."CompanyName") LIKE LOWER(:company)'
     if sector:
-        base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
+        if '%' in sector:
+            base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
+        else:
+            base_query += ' AND LOWER(f."sector") = LOWER(:sector)'
 
     base_query += f" ORDER BY {order_by} LIMIT :top_n"
 
@@ -192,7 +195,7 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
     if company:
         params["company"] = f"%{company}%"
     if sector:
-        params["sector"] = f"%{sector}%"
+        params["sector"] = sector
 
     query = text(base_query)
     return execute_query_with_retry(query, params)
@@ -207,34 +210,34 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
             f."Ticker",
             f."CompanyName",
             f."sector",
-            CASE WHEN f."Open" IS NULL OR f."Open" != f."Open" THEN 0 ELSE f."Open" END as "Open",
-            CASE WHEN f."High" IS NULL OR f."High" != f."High" THEN 0 ELSE f."High" END as "High",
-            CASE WHEN f."Low" IS NULL OR f."Low" != f."Low" THEN 0 ELSE f."Low" END as "Low",
-            CASE WHEN f."close_price" IS NULL OR f."close_price" != f."close_price" THEN 0 ELSE f."close_price" END as "Close",
-            CASE WHEN f."Adj Close" IS NULL OR f."Adj Close" != f."Adj Close" THEN 0 ELSE f."Adj Close" END as "Adj Close",
-            CASE WHEN f."Volume" IS NULL OR f."Volume" != f."Volume" THEN 0 ELSE f."Volume" END as "Volume",
-            CASE WHEN f."marketCap" IS NULL OR f."marketCap" != f."marketCap" THEN 0 ELSE f."marketCap" END as "marketCap",
-            CASE WHEN f."beta" IS NULL OR f."beta" != f."beta" THEN 0 ELSE f."beta" END as "beta",
-            CASE WHEN f."dividendYield" IS NULL OR f."dividendYield" != f."dividendYield" THEN 0 ELSE f."dividendYield" END as "dividendYield",
-            CASE WHEN f."returnOnEquity" IS NULL OR f."returnOnEquity" != f."returnOnEquity" THEN 0 ELSE f."returnOnEquity" END as "returnOnEquity",
-            CASE WHEN f."grossMargins" IS NULL OR f."grossMargins" != f."grossMargins" THEN 0 ELSE f."grossMargins" END as "grossMargins",
-            CASE WHEN f."operatingMargins" IS NULL OR f."operatingMargins" != f."operatingMargins" THEN 0 ELSE f."operatingMargins" END as "operatingMargins",
-            CASE WHEN f."profitMargins" IS NULL OR f."profitMargins" != f."profitMargins" THEN 0 ELSE f."profitMargins" END as "profitMargins",
-            CASE WHEN f."priceToBook" IS NULL OR f."priceToBook" != f."priceToBook" THEN 0 ELSE f."priceToBook" END as "priceToBook",
-            CASE WHEN f."trailingPE" IS NULL OR f."trailingPE" != f."trailingPE" THEN 0 ELSE f."trailingPE" END as "trailingPE",
-            CASE WHEN f."forwardPE" IS NULL OR f."forwardPE" != f."forwardPE" THEN 0 ELSE f."forwardPE" END as "forwardPE",
-            CASE WHEN f."priceToSalesTrailing12Months" IS NULL OR f."priceToSalesTrailing12Months" != f."priceToSalesTrailing12Months" THEN 0 ELSE f."priceToSalesTrailing12Months" END as "priceToSalesTrailing12Months",
-            CASE WHEN f."debtToEquity" IS NULL OR f."debtToEquity" != f."debtToEquity" THEN 0 ELSE f."debtToEquity" END as "debtToEquity",
-            CASE WHEN f."currentRatio" IS NULL OR f."currentRatio" != f."currentRatio" THEN 0 ELSE f."currentRatio" END as "currentRatio",
-            CASE WHEN f."quickRatio" IS NULL OR f."quickRatio" != f."quickRatio" THEN 0 ELSE f."quickRatio" END as "quickRatio",
-            CASE WHEN f."averageVolume" IS NULL OR f."averageVolume" != f."averageVolume" THEN 0 ELSE f."averageVolume" END as "averageVolume",
-            CASE WHEN f."earnings_yield" IS NULL OR f."earnings_yield" != f."earnings_yield" THEN 0 ELSE f."earnings_yield" END as "earnings_yield",
-            CASE WHEN f."return_12m" IS NULL OR f."return_12m" != f."return_12m" THEN 0 ELSE f."return_12m" END as "return_12m",
-            CASE WHEN f."return_3m" IS NULL OR f."return_3m" != f."return_3m" THEN 0 ELSE f."return_3m" END as "return_3m",
-            CASE WHEN f."vol_21d" IS NULL OR f."vol_21d" != f."vol_21d" THEN 0 ELSE f."vol_21d" END as "vol_21d",
-            CASE WHEN f."vol_252d" IS NULL OR f."vol_252d" != f."vol_252d" THEN 0 ELSE f."vol_252d" END as "vol_252d",
-            CASE WHEN f."factor_composite" IS NULL OR f."factor_composite" != f."factor_composite" THEN 0 ELSE f."factor_composite" END as "factor_composite",
-            CASE WHEN f."norm_quality_score" IS NULL OR f."norm_quality_score" != f."norm_quality_score" THEN 0 ELSE f."norm_quality_score" END as "norm_quality_score"
+            f."Open",
+            f."High",
+            f."Low",
+            f."close_price" as "Close",
+            f."Adj Close",
+            f."Volume",
+            f."marketCap",
+            f."beta",
+            f."dividendYield",
+            f."returnOnEquity",
+            f."grossMargins",
+            f."operatingMargins",
+            f."profitMargins",
+            f."priceToBook",
+            f."trailingPE",
+            f."forwardPE",
+            f."priceToSalesTrailing12Months",
+            f."debtToEquity",
+            f."currentRatio",
+            f."quickRatio",
+            f."averageVolume",
+            f."earnings_yield",
+            f."return_12m",
+            f."return_3m",
+            f."vol_21d",
+            f."vol_252d",
+            f."factor_composite",
+            f."norm_quality_score"
         FROM financial_tbl f
         INNER JOIN (
             SELECT "Ticker", MAX("Date") as max_date
@@ -250,7 +253,10 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
     if company:
         base_query += ' AND LOWER(f."CompanyName") LIKE LOWER(:company)'
     if sector:
-        base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
+        if '%' in sector:
+            base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
+        else:
+            base_query += ' AND LOWER(f."sector") = LOWER(:sector)'
 
     base_query += " ORDER BY f.factor_composite DESC, f.norm_quality_score DESC, f.return_12m DESC LIMIT :top_n"
 
@@ -258,7 +264,7 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
     if company:
         params["company"] = f"%{company}%"
     if sector:
-        params["sector"] = f"%{sector}%"
+        params["sector"] = sector
 
     query = text(base_query)
     return execute_query_with_retry(query, params)
@@ -355,8 +361,8 @@ def _query_macro_data():
             """
             SELECT
                 "Date",
-                COALESCE("GDP_Growth_YoY", 0) as "GDP_Growth_YoY",
-                COALESCE("Inflation_YoY", 0) as "Inflation_YoY"
+                "GDP_Growth_YoY",
+                "Inflation_YoY"
             FROM macro_data_tbl
             ORDER BY "Date" ASC
             """
@@ -372,3 +378,28 @@ def get_macro_data():
     """Get macroeconomic data (GDP growth and inflation)."""
     key = "macro_data"
     return get_cached_or_compute(key, lambda: _query_macro_data())
+
+
+def _query_unique_sectors():
+    """Query unique sectors from financial_tbl."""
+    try:
+        query = text(
+            """
+            SELECT DISTINCT "sector"
+            FROM financial_tbl
+            WHERE "sector" IS NOT NULL AND "sector" != ''
+            ORDER BY "sector" ASC
+            """
+        )
+        result = execute_query_with_retry(query)
+        return [row["sector"] for row in result]
+    except Exception as e:
+        logger.warning(f"Failed to query unique sectors: {e}")
+        return []
+
+
+@app.get("/get_unique_sectors")
+def get_unique_sectors():
+    """Get list of unique sectors."""
+    key = "unique_sectors"
+    return get_cached_or_compute(key, lambda: _query_unique_sectors())
