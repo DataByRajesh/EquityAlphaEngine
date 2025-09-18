@@ -19,14 +19,14 @@ except ImportError:
 logger = config.get_file_logger(__name__)
 
 # --- Helpers ---
-_SQL_TEXT = Text  # For generic text columns
-_SQL_FLOAT = Float  # For float columns
-_SQL_INT = Integer  # For integer columns
-_SQL_BIGINT = BigInteger  # For big integer columns
-_SQL_BOOL = Boolean  # For boolean columns
-_SQL_STR = String  # For string columns
-_SQL_DATE = Date  # For date columns
-_SQL_DT = DateTime  # For datetime columns
+_SQL_TEXT = Text()  # For generic text columns
+_SQL_FLOAT = Float()  # For float columns
+_SQL_INT = Integer()  # For integer columns
+_SQL_BIGINT = BigInteger()  # For big integer columns
+_SQL_BOOL = Boolean()  # For boolean columns
+_SQL_STR = Text()  # For string columns
+_SQL_DATE = Date()  # For date columns
+_SQL_DT = DateTime()  # For datetime columns
 
 
 def _sa_type_for_series(s: pd.Series, col_name: str = None):
@@ -238,6 +238,12 @@ class DBHelper:
         table_empty = False
 
         try:
+            # Rollback any pending failed transaction
+            try:
+                self.session.rollback()
+            except Exception:
+                pass  # Ignore if no transaction
+
             # Use session for ORM-based operations
             with self.session.begin():
                 logger.info("Creating table '%s' if not exists.", table_name)
@@ -268,7 +274,7 @@ class DBHelper:
                         logger.info(
                             "Adding missing column '%s' to table '%s'", col, table_name)
                         try:
-                            alter_stmt = text(f"ALTER TABLE \"{table_name}\" ADD COLUMN \"{col}\" {str(col_type).upper()}")
+                            alter_stmt = text(f"ALTER TABLE \"{table_name}\" ADD COLUMN \"{col}\" {col_type.compile(self.engine.dialect)}")
                             self.session.execute(alter_stmt)
                         except Exception as e:
                             logger.error(
@@ -278,6 +284,7 @@ class DBHelper:
                                 e,
                                 exc_info=True,
                             )
+                            self.session.rollback()
                     # ensure UNIQUE index for upsert if requested
                     if unique_cols:
                         self._ensure_unique_index(
