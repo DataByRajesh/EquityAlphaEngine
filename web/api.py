@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy import text
-from sqlalchemy.exc import OperationalError, TimeoutError as SQLTimeoutError
+from sqlalchemy.exc import OperationalError, TimeoutError as SQLTimeoutError, DataError
 from pg8000.exceptions import InterfaceError
 
 from data_pipeline.compute_factors import compute_factors
@@ -77,17 +77,21 @@ def execute_query_with_retry(query: text, params: dict = None, max_retries: int 
             logger.warning(
                 f"Database query attempt {attempt + 1}/{max_retries} failed: {str(e)[:200]}..."
             )
-            
+
             if attempt < max_retries - 1:
                 wait_time = DB_RETRY_DELAY * (2 ** attempt)  # Exponential backoff
                 logger.info(f"Retrying in {wait_time} seconds...")
                 time.sleep(wait_time)
             else:
                 logger.error(f"All {max_retries} query attempts failed. Last error: {e}")
-                
+
+        except (ValueError, TypeError, KeyError, DataError) as e:
+            logger.error(f"Data validation error during query execution: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"Invalid query parameters: {str(e)[:100]}")
+
         except Exception as e:
-            logger.error(f"Unexpected error during query execution: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Database query failed: {str(e)[:100]}")
+            logger.error(f"Unexpected server error during query execution: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)[:100]}")
     
     # If we get here, all retries failed
     error_msg = f"Database query failed after {max_retries} attempts: {str(last_exception)}"
@@ -126,9 +130,12 @@ def compute_factors_endpoint(payload: FactorsRequest) -> list[dict]:
         df = pd.DataFrame(payload.data)
         result_df = compute_factors(df)
         return result_df.to_dict(orient="records")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error(f"Data validation error in factor computation: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid input data: {str(e)[:100]}")
     except Exception as e:
-        logger.error(f"Error computing factors: {e}")
-        raise HTTPException(status_code=500, detail="Factor computation failed")
+        logger.error(f"Unexpected error in factor computation: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Factor computation failed: {str(e)[:100]}")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -233,6 +240,26 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
             base_query += ' AND LOWER(TRIM(f."sector")) LIKE LOWER(TRIM(:sector))'
         else:
             base_query += ' AND LOWER(TRIM(f."sector")) = LOWER(TRIM(:sector))'
+
+    # Validate order_by parameter to prevent SQL injection
+    allowed_columns = [
+        '"factor_composite"', '"norm_quality_score"', '"earnings_yield"',
+        '"marketCap"', '"beta"', '"dividendYield"', '"return_12m"',
+        '"vol_21d"', '"return_3m"', '"vol_252d"'
+    ]
+    allowed_directions = ['ASC', 'DESC']
+
+    # Check if order_by contains valid column references
+    order_parts = [part.strip().strip('"') for part in order_by.replace('"', '').split(',')]
+    for part in order_parts:
+        column_part = part.split()[0] if ' ' in part else part
+        if f'"{column_part}"' not in allowed_columns:
+            raise HTTPException(status_code=400, detail=f"Invalid order column: {column_part}")
+
+        if ' ' in part:
+            direction = part.split()[1].upper()
+            if direction not in allowed_directions:
+                raise HTTPException(status_code=400, detail=f"Invalid sort direction: {direction}")
 
     base_query += f" ORDER BY {order_by} LIMIT :top_n"
 

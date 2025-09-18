@@ -1,7 +1,6 @@
-- [x] Fix column name quoting in db_utils.py create_table method
-- [x] Fix column name quoting in db_utils.py temp table creation
-- [x] Test the fix by redeploying and checking logs
-- [x] Apply market cap formatting to all Streamlit tabs
-- [x] Improve API error handling and input validation to prevent 500 errors
-- [x] Fix critical SQL injection vulnerability in _query_combined_stocks
-- [x] Improve Streamlit navigation and search behavior with loading states and error handling
+- [x] Update execute_query_with_retry() in web/api.py to handle specific exceptions
+- [x] Update compute_factors_endpoint() in web/api.py to handle specific exceptions
+- [x] Add better logging for error details
+- [x] Test API endpoints with invalid data
+- [x] Run existing tests to ensure no regressions
+- [x] Comprehensive testing completed - all 29 tests passed
