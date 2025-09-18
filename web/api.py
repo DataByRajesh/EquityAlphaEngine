@@ -146,6 +146,33 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
     if min_mktcap < 0:
         raise HTTPException(status_code=400, detail="min_mktcap cannot be negative")
 
+    # Validate sector parameter against available sectors
+    if sector:
+        sector_clean = sector.replace("'", "''").strip()
+        sector_clean = urllib.parse.unquote(sector_clean)
+        logger.debug(f"Sector parameter: {sector}, cleaned and decoded: {sector_clean}")
+
+        # Get list of available sectors
+        available_sectors_query = text("""
+            SELECT DISTINCT TRIM("sector") as sector
+            FROM financial_tbl
+            WHERE TRIM("sector") IS NOT NULL AND TRIM("sector") != ''
+        """)
+        try:
+            available_sectors_result = execute_query_with_retry(available_sectors_query)
+            available_sectors = [row["sector"] for row in available_sectors_result]
+
+            # Check if provided sector exists (case-insensitive)
+            sector_found = any(sector_clean.lower() == avail_sector.lower() for avail_sector in available_sectors)
+            if not sector_found:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Sector '{sector_clean}' not found. Available sectors: {', '.join(sorted(available_sectors))}"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to validate sector: {e}")
+            # Continue without validation if database query fails
+
     base_query = """
         SELECT
             f."Ticker",
@@ -216,7 +243,13 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
         params["sector"] = sector_clean
 
     query = text(base_query)
-    return execute_query_with_retry(query, params)
+    result = execute_query_with_retry(query, params)
+    # Handle NaN values that are not JSON compliant
+    for row in result:
+        for key, value in row.items():
+            if isinstance(value, float) and (pd.isna(value) or value != value):  # Check for NaN
+                row[key] = None
+    return result
 
 
 def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sector: str = None):
@@ -228,6 +261,33 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
         raise HTTPException(status_code=400, detail="top_n must be between 1 and 100")
     if min_mktcap < 0:
         raise HTTPException(status_code=400, detail="min_mktcap cannot be negative")
+
+    # Validate sector parameter against available sectors
+    if sector:
+        sector_clean = sector.replace("'", "''").strip()
+        sector_clean = urllib.parse.unquote(sector_clean)
+        logger.debug(f"Sector parameter: {sector}, cleaned and decoded: {sector_clean}")
+
+        # Get list of available sectors
+        available_sectors_query = text("""
+            SELECT DISTINCT TRIM("sector") as sector
+            FROM financial_tbl
+            WHERE TRIM("sector") IS NOT NULL AND TRIM("sector") != ''
+        """)
+        try:
+            available_sectors_result = execute_query_with_retry(available_sectors_query)
+            available_sectors = [row["sector"] for row in available_sectors_result]
+
+            # Check if provided sector exists (case-insensitive)
+            sector_found = any(sector_clean.lower() == avail_sector.lower() for avail_sector in available_sectors)
+            if not sector_found:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Sector '{sector_clean}' not found. Available sectors: {', '.join(sorted(available_sectors))}"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to validate sector: {e}")
+            # Continue without validation if database query fails
 
     base_query = """
         SELECT
@@ -302,7 +362,13 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
         params["sector"] = sector_clean
 
     query = text(base_query)
-    return execute_query_with_retry(query, params)
+    result = execute_query_with_retry(query, params)
+    # Handle NaN values that are not JSON compliant
+    for row in result:
+        for key, value in row.items():
+            if isinstance(value, float) and (pd.isna(value) or value != value):  # Check for NaN
+                row[key] = None
+    return result
 
 
 @app.get("/get_undervalued_stocks")
@@ -402,7 +468,13 @@ def _query_macro_data():
             ORDER BY "Date" ASC
             """
         )
-        return execute_query_with_retry(query)
+        result = execute_query_with_retry(query)
+        # Handle NaN values that are not JSON compliant
+        for row in result:
+            for key, value in row.items():
+                if isinstance(value, float) and (pd.isna(value) or value != value):  # Check for NaN
+                    row[key] = None
+        return result
     except Exception as e:
         logger.warning(f"Macro data table not available: {e}")
         return []
