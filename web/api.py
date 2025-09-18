@@ -4,6 +4,7 @@ from threading import Lock
 from typing import Dict, Any
 import time
 import logging
+import urllib.parse
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -190,18 +191,21 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
     if company:
         # Sanitize company input to prevent SQL injection
         company_clean = company.replace("'", "''").strip()
+        company_clean = urllib.parse.unquote(company_clean)
         if len(company_clean) > 100:
             raise HTTPException(status_code=400, detail="Company name too long")
         base_query += ' AND LOWER(f."CompanyName") LIKE LOWER(:company)'
     if sector:
         # Sanitize sector input
         sector_clean = sector.replace("'", "''").strip()
+        sector_clean = urllib.parse.unquote(sector_clean)
+        logger.debug(f"Sector parameter: {sector}, cleaned and decoded: {sector_clean}")
         if len(sector_clean) > 100:
             raise HTTPException(status_code=400, detail="Sector name too long")
-        if '%' in sector:
-            base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
+        if '%' in sector_clean:
+            base_query += ' AND LOWER(TRIM(f."sector")) LIKE LOWER(TRIM(:sector))'
         else:
-            base_query += ' AND LOWER(f."sector") = LOWER(:sector)'
+            base_query += ' AND LOWER(TRIM(f."sector")) = LOWER(TRIM(:sector))'
 
     base_query += f" ORDER BY {order_by} LIMIT :top_n"
 
@@ -273,18 +277,21 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
     if company:
         # Sanitize company input to prevent SQL injection
         company_clean = company.replace("'", "''").strip()
+        company_clean = urllib.parse.unquote(company_clean)
         if len(company_clean) > 100:
             raise HTTPException(status_code=400, detail="Company name too long")
         base_query += ' AND LOWER(f."CompanyName") LIKE LOWER(:company)'
     if sector:
         # Sanitize sector input
         sector_clean = sector.replace("'", "''").strip()
+        sector_clean = urllib.parse.unquote(sector_clean)
+        logger.debug(f"Sector parameter: {sector}, cleaned and decoded: {sector_clean}")
         if len(sector_clean) > 100:
             raise HTTPException(status_code=400, detail="Sector name too long")
-        if '%' in sector:
-            base_query += ' AND LOWER(f."sector") LIKE LOWER(:sector)'
+        if '%' in sector_clean:
+            base_query += ' AND LOWER(TRIM(f."sector")) LIKE LOWER(TRIM(:sector))'
         else:
-            base_query += ' AND LOWER(f."sector") = LOWER(:sector)'
+            base_query += ' AND LOWER(TRIM(f."sector")) = LOWER(TRIM(:sector))'
 
     base_query += " ORDER BY f.\"factor_composite\" DESC, f.\"norm_quality_score\" DESC, f.\"return_12m\" DESC LIMIT :top_n"
 
@@ -413,10 +420,10 @@ def _query_unique_sectors():
     try:
         query = text(
             """
-            SELECT DISTINCT "sector"
+            SELECT DISTINCT TRIM("sector") as sector
             FROM financial_tbl
-            WHERE "sector" IS NOT NULL AND "sector" != ''
-            ORDER BY "sector" ASC
+            WHERE TRIM("sector") IS NOT NULL AND TRIM("sector") != ''
+            ORDER BY TRIM("sector") ASC
             """
         )
         result = execute_query_with_retry(query)
