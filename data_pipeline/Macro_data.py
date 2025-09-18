@@ -19,13 +19,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Try to get API key from GCP Secret Manager, fallback to environment variable
-try:
-    from data_pipeline.utils import get_secret
-    DEFAULT_API_KEY = get_secret("QUANDL_API_KEY")
-except Exception as e:
-    logger.warning(f"Failed to fetch QUANDL_API_KEY from Secret Manager: {e}, falling back to environment variable")
-    DEFAULT_API_KEY = os.environ.get("QUANDL_API_KEY")
+# Try to get API key from GCP Secret Manager if enabled, otherwise use environment variable
+if os.environ.get("USE_GCP_SECRET_MANAGER") == "true":
+    try:
+        from data_pipeline.utils import get_secret
+        DEFAULT_API_KEY = get_secret("QUANDL_API_KEY").strip()
+    except Exception as e:
+        logger.warning(f"Failed to fetch QUANDL_API_KEY from Secret Manager: {e}, falling back to environment variable")
+        DEFAULT_API_KEY = os.environ.get("QUANDL_API_KEY", "").strip()
+else:
+    logger.info("GCP Secret Manager not enabled, using environment variable for QUANDL_API_KEY")
+    DEFAULT_API_KEY = os.environ.get("QUANDL_API_KEY", "").strip()
 
 
 class FiveYearMacroDataLoader:
