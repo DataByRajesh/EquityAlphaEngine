@@ -74,6 +74,10 @@ def get_gmail_service(
 ):
     """Return an authenticated Gmail API service instance.
 
+    Supports both OAuth2 and Service Account authentication.
+    For Service Account, set GMAIL_SERVICE_ACCOUNT_KEY_PATH or use Secret Manager.
+    Requires domain-wide delegation for service account to send emails.
+
     In headless environments set the ``HEADLESS`` environment variable (or
     leave ``DISPLAY`` unset) to authenticate via the console instead of
     opening a browser.
@@ -93,6 +97,43 @@ def get_gmail_service(
         If the credentials file does not exist.
     """
 
+    # Check for service account key
+    service_account_key_path = os.environ.get("GMAIL_SERVICE_ACCOUNT_KEY_PATH")
+    if service_account_key_path:
+        logger.info("Using Service Account authentication for Gmail.")
+        from google.oauth2 import service_account
+        creds = service_account.Credentials.from_service_account_file(
+            service_account_key_path, scopes=SCOPES)
+        # For domain-wide delegation, impersonate the user
+        user_email = os.environ.get("GMAIL_USER_EMAIL", "raj.analystdata@gmail.com")
+        creds = creds.with_subject(user_email)
+        service = build("gmail", "v1", credentials=creds)
+        return service
+
+    # Check for service account from Secret Manager
+    secret_name = os.environ.get("GMAIL_SERVICE_ACCOUNT_SECRET_NAME")
+    if secret_name and secretmanager:
+        logger.info("Fetching Service Account key from Secret Manager for Gmail.")
+        try:
+            client = secretmanager.SecretManagerServiceClient()
+            name = f"projects/{config.GCP_PROJECT_ID}/secrets/{secret_name}/versions/latest"
+            response = client.access_secret_version(request={"name": name})
+            key_data = response.payload.data.decode("UTF-8")
+            from google.oauth2 import service_account
+            import json
+            key_dict = json.loads(key_data)
+            creds = service_account.Credentials.from_service_account_info(
+                key_dict, scopes=SCOPES)
+            # For domain-wide delegation, impersonate the user
+            user_email = os.environ.get("GMAIL_USER_EMAIL", "raj.analystdata@gmail.com")
+            creds = creds.with_subject(user_email)
+            service = build("gmail", "v1", credentials=creds)
+            return service
+        except Exception as e:
+            logger.error(f"Failed to use Service Account from Secret Manager: {e}")
+            raise
+
+    # Fallback to OAuth2
     credentials_path = credentials_path or _get_credentials_path()
     token_path = token_path or config.GMAIL_TOKEN_FILE
 
@@ -122,7 +163,14 @@ def get_gmail_service(
                 except AttributeError:
                     # Fallback for older versions of google-auth-oauthlib
                     logger.warning("run_console not available, using run_local_server")
-                    creds = flow.run_local_server(port=0)
+                    try:
+                        creds = flow.run_local_server(port=0)
+                    except Exception as e:
+                        if "could not locate runnable browser" in str(e).lower():
+                            logger.error("No runnable browser available for Gmail authentication in headless environment. Please use Service Account authentication or provide credentials.")
+                            raise RuntimeError("Browser authentication not available in headless environment") from e
+                        else:
+                            raise
             else:
                 creds = flow.run_local_server(port=0)
         # Save credentials for next run
