@@ -3,11 +3,18 @@ import os
 import pandas as pd
 import requests
 import streamlit as st
-
 from data_pipeline.db_connection import get_db
 
-API_URL = os.getenv(
-    "API_URL", "https://equity-api-248891289968.europe-west2.run.app")
+# Environment-based API URL configuration
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+if ENVIRONMENT == "production":
+    API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
+else:
+
+    
+    API_URL = os.getenv("API_URL", "http://localhost:8501")
+
+st.info(f"🌐 Connected to API: {API_URL} (Environment: {ENVIRONMENT})")
 
 
 def get_data(endpoint, params=None):
