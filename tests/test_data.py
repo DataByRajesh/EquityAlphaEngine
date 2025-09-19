@@ -115,12 +115,12 @@ class TestMarketData(unittest.TestCase):
         # Return fake price data
         mock_df = pd.DataFrame(
             {
-                ("Open", "MOCK.L"): [100, 102],
-                ("High", "MOCK.L"): [110, 112],
-                ("Low", "MOCK.L"): [99, 101],
-                ("Close", "MOCK.L"): [109, 111],
-                ("Adj Close", "MOCK.L"): [108, 110],
-                ("Volume", "MOCK.L"): [1000, 1200],
+                "Open": [100, 102],
+                "High": [110, 112],
+                "Low": [99, 101],
+                "Close": [109, 111],
+                "Adj Close": [108, 110],
+                "Volume": [1000, 1200],
             },
             index=pd.to_datetime(["2022-01-01", "2022-01-02"]),
         )

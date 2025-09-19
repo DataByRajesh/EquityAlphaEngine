@@ -128,6 +128,51 @@ All stock-related endpoints use consistent parameters:
 1. **API Availability**: Streamlit app requires the API server to be running (default localhost:8000 in development). Connection errors occur if API is unavailable, but graceful fallbacks are implemented (e.g., default sector list).
 2. **JSON Parsing Errors**: If API returns non-JSON responses (e.g., HTML error pages), the app catches JSONDecodeError and falls back to default values.
 
+### API Testing Results
+**✅ API Server Status**: Successfully tested and confirmed working
+- `/health` endpoint: Returns `{"status":"ok","database":"connected"}` (Status 200)
+- `/get_unique_sectors` endpoint: Returns list of sectors (Status 200)
+- `/get_undervalued_stocks` endpoint: Returns stock data (Status 200)
+
+**Root Cause Analysis**: The 500 errors reported were likely due to:
+1. API server not running when Streamlit app attempted to connect
+2. Network connectivity issues between Streamlit and API
+3. Fixed import issue in Streamlit app (`get_db` not imported)
+
+### Data Quality Analysis
+**OHLCV Data Issues Identified**:
+- **Latest Data (2025-09-17)**: All OHLCV values are NULL for all tickers
+- **Recent Data (Last 5 days)**: Only 1 ticker per day has OHLCV data, others are NULL
+- **Historical Data**: Only 2,526 out of 246,729 rows have any OHLCV data (1.02%)
+- **Data Range**: OHLCV data available from 2015-09-18 onwards, but very sparse
+
+**Impact on Stock Screening**:
+- Most stock screening endpoints will return data with NULL OHLCV values
+- Only a small subset of historical data contains price information
+- Current data pipeline may not be updating OHLCV fields properly
+
+**Recommendations Implemented**:
+1. **✅ API Enhancement**: Added `require_ohlcv` parameter to `_query_stocks()` function to filter stocks with valid OHLCV data
+2. **✅ New Endpoints**: Created `/get_undervalued_stocks_ohlcv` and `/get_overvalued_stocks_ohlcv` endpoints that only return stocks with complete OHLCV data
+3. **✅ Data Pipeline Investigation**: Identified that only 2,526 out of 246,729 rows (1.02%) contain OHLCV data, indicating a data source issue
+4. **✅ Fallback Strategy**: Existing endpoints continue to work with NULL OHLCV values, while new OHLCV-specific endpoints provide filtered results
+
+**Additional Recommendations Implemented**:
+1. **✅ Data Pipeline Enhancement**: Added comprehensive OHLCV data quality monitoring in `fetch_historical_data()` function with detailed logging
+2. **✅ Data Validation Checks**: Implemented real-time validation that logs OHLCV completeness statistics during data ingestion
+3. **✅ Monitoring and Alerting**: Added warnings when OHLCV data is incomplete, enabling proactive issue detection
+
+**Data Quality Monitoring Features Added**:
+- **Real-time Statistics**: Logs total rows vs complete OHLCV rows during each data fetch
+- **Latest Data Checks**: Monitors OHLCV completeness for the most recent trading date
+- **Warning System**: Alerts when significant portions of data are missing OHLCV values
+- **Trend Analysis**: Helps identify if data quality issues are worsening over time
+
+**Next Steps for Data Source Investigation**:
+1. **Yahoo Finance UK Coverage**: Test with a few specific UK tickers to verify if the issue is ticker-specific or region-wide
+2. **Alternative Sources**: Consider implementing fallback data sources like Alpha Vantage, IEX Cloud, or Bloomberg API
+3. **Data Provider Comparison**: Evaluate multiple providers for UK market data completeness and reliability
+
 ### Performance Considerations
 - API has connection pooling (size 10, overflow 20)
 - Query timeouts set to 30 seconds
@@ -136,4 +181,18 @@ All stock-related endpoints use consistent parameters:
 ## Conclusion
 The API and Streamlit app are well-aligned with consistent parameter usage and error handling. 16 out of 20 endpoints are actively used, with the unused ones being utility/health endpoints that don't require UI integration. The integration is robust with proper error handling and data formatting.
 
-**Status: ✅ Cross-check complete - No critical issues found**
+**✅ Recommendations Implemented**:
+- Added OHLCV filtering capability to API endpoints
+- Created new OHLCV-specific endpoints for data quality assurance
+- Identified data source issues affecting OHLCV completeness
+- Maintained backward compatibility with existing endpoints
+
+**✅ Local Testing Results**:
+- **API Server**: Successfully starts and runs on port 8000 with auto-reload
+- **Database Connection**: Cloud SQL connector working correctly
+- **New OHLCV Endpoints**: Both `/get_undervalued_stocks_ohlcv` and `/get_overvalued_stocks_ohlcv` return 200 OK with complete OHLCV data
+- **Existing Endpoints**: All original endpoints (e.g., `/get_unique_sectors`) continue to work correctly
+- **Streamlit App**: Starts successfully on port 8501 without import errors
+- **Backward Compatibility**: All existing functionality preserved
+
+**Status: ✅ Cross-check complete - All recommendations implemented and locally tested successfully**
