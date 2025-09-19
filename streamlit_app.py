@@ -17,7 +17,37 @@ logger = logging.getLogger(__name__)
 
 API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
 
-def get_data(endpoint, params=None):
+# Connection configuration
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
+CONNECTION_TIMEOUT = 500  # seconds
+REQUEST_TIMEOUT = 500  # seconds
+
+def make_request_with_retry(url, params=None, max_retries=MAX_RETRIES):
+    """Make HTTP request with retry logic and exponential backoff."""
+    last_exception = None
+
+    for attempt in range(max_retries):
+        try:
+            logger.debug(f"Request attempt {attempt + 1}/{max_retries} to {url}")
+            response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+            logger.debug(f"Request successful with status {response.status_code}")
+            return response
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                wait_time = RETRY_DELAY * (2 ** attempt)  # Exponential backoff
+                logger.warning(f"Request attempt {attempt + 1} failed: {e}. Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+            else:
+                logger.error(f"All {max_retries} request attempts failed. Last error: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error during request: {e}")
+            raise e
+
+    # If we get here, all retries failed
+    raise last_exception
+
     """Enhanced get_data function with retry logic and better error handling."""
     try:
         logger.info(f"Fetching data from endpoint: {endpoint}")
