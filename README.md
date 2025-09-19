@@ -44,6 +44,25 @@ database populated by the data pipeline to build visual dashboards.
 For step-by-step instructions on connecting Tableau, see
 [docs/tableau.md](docs/tableau.md).
 
+### Running the Streamlit Dashboard
+
+To run the interactive Equity Alpha Engine dashboard locally:
+
+```bash
+# Option 1: Using Python script
+python run_streamlit.py
+
+# Option 2: Using shell script
+./run_streamlit.sh
+
+# Option 3: Direct streamlit command
+streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+```
+
+The dashboard will be available at `http://localhost:8501`.
+
+**Note:** Make sure the API server is running on `http://localhost:8000` or set the `API_URL` environment variable to point to your API endpoint.
+
 ### Fetching UK Market Data
 
 Run the data pipeline script to download FTSE 100 data. The command below
