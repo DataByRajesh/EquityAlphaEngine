@@ -4,15 +4,15 @@ import pandas as pd
 import requests
 import streamlit as st
 from data_pipeline.db_connection import get_db
+from data_pipeline.utils import get_secret
 
-# Environment-based API URL configuration
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-if ENVIRONMENT == "production":
-    API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
-else:
-
-    
-    API_URL = os.getenv("API_URL", "http://localhost:8501")
+# API URL configuration from GCP Secret Manager
+try:
+    API_URL = get_secret("API_URL")
+    ENVIRONMENT = "production"
+except Exception:
+    API_URL = "http://localhost:8000"
+    ENVIRONMENT = "development"
 
 st.info(f"🌐 Connected to API: {API_URL} (Environment: {ENVIRONMENT})")
 
@@ -77,11 +77,11 @@ def format_market_cap(x):
     if pd.isna(x):
         return x
     if x >= 1e9:
-        return f"${x/1e9:.1f}B"
+        return f"£{x/1e9:.1f}B"
     elif x >= 1e6:
-        return f"${x/1e6:.1f}M"
+        return f"£{x/1e6:.1f}M"
     else:
-        return f"${x:,.0f}"
+        return f"£{x:,.0f}"
 
 
 def format_dataframe(df):

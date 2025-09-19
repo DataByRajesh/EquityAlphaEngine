@@ -33,10 +33,17 @@
 - [x] Add targeted warning filter for cleaner log output
 - [x] Maintain compatibility with both GCP and local environments
 
+### 7. Enhanced OAuth and Service Account Integration ✅
+- [x] Enable proper OAuth token storage and retrieval from Secret Manager
+- [x] Add automatic OAuth token refresh and re-saving to Secret Manager
+- [x] Improve Service Account authentication with Secret Manager integration
+- [x] Add comprehensive logging for authentication flow debugging
+- [x] Support both local file and Secret Manager token storage
+
 ## Files Modified
 - `web/api.py` - API endpoint fixes and currency handling
 - `streamlit_app.py` - Filter logic standardization
-- `data_pipeline/gmail_utils.py` - Enhanced error handling and warning suppression
+- `data_pipeline/gmail_utils.py` - Enhanced error handling, warning suppression, and Secret Manager integration
 - `data_pipeline/market_data.py` - Better email failure handling
 - `data_pipeline/Macro_data.py` - Enhanced Quandl API error handling
 
