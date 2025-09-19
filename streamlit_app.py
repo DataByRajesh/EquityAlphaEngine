@@ -14,18 +14,18 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # API URL configuration from GCP Secret Manager
-#try:
-raw_url = get_secret("API_URL")
-# Clean the URL by removing trailing whitespace and URL-encoded newlines
-API_URL = raw_url.strip().rstrip('\r\n').rstrip('\n').rstrip('\r')
-# Also remove any URL-encoded line breaks (%0D%0A, %0A, %0D)
-API_URL = urllib.parse.unquote(API_URL).strip().rstrip('\r\n').rstrip('\n').rstrip('\r')
-ENVIRONMENT = "production"
-logger.info(f"Using API_URL from secret manager: {API_URL} (raw: {raw_url.strip()})")
-#except Exception as e:
-    #API_URL = "http://localhost:8000"
-    #ENVIRONMENT = "development"
-    #logger.info(f"Using default API_URL: {API_URL}, Error: {e}")
+try:
+    raw_url = get_secret("API_URL")
+    # Clean the URL by removing trailing whitespace and URL-encoded newlines
+    API_URL = raw_url.strip().rstrip('\r\n').rstrip('\n').rstrip('\r')
+    # Also remove any URL-encoded line breaks (%0D%0A, %0A, %0D)
+    API_URL = urllib.parse.unquote(API_URL).strip().rstrip('\r\n').rstrip('\n').rstrip('\r')
+    ENVIRONMENT = "production"
+    logger.info(f"Using API_URL from secret manager: {API_URL} (raw: {raw_url.strip()})")
+except Exception as e:
+    API_URL = "http://localhost:8000"
+    ENVIRONMENT = "development"
+    logger.info(f"Using default API_URL: {API_URL}, Error: {e}")
 
 # Connection configuration
 MAX_RETRIES = 3
@@ -36,16 +36,25 @@ REQUEST_TIMEOUT = 30  # seconds
 # Display connection info with health check
 def display_connection_status():
     """Display connection status with health check."""
-    is_healthy, health_info = check_api_health()
-    if is_healthy:
-        st.info(f"🌐 Connected to API: {API_URL} (Environment: {ENVIRONMENT}) ✅")
-        if health_info.get("database") == "connected":
-            st.success("📊 Database connection: Healthy")
+    try:
+        # Safely access global variables with fallbacks
+        current_api_url = globals().get('API_URL', 'Unknown')
+        current_environment = globals().get('ENVIRONMENT', 'Unknown')
+        
+        is_healthy, health_info = check_api_health()
+        if is_healthy:
+            st.info(f"🌐 Connected to API: {current_api_url} (Environment: {current_environment}) ✅")
+            if health_info.get("database") == "connected":
+                st.success("📊 Database connection: Healthy")
+            else:
+                st.warning("📊 Database connection: Issues detected")
         else:
-            st.warning("📊 Database connection: Issues detected")
-    else:
-        st.error(f"🌐 API Connection: Failed ({health_info.get('status', 'unknown')})")
-        st.warning("Using fallback data where available")
+            st.error(f"🌐 API Connection: Failed ({health_info.get('status', 'unknown')})")
+            st.warning("Using fallback data where available (cloud)")
+            st.info(f"Attempted URL: {current_api_url} (Environment: {current_environment})")
+    except Exception as e:
+        st.error(f"🌐 API Connection: Error in connection status check: {str(e)}")
+        st.warning("Using fallback data where available (cloud)")
 
 
 def check_api_health():
