@@ -33,6 +33,8 @@ spec:
               value: ${secrets.GCP_SA_KEY}
             - name: GMAIL_CREDENTIALS_FILE
               value: ${secrets.GMAIL_CREDENTIALS_FILE}
+            - name: GMAIL_CREDENTIALS_SECRET_NAME
+              value: GMAIL_CLIENT_SECRET
             - name: QUANDL_API_KEY
               value: ${secrets.QUANDL_API_KEY}
             - name: BUILD_SHA
