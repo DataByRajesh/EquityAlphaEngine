@@ -635,23 +635,61 @@ def main(engine, start_date, end_date):
 
             # Prepare and send email notification
             try:
+                logger.info("Attempting to send email notification...")
                 gmail_service = get_gmail_service()
+                
                 if gmail_service is None:
                     logger.warning(
-                        "Gmail service not available. Email notification will not be sent.")
+                        "Gmail service initialization failed. Email notification will not be sent. "
+                        "Check Gmail credentials and configuration."
+                    )
                 else:
                     sender = "raj.analystdata@gmail.com"
                     recipient = "raj.analystdata@gmail.com"
                     subject = "Data Fetch Success"
-                    body = "Financial data computed and saved to DB."
+                    
+                    # Include more details in the email body
+                    body = f"""
+Financial data pipeline completed successfully.
+
+Summary:
+- Data processed and saved to database
+- Pipeline execution time: {time.time() - start_time:.2f} seconds
+- Timestamp: {time.ctime()}
+
+This is an automated notification from the Equity Alpha Engine.
+                    """.strip()
 
                     msg = create_message(sender, recipient, subject, body)
-                    send_message(gmail_service, "me", msg)
-                    logger.info("Email notification sent successfully.")
+                    result = send_message(gmail_service, "me", msg)
+                    
+                    if result:
+                        logger.info(f"Email notification sent successfully. Message ID: {result.get('id', 'unknown')}")
+                    else:
+                        logger.warning("Email notification failed to send. Check Gmail service logs for details.")
+                        
             except FileNotFoundError as e:
-                logger.warning(f"Gmail credentials not found: {e}. Continuing without email notification.")
+                logger.warning(
+                    f"Gmail credentials file not found: {e}. "
+                    "Set GMAIL_CREDENTIALS_FILE environment variable or place credentials.json in the project root. "
+                    "Continuing without email notification."
+                )
+            except RuntimeError as e:
+                if "browser authentication" in str(e).lower():
+                    logger.warning(
+                        f"Gmail authentication requires browser access: {e}. "
+                        "For headless environments, use Service Account authentication. "
+                        "Continuing without email notification."
+                    )
+                else:
+                    logger.warning(f"Gmail service runtime error: {e}. Continuing without email notification.")
             except Exception as e:
-                logger.warning(f"Failed to send email notification: {e}. Continuing pipeline execution.")
+                logger.warning(
+                    f"Unexpected error during email notification: {e}. "
+                    f"Error type: {type(e).__name__}. "
+                    "Check Gmail API configuration and network connectivity. "
+                    "Continuing pipeline execution."
+                )
 
             logger.info("Financial data computed and saved to DB.")
         else:

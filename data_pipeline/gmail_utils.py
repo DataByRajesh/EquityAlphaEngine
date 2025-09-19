@@ -24,6 +24,10 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Suppress specific gRPC warnings when not running on GCP (only affects this module)
+import warnings
+warnings.filterwarnings("ignore", message=".*ALTS creds ignored.*")
+
 # If modifying these SCOPES, delete token.json.
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
@@ -192,14 +196,41 @@ def create_message(sender, to, subject, message_text):
 
 
 def send_message(service, user_id, message):
-    """Send ``message`` using the Gmail API service."""
+    """Send ``message`` using the Gmail API service.
+    
+    Returns:
+        dict: Message object with ID if successful, None if failed
+    """
     try:
-        message = service.users().messages().send(
+        if service is None:
+            logger.error("Gmail service is None - cannot send message")
+            return None
+            
+        if not message or not message.get('raw'):
+            logger.error("Invalid message format - missing 'raw' field")
+            return None
+            
+        result = service.users().messages().send(
             userId=user_id, body=message).execute()
-        logger.info(f"Message Id: {message['id']}")
-        return message
+        logger.info(f"Email sent successfully. Message ID: {result.get('id', 'unknown')}")
+        return result
+        
     except Exception as e:  # pragma: no cover - network errors
-        logger.error(f"An error occurred: {e}")
+        error_msg = str(e)
+        logger.error(f"Failed to send email: {error_msg}")
+        
+        # Log specific error types for better debugging
+        if "authentication" in error_msg.lower():
+            logger.error("Gmail authentication failed. Check credentials and permissions.")
+        elif "quota" in error_msg.lower():
+            logger.error("Gmail API quota exceeded. Try again later.")
+        elif "permission" in error_msg.lower():
+            logger.error("Insufficient permissions for Gmail API. Check OAuth scopes.")
+        elif "network" in error_msg.lower() or "connection" in error_msg.lower():
+            logger.error("Network connectivity issue. Check internet connection.")
+        else:
+            logger.error(f"Unexpected Gmail API error: {error_msg}")
+            
         return None
 
 
