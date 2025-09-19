@@ -56,16 +56,10 @@ class FiveYearMacroDataLoader:
         # If quandl is not available or no API key, use mock data
         if not QUANDL_AVAILABLE or not self.api_key:
             logger.info("Using mock GDP growth data (quandl unavailable or no API key).")
-            dates = pd.date_range(start=self.start_date, end=self.end_date, freq="YE")
-            df = pd.DataFrame(
-                {
-                    "Date": dates.to_period("Y").to_timestamp(),
-                    "GDP_Growth_YoY": [2.0] * len(dates),  # Mock constant growth
-                }
-            )
-            return df
+            return self._create_mock_gdp_data()
             
         try:
+            logger.info("Attempting to fetch GDP growth data from Quandl...")
             df = (
                 quandl.get(
                     "ODA/GBR_NGDP_RPCH",
@@ -78,19 +72,46 @@ class FiveYearMacroDataLoader:
             # Normalize to Jan 1 of the year for stable merge keys
             df["Date"] = pd.to_datetime(
                 df["Date"]).dt.to_period("Y").dt.to_timestamp()
+            logger.info(f"Successfully fetched {len(df)} GDP growth data points from Quandl.")
             return df[["Date", "GDP_Growth_YoY"]].sort_values("Date")
         except Exception as e:
-            logger.error("Error fetching GDP Growth Data: %s", e)
-            # Fallback to mock data
+            error_msg = str(e)
+            if "403" in error_msg or "Status 403" in error_msg:
+                logger.warning(
+                    "Quandl API returned 403 Forbidden. This could be due to: "
+                    "1) Invalid or expired API key, "
+                    "2) Rate limiting, "
+                    "3) Insufficient permissions for the dataset. "
+                    "Using mock data as fallback."
+                )
+            elif "401" in error_msg or "unauthorized" in error_msg.lower():
+                logger.warning(
+                    "Quandl API authentication failed. Check your QUANDL_API_KEY. "
+                    "Using mock data as fallback."
+                )
+            elif "network" in error_msg.lower() or "connection" in error_msg.lower():
+                logger.warning(
+                    "Network connectivity issue with Quandl API. "
+                    "Using mock data as fallback."
+                )
+            else:
+                logger.error("Error fetching GDP Growth Data: %s", e)
+            
             logger.info("Using mock GDP growth data as fallback.")
-            dates = pd.date_range(start=self.start_date, end=self.end_date, freq="YE")
-            df = pd.DataFrame(
-                {
-                    "Date": dates.to_period("Y").to_timestamp(),
-                    "GDP_Growth_YoY": [2.0] * len(dates),  # Mock constant growth
-                }
-            )
-            return df
+            return self._create_mock_gdp_data()
+
+    def _create_mock_gdp_data(self) -> pd.DataFrame:
+        """Create mock GDP growth data for fallback scenarios."""
+        dates = pd.date_range(start=self.start_date, end=self.end_date, freq="YE")
+        # Use more realistic mock data with some variation
+        mock_growth_rates = [1.8, 2.1, 1.9, 2.3, 2.0] * (len(dates) // 5 + 1)
+        df = pd.DataFrame(
+            {
+                "Date": dates.to_period("Y").to_timestamp(),
+                "GDP_Growth_YoY": mock_growth_rates[:len(dates)],
+            }
+        )
+        return df
 
     def fetch_inflation_rate(self) -> pd.DataFrame:
         """Placeholder inflation series (annual, constant 2.5%)."""

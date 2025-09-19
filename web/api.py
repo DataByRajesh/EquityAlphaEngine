@@ -278,11 +278,18 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
 
     query = text(base_query)
     result = execute_query_with_retry(query, params)
-    # Handle NaN values that are not JSON compliant
+    # Handle NaN values that are not JSON compliant and add currency information
     for row in result:
         for key, value in row.items():
             if isinstance(value, float) and (pd.isna(value) or value != value):  # Check for NaN
                 row[key] = None
+        
+        # Add currency information for market cap based on ticker suffix
+        ticker = row.get("Ticker", "")
+        if ticker.endswith(".L"):
+            row["marketCapCurrency"] = "GBP"  # London Stock Exchange
+        else:
+            row["marketCapCurrency"] = "USD"  # Default for other exchanges
     return result
 
 
@@ -397,11 +404,18 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
 
     query = text(base_query)
     result = execute_query_with_retry(query, params)
-    # Handle NaN values that are not JSON compliant
+    # Handle NaN values that are not JSON compliant and add currency information
     for row in result:
         for key, value in row.items():
             if isinstance(value, float) and (pd.isna(value) or value != value):  # Check for NaN
                 row[key] = None
+        
+        # Add currency information for market cap based on ticker suffix
+        ticker = row.get("Ticker", "")
+        if ticker.endswith(".L"):
+            row["marketCapCurrency"] = "GBP"  # London Stock Exchange
+        else:
+            row["marketCapCurrency"] = "USD"  # Default for other exchanges
     return result
 
 
@@ -418,69 +432,69 @@ def get_overvalued_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = N
 
 
 @app.get("/get_high_quality_stocks")
-def get_high_quality_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"high_quality_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"norm_quality_score" DESC', min_mktcap, top_n, company, sector))
+def get_high_quality_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"high_quality_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"norm_quality_score" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_high_earnings_yield_stocks")
-def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"high_earnings_yield_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"earnings_yield" DESC', min_mktcap, top_n, company, sector))
+def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"high_earnings_yield_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"earnings_yield" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_top_market_cap_stocks")
-def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"top_market_cap_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"marketCap" DESC', min_mktcap, top_n, company, sector))
+def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"top_market_cap_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"marketCap" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_low_beta_stocks")
-def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"beta" ASC', min_mktcap, top_n, company, sector))
+def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"beta" ASC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_high_dividend_yield_stocks")
-def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"high_dividend_yield_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC', min_mktcap, top_n, company, sector))
+def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"high_dividend_yield_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_high_momentum_stocks")
-def get_high_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"high_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"return_12m" DESC', min_mktcap, top_n, company, sector))
+def get_high_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"high_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"return_12m" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_low_volatility_stocks")
-def get_low_volatility_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"low_volatility_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"vol_21d" ASC', min_mktcap, top_n, company, sector))
+def get_low_volatility_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"low_volatility_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"vol_21d" ASC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_top_short_term_momentum_stocks")
-def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"top_short_term_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"return_3m" DESC', min_mktcap, top_n, company, sector))
+def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"top_short_term_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"return_3m" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_high_dividend_low_beta_stocks")
-def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"high_dividend_low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC, "beta" ASC', min_mktcap, top_n, company, sector))
+def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"high_dividend_low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC, "beta" ASC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_top_factor_composite_stocks")
-def get_top_factor_composite_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"top_factor_composite_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector))
+def get_top_factor_composite_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"top_factor_composite_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_high_risk_stocks")
-def get_high_risk_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"high_risk_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"vol_252d" DESC', min_mktcap, top_n, company, sector))
+def get_high_risk_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    key = f"high_risk_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"vol_252d" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
 
 
 @app.get("/get_top_combined_screen_limited")

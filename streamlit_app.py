@@ -169,7 +169,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_quality = get_data("get_high_quality_stocks", params=params)
         df_display = format_dataframe(df_quality.copy())
@@ -187,7 +187,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_ey = get_data("get_high_earnings_yield_stocks", params=params)
         df_display = format_dataframe(df_ey.copy())
@@ -205,7 +205,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_mktcap = get_data("get_top_market_cap_stocks", params=params)
         df_display = format_dataframe(df_mktcap.copy())
@@ -223,7 +223,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_lowbeta = get_data("get_low_beta_stocks", params=params)
         df_display = format_dataframe(df_lowbeta.copy())
@@ -241,7 +241,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_div = get_data("get_high_dividend_yield_stocks", params=params)
         df_display = format_dataframe(df_div.copy())
@@ -259,7 +259,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_mom = get_data("get_high_momentum_stocks", params=params)
         df_display = format_dataframe(df_mom.copy())
@@ -277,7 +277,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_lowvol = get_data("get_low_volatility_stocks", params=params)
         df_display = format_dataframe(df_lowvol.copy())
@@ -295,7 +295,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_stmom = get_data("get_top_short_term_momentum_stocks", params=params)
         df_display = format_dataframe(df_stmom.copy())
@@ -313,7 +313,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_div_lowbeta = get_data("get_high_dividend_low_beta_stocks", params=params)
         df_display = format_dataframe(df_div_lowbeta.copy())
@@ -331,7 +331,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_factor = get_data("get_top_factor_composite_stocks", params=params)
         df_display = format_dataframe(df_factor.copy())
@@ -349,7 +349,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_risk = get_data("get_high_risk_stocks", params=params)
         df_display = format_dataframe(df_risk.copy())
@@ -368,7 +368,7 @@ try:
         params = {"min_mktcap": min_mktcap, "top_n": top_n}
         if company_filter:
             params["company"] = company_filter
-        if sector_filter:
+        if sector_filter != "All":
             params["sector"] = sector_filter
         df_combined = get_data("get_top_combined_screen_limited", params=params)
         if not df_combined.empty:
