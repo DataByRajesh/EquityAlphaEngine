@@ -670,8 +670,8 @@ This is an automated notification from the Equity Alpha Engine.
                         
             except FileNotFoundError as e:
                 logger.warning(
-                    f"Gmail credentials file not found: {e}. "
-                    "Set GMAIL_CREDENTIALS_FILE environment variable or place credentials.json in the project root. "
+                    f"Gmail credentials configuration issue: {e}. "
+                    "Check Gmail credentials setup in environment variables or Secret Manager. "
                     "Continuing without email notification."
                 )
             except RuntimeError as e:

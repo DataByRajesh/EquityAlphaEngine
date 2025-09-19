@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore", message=".*ALTS creds ignored.*")
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
 # Gmail authentication configuration
-USE_SECRET_MANAGER = os.environ.get("USE_GCP_SECRET_MANAGER", "false").lower() == "true"
+USE_SECRET_MANAGER = os.environ.get("USE_GCP_SECRET_MANAGER", "true").lower() == "true"
 
 def _get_secret_from_manager(secret_name: str) -> Optional[str]:
     """Get secret from Google Cloud Secret Manager."""

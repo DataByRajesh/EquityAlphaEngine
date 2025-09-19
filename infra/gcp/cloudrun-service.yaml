@@ -35,6 +35,8 @@ spec:
               value: ${secrets.GMAIL_CREDENTIALS_FILE}
             - name: GMAIL_CREDENTIALS_SECRET_NAME
               value: GMAIL_CLIENT_SECRET
+            - name: USE_GCP_SECRET_MANAGER
+              value: "true"
             - name: QUANDL_API_KEY
               value: ${secrets.QUANDL_API_KEY}
             - name: BUILD_SHA
