@@ -1,34 +1,28 @@
-# Fix "Connection error fetching sectors" Issue
+# API Connection Fix - TODO List
 
-## Progress Tracking
-
-### ✅ Completed Steps
-- [x] Analyzed the issue in `streamlit_app.py`
-- [x] Identified the root cause in `get_sectors()` function
-- [x] Reviewed API endpoint `/get_unique_sectors` in `web/api.py`
-- [x] Understood the database connection flow
-
-### 🔄 In Progress
-- [ ] Enhance error handling and logging in Streamlit app
-- [ ] Add connection testing functionality
-- [ ] Implement retry logic with exponential backoff
-- [ ] Add health check integration
-- [ ] Improve API endpoint error handling
-
-### 📋 Pending Tasks
-- [ ] Test fixes locally
-- [ ] Verify API server connectivity
+## 1. Diagnose Current State
+- [ ] Check if API server is running locally
+- [ ] Verify GCP credentials and Secret Manager access
 - [ ] Test database connectivity
-- [ ] Test in different environments
+- [ ] Check environment variables
+- [ ] Test API health endpoint
 
-## Implementation Plan
+## 2. Fix API Connection Issues
+- [ ] Start the FastAPI server if not running
+- [ ] Configure proper API_URL in Secret Manager or environment
+- [ ] Ensure database connection is working
+- [ ] Test the health endpoint
 
-1. **Enhanced Error Handling** - Add detailed logging to identify exact failure points
-2. **Connection Testing** - Verify API availability before making requests
-3. **Retry Logic** - Implement exponential backoff for transient failures
-4. **Health Check Integration** - Use existing `/health` endpoint to verify connectivity
-5. **Better Fallback Handling** - Improve user experience when API is unavailable
+## 3. Environment Setup
+- [ ] Set up proper GCP credentials if needed
+- [ ] Configure required environment variables
+- [ ] Ensure all dependencies are installed
 
-## Files to Modify
-- `streamlit_app.py` - Main fixes for connection handling
-- `web/api.py` - Enhanced error handling (if needed)
+## 4. Testing and Validation
+- [ ] Test API endpoints individually
+- [ ] Verify Streamlit app can connect to API
+- [ ] Validate data flow from database through API to Streamlit
+
+## Progress Notes
+- Started: API connection diagnosis and fix
+- Current Status: Beginning diagnosis phase
