@@ -47,7 +47,7 @@ def make_request_with_retry(url, params=None, max_retries=MAX_RETRIES):
 
     # If we get here, all retries failed
     raise last_exception
-
+def get_data(endpoint, params=None):
     """Enhanced get_data function with retry logic and better error handling."""
     try:
         logger.info(f"Fetching data from endpoint: {endpoint}")
