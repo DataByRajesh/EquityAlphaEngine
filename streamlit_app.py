@@ -21,7 +21,7 @@ try:
     # Also remove any URL-encoded line breaks (%0D%0A, %0A, %0D)
     API_URL = urllib.parse.unquote(API_URL).strip().rstrip('\r\n').rstrip('\n').rstrip('\r')
     ENVIRONMENT = "production"
-    logger.info(f"Using API_URL from secret manager: '{API_URL}' (raw: '{raw_url}')")
+    logger.debug(f"Using API_URL from secret manager: {API_URL} (raw: {raw_url.strip()})")
 except Exception as e:
     API_URL = "http://localhost:8000"
     ENVIRONMENT = "development"
