@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Try to get API key from GCP Secret Manager if enabled, otherwise use environment variable
-if os.environ.get("USE_GCP_SECRET_MANAGER") == "true":
+if os.environ.get("USE_GCP_SECRET_MANAGER", "true") == "true":
     try:
         from data_pipeline.utils import get_secret
         DEFAULT_API_KEY = get_secret("QUANDL_API_KEY").strip()
