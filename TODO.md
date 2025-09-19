@@ -64,3 +64,11 @@
 - ✅ Provides clear error messages for troubleshooting
 - ✅ Maintains backward compatibility with existing configurations
 - ✅ Uses secure credential management practices
+- ✅ Fixed Cloud Run deployment issues with missing secrets
+- ✅ Dynamic secret management prevents deployment failures
+
+## Additional Fixes Applied
+Based on the deployment logs, I also resolved:
+- **Missing secrets issue**: Updated deployment to handle missing `GMAIL_CREDENTIALS_FILE` and `BUILD_SHA` secrets gracefully
+- **Dynamic secret loading**: Deployment now only includes secrets that actually exist in Secret Manager
+- **Robust error handling**: Prevents Cloud Run deployment failures due to missing optional secrets

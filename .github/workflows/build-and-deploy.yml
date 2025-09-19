@@ -96,6 +96,23 @@ jobs:
         run: |
           echo "$GCP_SA_KEY" | (gcloud secrets describe GCP_SA_KEY >/dev/null 2>&1 && gcloud secrets versions add GCP_SA_KEY --data-file=- || gcloud secrets create GCP_SA_KEY --data-file=-)
 
+      # Create missing secrets with placeholder values if they don't exist
+      - name: Ensure required secrets exist
+        run: |
+          # Create BUILD_SHA secret if it doesn't exist
+          if ! gcloud secrets describe BUILD_SHA >/dev/null 2>&1; then
+            echo "${{ github.sha }}" | gcloud secrets create BUILD_SHA --data-file=-
+          else
+            echo "${{ github.sha }}" | gcloud secrets versions add BUILD_SHA --data-file=-
+          fi
+          
+          # Create GMAIL_CREDENTIALS_FILE secret if it doesn't exist and GMAIL_CREDENTIALS_FILE env var is set
+          if [ -n "$GMAIL_CREDENTIALS_FILE" ] && ! gcloud secrets describe GMAIL_CREDENTIALS_FILE >/dev/null 2>&1; then
+            echo "$GMAIL_CREDENTIALS_FILE" | gcloud secrets create GMAIL_CREDENTIALS_FILE --data-file=-
+          elif [ -n "$GMAIL_CREDENTIALS_FILE" ]; then
+            echo "$GMAIL_CREDENTIALS_FILE" | gcloud secrets versions add GMAIL_CREDENTIALS_FILE --data-file=-
+          fi
+
       # Deploy with Cloud Run flags
       - name: Deploy to Cloud Run (no-cost tier)
         run: |
@@ -105,6 +122,23 @@ jobs:
           # - cpu=1, memory=256Mi (lowest free tier config)
           # - allow-unauthenticated: remove if not needed (public access may incur cost if abused)
           # - vpc-connector: enables access to VPC resources like databases
+          
+          # Build secrets list dynamically based on what exists
+          SECRETS_LIST="DATABASE_URL=DATABASE_URL:latest,QUANDL_API_KEY=QUANDL_API_KEY:latest"
+          
+          # Add GCP_SA_KEY if it exists
+          if gcloud secrets describe GCP_SA_KEY >/dev/null 2>&1; then
+            SECRETS_LIST="${SECRETS_LIST},GCP_SA_KEY=GCP_SA_KEY:latest"
+          fi
+          
+          # Add BUILD_SHA (we ensure it exists above)
+          SECRETS_LIST="${SECRETS_LIST},BUILD_SHA=BUILD_SHA:latest"
+          
+          # Add GMAIL_CREDENTIALS_FILE if it exists
+          if gcloud secrets describe GMAIL_CREDENTIALS_FILE >/dev/null 2>&1; then
+            SECRETS_LIST="${SECRETS_LIST},GMAIL_CREDENTIALS_FILE=GMAIL_CREDENTIALS_FILE:latest"
+          fi
+          
           gcloud run deploy "$CLOUD_RUN_SERVICE" \
             --image "$IMAGE_URI:$IMAGE_TAG" \
             --region "$GCP_REGION" \
@@ -114,7 +148,7 @@ jobs:
             --min-instances=0 \
             --max-instances=1 \
             --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
-            --set-secrets="DATABASE_URL=DATABASE_URL:latest,QUANDL_API_KEY=QUANDL_API_KEY:latest,GMAIL_CREDENTIALS_FILE=GMAIL_CREDENTIALS_FILE:latest,GCP_SA_KEY=GCP_SA_KEY:latest,BUILD_SHA=BUILD_SHA:latest" \
+            --set-secrets="$SECRETS_LIST" \
             --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},GCP_REGION=${GCP_REGION},REPO=${REPO},GCP_PROJECT_ID=${GCP_PROJECT_ID},IMAGE_TAG=${IMAGE_TAG},IMAGE_URI=${IMAGE_URI},GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET,USE_GCP_SECRET_MANAGER=true" \
             --timeout=600 \
             --allow-unauthenticated
