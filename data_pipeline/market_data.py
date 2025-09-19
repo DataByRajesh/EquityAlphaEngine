@@ -183,6 +183,10 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
                         timeout=timeout,
                     )
                     if not ticker_data.empty:
+                        # Standardize column names immediately for each ticker
+                        if isinstance(ticker_data.columns, pd.MultiIndex):
+                            ticker_data.columns = ticker_data.columns.get_level_values(0)
+                        ticker_data.columns = ticker_data.columns.str.title()
                         ticker_data["Ticker"] = ticker
                         all_data.append(ticker_data)
                 except YFPricesMissingError as e:
@@ -200,11 +204,6 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
 
             data = pd.concat(all_data, ignore_index=False)
 
-            # Standardize column names to title case in case they are lowercase
-            if isinstance(data.columns, pd.MultiIndex):
-                data.columns = data.columns.get_level_values(0)
-            data.columns = data.columns.str.title()
-
             # Since we download sequentially, data is already a regular DataFrame with Ticker column
             # No need for MultiIndex handling as in concurrent download
             data = data.reset_index().rename(columns={"index": "Date"})
@@ -214,6 +213,22 @@ def fetch_historical_data(tickers: list[str], start_date: str, end_date: str) ->
             # issues
             if "Close" in data.columns:
                 data = data.rename(columns={"Close": "close_price"})
+
+            # Log OHLCV data quality for monitoring (after column standardization)
+            total_rows = len(data)
+            ohlcv_complete = data[['Open', 'High', 'Low', 'close_price']].notna().all(axis=1).sum()
+            ohlcv_incomplete = total_rows - ohlcv_complete
+
+            logger.info(f"OHLCV Data Quality: {ohlcv_complete}/{total_rows} rows have complete OHLCV data")
+            if ohlcv_incomplete > 0:
+                logger.warning(f"{ohlcv_incomplete} rows missing OHLCV data - this may indicate data source issues")
+
+            # Sample check for recent data
+            if not data.empty:
+                latest_date = data['Date'].max()
+                latest_data = data[data['Date'] == latest_date]
+                latest_ohlcv_count = latest_data[['Open', 'High', 'Low', 'close_price']].notna().all(axis=1).sum()
+                logger.info(f"Latest date ({latest_date}): {latest_ohlcv_count}/{len(latest_data)} tickers have OHLCV data")
 
             if "Volume" in data.columns:
                 data["Volume"] = data["Volume"].fillna(0).astype(int)

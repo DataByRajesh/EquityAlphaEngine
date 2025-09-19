@@ -143,9 +143,12 @@ async def root():
     return "<h2>Welcome to Equity Alpha Engine API!</h2><p>Visit <a href='/docs'>/docs</a> for the interactive API documentation.</p>"
 
 
-def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = None, sector: str = None):
+def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = None, sector: str = None, require_ohlcv: bool = False):
     """Query stocks with improved error handling and connection management.
     Selects only the latest data per ticker.
+
+    Args:
+        require_ohlcv: If True, only return stocks with valid OHLCV data (non-null Open, High, Low, close_price)
     """
     # Input validation
     if top_n <= 0 or top_n > 100:
@@ -188,7 +191,7 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
             f."Open",
             f."High",
             f."Low",
-            f."close_price" as "Close",
+            f."close_price",
             f."Adj Close",
             f."Volume",
             f."marketCap",
@@ -221,6 +224,10 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
         ) m ON f."Ticker" = m."Ticker" AND f."Date" = m.max_date
         WHERE f."marketCap" >= :min_mktcap
     """
+
+    # Add OHLCV filter if required
+    if require_ohlcv:
+        base_query += ' AND f."Open" IS NOT NULL AND f."High" IS NOT NULL AND f."Low" IS NOT NULL AND f."close_price" IS NOT NULL'
 
     if company:
         # Sanitize company input to prevent SQL injection
@@ -324,7 +331,7 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
             f."Open",
             f."High",
             f."Low",
-            f."close_price" as "Close",
+            f."close_price",
             f."Adj Close",
             f."Volume",
             f."marketCap",
@@ -401,13 +408,13 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
 @app.get("/get_undervalued_stocks")
 def get_undervalued_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"undervalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" ASC', min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" ASC', min_mktcap, top_n, company, sector, require_ohlcv=True))
 
 
 @app.get("/get_overvalued_stocks")
 def get_overvalued_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
     key = f"overvalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector))
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector, require_ohlcv=True))
 
 
 @app.get("/get_high_quality_stocks")
@@ -537,3 +544,17 @@ def get_unique_sectors():
     """Get list of unique sectors."""
     key = "unique_sectors"
     return get_cached_or_compute(key, lambda: _query_unique_sectors())
+
+
+@app.get("/get_undervalued_stocks_ohlcv")
+def get_undervalued_stocks_ohlcv(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
+    """Get undervalued stocks with valid OHLCV data only."""
+    key = f"undervalued_ohlcv_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" ASC', min_mktcap, top_n, company, sector, require_ohlcv=True))
+
+
+@app.get("/get_overvalued_stocks_ohlcv")
+def get_overvalued_stocks_ohlcv(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
+    """Get overvalued stocks with valid OHLCV data only."""
+    key = f"overvalued_ohlcv_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
+    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector, require_ohlcv=True))
