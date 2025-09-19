@@ -30,29 +30,7 @@ try:
 except ImportError:
     secretmanager = None
 
-# ------------------------------------------------------------------------------
-# Google Cloud IPv4 Configuration
-#
-# Force IPv4 connections to prevent IPv6 connectivity issues with Google APIs.
-# This addresses google.api_core.exceptions.RetryError with "Network is unreachable" for IPv6.
-# ------------------------------------------------------------------------------
-def _configure_gcp_ipv4():
-    """Configure Google Cloud client libraries to use IPv4 instead of IPv6."""
-    # Force gRPC to use IPv4 by setting DNS resolver to ares
-    if "GRPC_DNS_RESOLVER" not in os.environ:
-        os.environ["GRPC_DNS_RESOLVER"] = "ares"
 
-    # Additional IPv4 forcing for Google Cloud libraries
-    # This helps prevent IPv6 connection attempts that may fail
-    if "GOOGLE_CLOUD_DISABLE_GRPC_IPV6" not in os.environ:
-        os.environ["GOOGLE_CLOUD_DISABLE_GRPC_IPV6"] = "true"
-
-    # Log the configuration
-    logger = logging.getLogger(__name__)
-    logger.info("Configured Google Cloud clients to use IPv4 connections")
-
-# Apply IPv4 configuration immediately when config is imported
-_configure_gcp_ipv4()
 
 # ---------------------------------------------------------------------------
 # Directory structure
