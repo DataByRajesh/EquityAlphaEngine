@@ -1,4 +1,6 @@
 import os
+import time
+import logging
 
 import pandas as pd
 import requests
@@ -6,25 +8,103 @@ import streamlit as st
 from data_pipeline.db_connection import get_db
 from data_pipeline.utils import get_secret
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # API URL configuration from GCP Secret Manager
 try:
     API_URL = get_secret("API_URL")
     ENVIRONMENT = "production"
-except Exception:
+    logger.info(f"Using API_URL from secret manager: {API_URL}")
+except Exception as e:
     API_URL = "http://localhost:8000"
     ENVIRONMENT = "development"
+    logger.info(f"Using default API_URL: {API_URL}, Error: {e}")
 
-st.info(f"🌐 Connected to API: {API_URL} (Environment: {ENVIRONMENT})")
+# Connection configuration
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
+CONNECTION_TIMEOUT = 10  # seconds
+REQUEST_TIMEOUT = 30  # seconds
+
+# Display connection info with health check
+def display_connection_status():
+    """Display connection status with health check."""
+    is_healthy, health_info = check_api_health()
+    if is_healthy:
+        st.info(f"🌐 Connected to API: {API_URL} (Environment: {ENVIRONMENT}) ✅")
+        if health_info.get("database") == "connected":
+            st.success("📊 Database connection: Healthy")
+        else:
+            st.warning("📊 Database connection: Issues detected")
+    else:
+        st.error(f"🌐 API Connection: Failed ({health_info.get('status', 'unknown')})")
+        st.warning("Using fallback data where available")
+
+
+def check_api_health():
+    """Check if the API server is healthy and accessible."""
+    try:
+        logger.info(f"Checking API health at {API_URL}/health")
+        response = requests.get(f"{API_URL}/health", timeout=CONNECTION_TIMEOUT)
+        if response.status_code == 200:
+            health_data = response.json()
+            logger.info(f"API health check successful: {health_data}")
+            return True, health_data
+        else:
+            logger.warning(f"API health check failed with status {response.status_code}")
+            return False, {"status": "unhealthy", "code": response.status_code}
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error during health check: {e}")
+        return False, {"status": "connection_error", "error": str(e)}
+    except requests.exceptions.Timeout as e:
+        logger.error(f"Timeout during health check: {e}")
+        return False, {"status": "timeout", "error": str(e)}
+    except Exception as e:
+        logger.error(f"Unexpected error during health check: {e}")
+        return False, {"status": "error", "error": str(e)}
+
+
+def make_request_with_retry(url, params=None, max_retries=MAX_RETRIES):
+    """Make HTTP request with retry logic and exponential backoff."""
+    last_exception = None
+    
+    for attempt in range(max_retries):
+        try:
+            logger.debug(f"Request attempt {attempt + 1}/{max_retries} to {url}")
+            response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+            logger.debug(f"Request successful with status {response.status_code}")
+            return response
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                wait_time = RETRY_DELAY * (2 ** attempt)  # Exponential backoff
+                logger.warning(f"Request attempt {attempt + 1} failed: {e}. Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+            else:
+                logger.error(f"All {max_retries} request attempts failed. Last error: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error during request: {e}")
+            raise e
+    
+    # If we get here, all retries failed
+    raise last_exception
 
 
 def get_data(endpoint, params=None):
+    """Enhanced get_data function with retry logic and better error handling."""
     try:
-        response = requests.get(f"{API_URL}/{endpoint}", params=params, timeout=30)
+        logger.info(f"Fetching data from endpoint: {endpoint}")
+        response = make_request_with_retry(f"{API_URL}/{endpoint}", params=params)
+        
         if response.status_code == 200:
             data = response.json()
             if isinstance(data, list) and len(data) > 0:
+                logger.info(f"Successfully retrieved {len(data)} records from {endpoint}")
                 return pd.DataFrame(data)
             else:
+                logger.warning(f"No data returned from {endpoint}")
                 return pd.DataFrame()
         elif response.status_code == 400:
             st.warning(f"Invalid request parameters: {response.text}")
@@ -35,42 +115,49 @@ def get_data(endpoint, params=None):
         else:
             st.error(f"API error: {response.status_code} - {response.text}")
             return pd.DataFrame()
-    except requests.exceptions.Timeout:
-        st.error("Request timed out. Please try again.")
-        return pd.DataFrame()
-    except requests.exceptions.ConnectionError:
-        st.error("Connection error. Please check your internet connection.")
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        logger.error(f"Connection/timeout error for {endpoint}: {e}")
+        st.error(f"Connection error for {endpoint}. Please check your connection and try again.")
         return pd.DataFrame()
     except ValueError as e:
+        logger.error(f"JSON parsing error for {endpoint}: {e}")
         st.error(f"Error parsing response data: {e}")
         return pd.DataFrame()
     except Exception as e:
+        logger.error(f"Unexpected error for {endpoint}: {e}")
         st.error(f"Unexpected error: {e}")
         return pd.DataFrame()
 
 
 def get_sectors():
+    """Enhanced get_sectors function with retry logic and better error handling."""
+    default_sectors = ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
+    
     try:
-        response = requests.get(f"{API_URL}/get_unique_sectors", timeout=30)
+        logger.info("Fetching sectors from API")
+        response = make_request_with_retry(f"{API_URL}/get_unique_sectors")
+        
         if response.status_code == 200:
             data = response.json()
-            if isinstance(data, list):
+            if isinstance(data, list) and len(data) > 0:
+                logger.info(f"Successfully retrieved {len(data)} sectors")
                 return data
             else:
-                st.warning("Invalid sectors data format")
-                return []
+                logger.warning("Invalid sectors data format or empty list")
+                st.warning("Invalid sectors data format. Using default list.")
+                return default_sectors
         else:
-            st.warning(f"Failed to fetch sectors: {response.status_code}")
-            return []
-    except requests.exceptions.Timeout:
-        st.warning("Timeout fetching sectors. Using default list.")
-        return ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
-    except requests.exceptions.ConnectionError:
+            logger.warning(f"Failed to fetch sectors: {response.status_code}")
+            st.warning(f"Failed to fetch sectors: {response.status_code}. Using default list.")
+            return default_sectors
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        logger.error(f"Connection/timeout error fetching sectors: {e}")
         st.warning("Connection error fetching sectors. Using default list.")
-        return ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
+        return default_sectors
     except Exception as e:
+        logger.error(f"Unexpected error fetching sectors: {e}")
         st.warning(f"Error fetching sectors: {e}. Using default list.")
-        return ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
+        return default_sectors
 
 
 def format_market_cap(x):
@@ -95,6 +182,9 @@ session = next(get_db())
 try:
     st.set_page_config(page_title="Equity Alpha Engine", layout="wide")
     st.title("📊 Equity Alpha Engine Dashboard")
+    
+    # Display connection status
+    display_connection_status()
 
     st.sidebar.header("Filter Options")
     min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
