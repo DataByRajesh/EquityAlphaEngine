@@ -17,18 +17,18 @@
 # If an environment variable is not set, a safe default is used for local
 # development.
 
-
 import logging
+
 # Standard library imports
 import os
 import tempfile
 
 # Third-party imports
-
 try:
     from google.cloud import secretmanager
 except ImportError:
     secretmanager = None
+    logger.warning("google-cloud-secretmanager not installed. Secrets will not be loaded.")
 
 
 
@@ -57,10 +57,10 @@ def _ensure_dir(env_var: str, default: str) -> str:
         path = tempfile.mkdtemp()
     return path
 
-
-DATA_DIR = _ensure_dir("DATA_DIR", os.path.join("data_pipeline", "data"))
-CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join("data_pipeline", "cache"))
-LOG_DIR = _ensure_dir("LOG_DIR", os.path.join("data_pipeline", "logs"))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = _ensure_dir("DATA_DIR", os.path.join(BASE_DIR, "data"))
+CACHE_DIR = _ensure_dir("CACHE_DIR", os.path.join(BASE_DIR, "cache"))
+LOG_DIR = _ensure_dir("LOG_DIR", os.path.join(BASE_DIR, "logs"))
 
 
 # PROJECT_ID = "your-gcp-project-id"

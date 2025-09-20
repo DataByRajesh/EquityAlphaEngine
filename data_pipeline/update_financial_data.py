@@ -13,6 +13,9 @@ scheduled job so that dashboards can simply read from an already populated
 database.
 """
 
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file if present
+
 from __future__ import annotations
 
 # Standard library imports

@@ -1,512 +1,146 @@
-import os
-import time
-import logging
-import urllib.parse
-import random
+import os, time, logging, random
 from typing import Optional
-
 import pandas as pd
 import requests
 import streamlit as st
 from data_pipeline.db_connection import get_db
-from data_pipeline.utils import get_secret
 
-# Configure logging
+# Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# API URL configuration from environment variable or default
-# Clean the URL to remove any carriage returns or whitespace that cause DNS issues
-raw_api_url = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
-API_URL = raw_api_url.strip().replace('\r', '').replace('\n', '')
-logger.info(f"Using API URL: {API_URL}")
+# API config
+API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app").strip()
+MAX_RETRIES, RETRY_DELAY = 5, 1
+CONNECTION_TIMEOUT, REQUEST_TIMEOUT = 10, 30
+HEALTH_CHECK_TIMEOUT = 5
 
-# Optimized connection configuration for Cloud Run
-MAX_RETRIES = 5
-RETRY_DELAY = 1  # seconds, initial delay
-CONNECTION_TIMEOUT = 10  # seconds, reduced for Cloud Run
-REQUEST_TIMEOUT = 30  # seconds, reduced for Cloud Run
-HEALTH_CHECK_TIMEOUT = 5  # seconds, for health checks
-
-# Create a session for connection pooling
-http_session = requests.Session()
-http_session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20))
-http_session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20))
+session = requests.Session()
+session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20))
+session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20))
 
 def check_api_health() -> bool:
-    """Check if the API service is healthy before making requests."""
     try:
-        logger.debug("Checking API health...")
-        response = http_session.get(f"{API_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
-        if response.status_code == 200:
-            logger.debug("API health check passed")
-            return True
-        else:
-            logger.warning(f"API health check failed with status: {response.status_code}")
-            return False
-    except Exception as e:
-        logger.warning(f"API health check failed: {e}")
-        return False
+        return session.get(f"{API_URL}/health", timeout=HEALTH_CHECK_TIMEOUT).status_code == 200
+    except: return False
 
-
-def make_request_with_retry(url, params=None, max_retries=MAX_RETRIES):
-    """Make HTTP request with retry logic, exponential backoff, and jitter."""
-    last_exception = None
-
-    # Perform health check for the first attempt
-    if not check_api_health():
-        logger.warning("API health check failed, but proceeding with request...")
-
-    for attempt in range(max_retries):
+def make_request(url, params=None):
+    for attempt in range(MAX_RETRIES):
         try:
-            logger.debug(f"Request attempt {attempt + 1}/{max_retries} to {url}")
-            
-            # Use http_session for connection pooling
-            response = http_session.get(
-                url, 
-                params=params, 
-                timeout=(CONNECTION_TIMEOUT, REQUEST_TIMEOUT)
-            )
-            
-            logger.debug(f"Request successful with status {response.status_code}")
-            return response
-            
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-            last_exception = e
-            if attempt < max_retries - 1:
-                # Exponential backoff with jitter
-                base_wait = RETRY_DELAY * (2 ** attempt)
-                jitter = random.uniform(0.1, 0.5)  # Add jitter to prevent thundering herd
-                wait_time = base_wait + jitter
-                
-                logger.warning(f"Request attempt {attempt + 1} failed: {e}. Retrying in {wait_time:.2f} seconds...")
-                time.sleep(wait_time)
-            else:
-                logger.error(f"All {max_retries} request attempts failed. Last error: {e}")
-                
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error during request: {e}")
-            raise e
-            
-        except Exception as e:
-            logger.error(f"Unexpected error during request: {e}")
-            raise e
+            return session.get(url, params=params, timeout=(CONNECTION_TIMEOUT, REQUEST_TIMEOUT))
+        except (requests.ConnectionError, requests.Timeout):
+            time.sleep(RETRY_DELAY*(2**attempt)+random.uniform(0.1,0.5))
+    return None
 
-    # If we get here, all retries failed
-    raise last_exception
+@st.cache_data
 def get_data(endpoint, params=None):
-    """Enhanced get_data function with retry logic and better error handling."""
-    try:
-        logger.info(f"Fetching data from endpoint: {endpoint}")
-        response = make_request_with_retry(f"{API_URL}/{endpoint}", params=params)
+    resp = make_request(f"{API_URL}/{endpoint}", params=params)
+    if resp and resp.status_code==200: 
+        data = resp.json()
+        return pd.DataFrame(data) if isinstance(data,list) else pd.DataFrame()
+    return pd.DataFrame()
 
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                logger.info(f"Successfully retrieved {len(data)} records from {endpoint}")
-                return pd.DataFrame(data)
-            else:
-                logger.warning(f"No data returned from {endpoint}")
-                return pd.DataFrame()
-        elif response.status_code == 400:
-            st.warning(f"Invalid request parameters: {response.text}")
-            return pd.DataFrame()
-        elif response.status_code == 503:
-            st.warning("Database temporarily unavailable. Please try again later.")
-            return pd.DataFrame()
-        else:
-            st.error(f"API error: {response.status_code} - {response.text}")
-            return pd.DataFrame()
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        logger.error(f"Connection/timeout error for {endpoint}: {e}")
-        st.error(f"Connection error for {endpoint}. Please check your connection and try again.")
-        return pd.DataFrame()
-    except ValueError as e:
-        logger.error(f"JSON parsing error for {endpoint}: {e}")
-        st.error(f"Error parsing response data: {e}")
-        return pd.DataFrame()
-    except Exception as e:
-        logger.error(f"Unexpected error for {endpoint}: {e}")
-        st.error(f"Unexpected error: {e}")
-        return pd.DataFrame()
-
+@st.cache_data
 def get_sectors():
-    """Enhanced get_sectors function with retry logic and better error handling."""
-    default_sectors = ["Technology", "Healthcare", "Financial Services", "Consumer Cyclical", "Communication Services"]
-    
-    try:
-        logger.info("Fetching sectors from API")
-        response = make_request_with_retry(f"{API_URL}/get_unique_sectors")
-        
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                logger.info(f"Successfully retrieved {len(data)} sectors")
-                return data
-            else:
-                logger.warning("Invalid sectors data format or empty list")
-                st.warning("Invalid sectors data format. Using default list.")
-                return default_sectors
-        else:
-            logger.warning(f"Failed to fetch sectors: {response.status_code}")
-            st.warning(f"Failed to fetch sectors: {response.status_code}. Using default list.")
-            return default_sectors
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        logger.error(f"Connection/timeout error fetching sectors: {e}")
-        st.warning("Connection error fetching sectors. Using default list.")
-        return default_sectors
-    except Exception as e:
-        logger.error(f"Unexpected error fetching sectors: {e}")
-        st.warning(f"Error fetching sectors: {e}. Using default list.")
-        return default_sectors
-
+    default = ["Technology","Healthcare","Financial Services","Consumer Cyclical","Communication Services"]
+    resp = make_request(f"{API_URL}/get_unique_sectors")
+    try: data = resp.json(); return data if isinstance(data,list) and data else default
+    except: return default
 
 def format_market_cap(x):
-    if pd.isna(x):
-        return x
-    if x >= 1e9:
-        return f"£{x/1e9:.1f}B"
-    elif x >= 1e6:
-        return f"£{x/1e6:.1f}M"
-    else:
-        return f"£{x:,.0f}"
+    if pd.isna(x): return x
+    return f"£{x/1e9:.1f}B" if x>=1e9 else f"£{x/1e6:.1f}M" if x>=1e6 else f"£{x:,.0f}"
 
-
-def format_dataframe(df):
-    if 'marketCap' in df.columns:
-        df['marketCap'] = df['marketCap'].apply(format_market_cap)
+def format_df(df):
+    if 'marketCap' in df.columns: df['marketCap'] = df['marketCap'].apply(format_market_cap)
     return df
 
-
-# Ensure proper session handling using `get_db()`
-session = next(get_db())
+# Dashboard
+db_session = next(get_db())
 try:
     st.set_page_config(page_title="Equity Alpha Engine", layout="wide")
     st.title("📊 Equity Alpha Engine Dashboard")
 
-    st.sidebar.header("Filter Options")
-    min_mktcap = st.sidebar.number_input("Min Market Cap", min_value=0)
-    top_n = st.sidebar.slider("Number of Top Stocks",
-                              min_value=5, max_value=50, value=10)
-    company_filter = st.sidebar.text_input("Company Name", "")
-    sectors = get_sectors()
-    sector_options = ["All"] + sectors
-    sector_filter = st.sidebar.selectbox("Sector", sector_options)
+    # Initialize session state for filters
+    if "min_mktcap" not in st.session_state:
+        st.session_state.min_mktcap = 0
+    if "top_n" not in st.session_state:
+        st.session_state.top_n = 10
+    if "sector_filter" not in st.session_state:
+        st.session_state.sector_filter = "All"
+    if "company_filter" not in st.session_state:
+        st.session_state.company_filter = ""
 
-    # Define Tabs
-    TABS = [
-        "Undervalued Stocks",
-        "Overvalued Stocks",
-        "High Quality Stocks",
-        "High Earnings Yield",
-        "Top Market Cap Stocks",
-        "Low Beta Stocks",
-        "High Dividend Yield",
-        "High Momentum Stocks",
-        "Low Volatility Stocks",
-        "Short-Term Momentum",
-        "High Dividend & Low Beta",
-        "Top Factor Composite",
-        "High Risk Stocks",
-        "Top Combined Screener",
-        "Macro Data Visualization",
-    ]
-    tabs = st.tabs(TABS)
+    sectors = ["All"] + get_sectors()
 
-    with tabs[0]:
-        st.header("💰 Undervalued Stocks")
-        with st.spinner("Loading undervalued stocks..."):
-            params = {"min_mktcap": min_mktcap, "top_n": top_n}
-            if company_filter:
-                params["company"] = company_filter
-            if sector_filter != "All":
-                params["sector"] = sector_filter
-            df_undervalued = get_data("get_undervalued_stocks", params=params)
-            if not df_undervalued.empty:
-                df_display = format_dataframe(df_undervalued.copy())
+    with st.sidebar.expander("🔍 Filter Options", expanded=True):
+        with st.form("filter_form"):
+            st.markdown("### Customize Your Search")
+            col1,col2 = st.columns(2)
+            min_mktcap = col1.number_input("Min Market Cap (£)", 0, 1_000_000_000, st.session_state.min_mktcap)
+            top_n = col2.slider("Number of Top Stocks", 5,50, st.session_state.top_n)
+            col3,col4 = st.columns(2)
+            company_input = col3.text_input("Company Name", st.session_state.company_filter)
+            sector_filter = col4.selectbox("Sector", sectors, index=sectors.index(st.session_state.sector_filter) if st.session_state.sector_filter in sectors else 0)
+            submitted = st.form_submit_button("🚀 Apply Filters")
+
+        if st.button("🗑️ Clear Filters"):
+            st.session_state.min_mktcap = 0
+            st.session_state.top_n = 10
+            st.session_state.sector_filter = "All"
+            st.session_state.company_filter = ""
+            st.rerun()
+
+    if submitted:
+        st.session_state.min_mktcap = min_mktcap
+        st.session_state.top_n = top_n
+        st.session_state.sector_filter = sector_filter
+        st.session_state.company_filter = company_input.strip()
+
+    min_mktcap_val = st.session_state.min_mktcap
+    top_n_val = st.session_state.top_n
+    sector_val = st.session_state.sector_filter
+    company_filter_val = st.session_state.company_filter
+
+    endpoints = {
+        "Undervalued Stocks":"get_undervalued_stocks",
+        "Overvalued Stocks":"get_overvalued_stocks",
+        "High Quality Stocks":"get_high_quality_stocks",
+        "High Earnings Yield":"get_high_earnings_yield_stocks",
+        "Top Market Cap Stocks":"get_top_market_cap_stocks",
+        "Low Beta Stocks":"get_low_beta_stocks",
+        "High Dividend Yield":"get_high_dividend_yield_stocks",
+        "High Momentum Stocks":"get_high_momentum_stocks",
+        "Low Volatility Stocks":"get_low_volatility_stocks",
+        "Short-Term Momentum":"get_top_short_term_momentum_stocks",
+        "High Dividend & Low Beta":"get_high_dividend_low_beta_stocks",
+        "Top Factor Composite":"get_top_factor_composite_stocks",
+        "High Risk Stocks":"get_high_risk_stocks",
+        "Top Combined Screener":"get_top_combined_screen_limited",
+        "Macro Data Visualization":"get_macro_data"
+    }
+
+    tabs = st.tabs(list(endpoints.keys()))
+    for tab, name in zip(tabs, endpoints.keys()):
+        with tab:
+            st.header(f"📈 {name}")
+            params = {"min_mktcap":min_mktcap_val,"top_n":top_n_val}
+            if company_filter_val: params["company"]=company_filter_val
+            if sector_val!="All": params["sector"]=sector_val
+            with st.spinner("Loading data..."):
+                df = get_data(endpoints[name], params=params)
+
+            if not df.empty:
+                df_display = format_df(df.copy())
+                if name=="Macro Data Visualization":
+                    df_display['Date']=pd.to_datetime(df_display['Date'])
+                    c1,c2 = st.columns(2)
+                    c1.line_chart(df_display.set_index('Date')['GDP_Growth_YoY'])
+                    c2.line_chart(df_display.set_index('Date')['Inflation_YoY'])
                 st.dataframe(df_display)
-                st.download_button(
-                    label="Download as CSV",
-                    data=df_undervalued.to_csv(index=False),
-                    file_name="undervalued_stocks.csv",
-                    mime="text/csv",
-                )
+                st.download_button(f"Download CSV", df.to_csv(index=False), f"{name.replace(' ','_').lower()}.csv","text/csv")
             else:
-                st.info("No undervalued stocks found with current filters.")
-
-    with tabs[1]:
-        st.header("📉 Overvalued Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_overvalued = get_data("get_overvalued_stocks", params=params)
-        df_display = format_dataframe(df_overvalued.copy())
-        st.dataframe(df_display)
-        if not df_overvalued.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_overvalued.to_csv(index=False),
-                file_name="overvalued_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[2]:
-        st.header("🏅 High Quality Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_quality = get_data("get_high_quality_stocks", params=params)
-        df_display = format_dataframe(df_quality.copy())
-        st.dataframe(df_display)
-        if not df_quality.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_quality.to_csv(index=False),
-                file_name="high_quality_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[3]:
-        st.header("💵 High Earnings Yield Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_ey = get_data("get_high_earnings_yield_stocks", params=params)
-        df_display = format_dataframe(df_ey.copy())
-        if not df_display.empty:
-            df_display = df_display.reset_index(drop=True)
-            st.dataframe(df_display)
-        if not df_ey.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_ey.to_csv(index=False),
-                file_name="high_earnings_yield_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[4]:
-        st.header("🏦 Top Market Cap Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_mktcap = get_data("get_top_market_cap_stocks", params=params)
-        df_display = format_dataframe(df_mktcap.copy())
-        st.dataframe(df_display)
-        if not df_mktcap.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_mktcap.to_csv(index=False),
-                file_name="top_market_cap_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[5]:
-        st.header("🛡️ Low Beta Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_lowbeta = get_data("get_low_beta_stocks", params=params)
-        df_display = format_dataframe(df_lowbeta.copy())
-        st.dataframe(df_display)
-        if not df_lowbeta.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_lowbeta.to_csv(index=False),
-                file_name="low_beta_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[6]:
-        st.header("💸 High Dividend Yield Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_div = get_data("get_high_dividend_yield_stocks", params=params)
-        df_display = format_dataframe(df_div.copy())
-        st.dataframe(df_display)
-        if not df_div.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_div.to_csv(index=False),
-                file_name="high_dividend_yield_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[7]:
-        st.header("🚀 High Momentum Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_mom = get_data("get_high_momentum_stocks", params=params)
-        df_display = format_dataframe(df_mom.copy())
-        st.dataframe(df_display)
-        if not df_mom.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_mom.to_csv(index=False),
-                file_name="high_momentum_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[8]:
-        st.header("🛡️ Low Volatility Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_lowvol = get_data("get_low_volatility_stocks", params=params)
-        df_display = format_dataframe(df_lowvol.copy())
-        st.dataframe(df_display)
-        if not df_lowvol.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_lowvol.to_csv(index=False),
-                file_name="low_volatility_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[9]:
-        st.header("⚡ Short-Term Momentum Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_stmom = get_data("get_top_short_term_momentum_stocks", params=params)
-        df_display = format_dataframe(df_stmom.copy())
-        st.dataframe(df_display)
-        if not df_stmom.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_stmom.to_csv(index=False),
-                file_name="short_term_momentum_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[10]:
-        st.header("💰 High Dividend + Low Beta Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_div_lowbeta = get_data("get_high_dividend_low_beta_stocks", params=params)
-        df_display = format_dataframe(df_div_lowbeta.copy())
-        st.dataframe(df_display)
-        if not df_div_lowbeta.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_div_lowbeta.to_csv(index=False),
-                file_name="high_dividend_low_beta_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[11]:
-        st.header("🏅 Top Factor Composite Scores")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_factor = get_data("get_top_factor_composite_stocks", params=params)
-        df_display = format_dataframe(df_factor.copy())
-        st.dataframe(df_display)
-        if not df_factor.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_factor.to_csv(index=False),
-                file_name="top_factor_composite_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[12]:
-        st.header("🚩 High Risk Warning Stocks")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_risk = get_data("get_high_risk_stocks", params=params)
-        df_display = format_dataframe(df_risk.copy())
-        st.dataframe(df_display)
-        if not df_risk.empty:
-            st.download_button(
-                label="Download as CSV",
-                data=df_risk.to_csv(index=False),
-                file_name="high_risk_stocks.csv",
-                mime="text/csv",
-            )
-
-    with tabs[13]:
-        st.header(
-            "🏆 Top Combined Screener (Undervalued + High Quality + High Momentum)")
-        params = {"min_mktcap": min_mktcap, "top_n": top_n}
-        if company_filter:
-            params["company"] = company_filter
-        if sector_filter != "All":
-            params["sector"] = sector_filter
-        df_combined = get_data("get_top_combined_screen_limited", params=params)
-        if not df_combined.empty:
-            df_display = format_dataframe(df_combined.copy())
-            st.dataframe(df_display)
-            st.download_button(
-                label="Download Combined Screener as CSV",
-                data=df_combined.to_csv(index=False),
-                file_name="top_combined_screener.csv",
-                mime="text/csv",
-            )
-        else:
-            st.warning(
-                "No combined results found based on current filter criteria.")
-
-    with tabs[14]:
-        st.header("📈 Macro Data Visualization")
-        df_macro = get_data("get_macro_data")
-        if not df_macro.empty:
-            # Convert Date column to datetime for proper plotting
-            df_macro['Date'] = pd.to_datetime(df_macro['Date'])
-
-            # Create two columns for charts
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.subheader("GDP Growth (YoY %)")
-                st.line_chart(df_macro.set_index('Date')['GDP_Growth_YoY'])
-
-            with col2:
-                st.subheader("Inflation Rate (YoY %)")
-                st.line_chart(df_macro.set_index('Date')['Inflation_YoY'])
-
-            # Display the data table
-            st.subheader("Macro Data Table")
-            st.dataframe(df_macro)
-
-            # Download button for macro data
-            st.download_button(
-                label="Download Macro Data as CSV",
-                data=df_macro.to_csv(index=False),
-                file_name="macro_data.csv",
-                mime="text/csv",
-            )
-        else:
-            st.warning("No macro data available.")
-
-    st.success("Dashboard Loaded Successfully!")
+                st.info(f"No {name.lower()} found for this filter/search.")
 
 finally:
-    session.close()
+    db_session.close()

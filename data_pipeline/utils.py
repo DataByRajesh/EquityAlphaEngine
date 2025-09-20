@@ -1,10 +1,13 @@
+# standard libraries
 import logging
 import os
 import json
 import tempfile
 
+# third-party libraries
 from google.cloud import secretmanager
 
+# local application imports
 import data_pipeline.config as config
 
 logger = logging.getLogger(__name__)

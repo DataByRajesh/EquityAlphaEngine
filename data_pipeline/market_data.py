@@ -5,6 +5,9 @@ retrieving fundamental data and combining the results for further
 processing in the equity pipeline.
 """
 
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file if present
+
 # import necessary libraries
 import asyncio  # For asynchronous operations
 import logging
