@@ -162,7 +162,7 @@ jobs:
             --max-instances=3 \
             --concurrency=80 \
             --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
-            --set-secrets="$SECRETS_LIST" \
+            --set-secrets="DATABASE_URL=DATABASE_URL:latest,QUANDL_API_KEY=QUANDL_API_KEY:latest,GMAIL_CREDENTIALS_FILE=GMAIL_CREDENTIALS_FILE:latest,GCP_SA_KEY=GCP_SA_KEY:latest,API_URL=API_URL:latest,BUILD_SHA=BUILD_SHA:latest" \
             --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},GCP_REGION=${GCP_REGION},REPO=${REPO},GCP_PROJECT_ID=${GCP_PROJECT_ID},IMAGE_TAG=${IMAGE_TAG},IMAGE_URI=${IMAGE_URI},GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET,USE_GCP_SECRET_MANAGER=true" \
             --timeout=900 \
             --allow-unauthenticated
