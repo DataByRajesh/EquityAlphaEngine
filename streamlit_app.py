@@ -279,7 +279,9 @@ try:
             params["sector"] = sector_filter
         df_ey = get_data("get_high_earnings_yield_stocks", params=params)
         df_display = format_dataframe(df_ey.copy())
-        st.dataframe(df_display)
+        if not df_display.empty:
+            df_display = df_display.reset_index(drop=True)
+            st.dataframe(df_display)
         if not df_ey.empty:
             st.download_button(
                 label="Download as CSV",
