@@ -16,7 +16,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # API URL configuration from environment variable or default
-API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
+# Clean the URL to remove any carriage returns or whitespace that cause DNS issues
+raw_api_url = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
+API_URL = raw_api_url.strip().replace('\r', '').replace('\n', '')
+logger.info(f"Using API URL: {API_URL}")
 
 # Optimized connection configuration for Cloud Run
 MAX_RETRIES = 5
