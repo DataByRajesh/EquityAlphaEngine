@@ -50,6 +50,12 @@ jobs:
         run: |
           docker push $GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$IMAGE_NAME:latest
 
+      - name: Get API Service URL
+        id: api-url
+        run: |
+          API_URL=$(gcloud run services describe equity-api --region=$GCP_REGION --format="value(status.url)")
+          echo "API_URL=$API_URL" >> $GITHUB_ENV
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy $SERVICE_NAME \
@@ -60,4 +66,4 @@ jobs:
             --vpc-egress=all \
             --allow-unauthenticated \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
-            --set-env-vars=GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET
+            --set-env-vars="API_URL=$API_URL,GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET"
