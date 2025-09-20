@@ -3,12 +3,6 @@ import os
 import json
 import tempfile
 
-# IPv6 Connectivity Fix - Force IPv4 connections for Google Cloud services
-# This prevents "Network is unreachable" errors for IPv6 addresses like 2a00:1450:4009:c15::5f
-os.environ.setdefault("GRPC_DNS_RESOLVER", "ares")
-os.environ.setdefault("GOOGLE_CLOUD_DISABLE_GRPC_IPV6", "true")
-os.environ.setdefault("GRPC_EXPERIMENTAL_ENABLE_ARES_DNS_RESOLVER", "true")
-
 from google.cloud import secretmanager
 
 import data_pipeline.config as config
