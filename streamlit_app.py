@@ -2,6 +2,8 @@ import os
 import time
 import logging
 import urllib.parse
+import random
+from typing import Optional
 
 import pandas as pd
 import requests
@@ -14,33 +16,75 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # API URL configuration from environment variable or default
-
 API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app")
 
-# Connection configuration
-MAX_RETRIES = 3
-RETRY_DELAY = 2  # seconds
-CONNECTION_TIMEOUT = 500  # seconds
-REQUEST_TIMEOUT = 500  # seconds
+# Optimized connection configuration for Cloud Run
+MAX_RETRIES = 5
+RETRY_DELAY = 1  # seconds, initial delay
+CONNECTION_TIMEOUT = 10  # seconds, reduced for Cloud Run
+REQUEST_TIMEOUT = 30  # seconds, reduced for Cloud Run
+HEALTH_CHECK_TIMEOUT = 5  # seconds, for health checks
+
+# Create a session for connection pooling
+http_session = requests.Session()
+http_session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20))
+http_session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20))
+
+def check_api_health() -> bool:
+    """Check if the API service is healthy before making requests."""
+    try:
+        logger.debug("Checking API health...")
+        response = http_session.get(f"{API_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
+        if response.status_code == 200:
+            logger.debug("API health check passed")
+            return True
+        else:
+            logger.warning(f"API health check failed with status: {response.status_code}")
+            return False
+    except Exception as e:
+        logger.warning(f"API health check failed: {e}")
+        return False
+
 
 def make_request_with_retry(url, params=None, max_retries=MAX_RETRIES):
-    """Make HTTP request with retry logic and exponential backoff."""
+    """Make HTTP request with retry logic, exponential backoff, and jitter."""
     last_exception = None
+
+    # Perform health check for the first attempt
+    if not check_api_health():
+        logger.warning("API health check failed, but proceeding with request...")
 
     for attempt in range(max_retries):
         try:
             logger.debug(f"Request attempt {attempt + 1}/{max_retries} to {url}")
-            response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+            
+            # Use http_session for connection pooling
+            response = http_session.get(
+                url, 
+                params=params, 
+                timeout=(CONNECTION_TIMEOUT, REQUEST_TIMEOUT)
+            )
+            
             logger.debug(f"Request successful with status {response.status_code}")
             return response
+            
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             last_exception = e
             if attempt < max_retries - 1:
-                wait_time = RETRY_DELAY * (2 ** attempt)  # Exponential backoff
-                logger.warning(f"Request attempt {attempt + 1} failed: {e}. Retrying in {wait_time} seconds...")
+                # Exponential backoff with jitter
+                base_wait = RETRY_DELAY * (2 ** attempt)
+                jitter = random.uniform(0.1, 0.5)  # Add jitter to prevent thundering herd
+                wait_time = base_wait + jitter
+                
+                logger.warning(f"Request attempt {attempt + 1} failed: {e}. Retrying in {wait_time:.2f} seconds...")
                 time.sleep(wait_time)
             else:
                 logger.error(f"All {max_retries} request attempts failed. Last error: {e}")
+                
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error during request: {e}")
+            raise e
+            
         except Exception as e:
             logger.error(f"Unexpected error during request: {e}")
             raise e
