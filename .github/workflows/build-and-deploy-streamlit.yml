@@ -59,4 +59,4 @@ jobs:
             --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
             --allow-unauthenticated \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
-            --set-env-vars=API_URL=${{ vars.API_URL }},GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET
+            --set-env-vars=GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET
