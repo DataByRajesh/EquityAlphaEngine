@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 # API config
 API_URL = os.getenv("API_URL", "https://equity-api-248891289968.europe-west2.run.app").strip()
+# Fetch cap for ranking base; UI slices this for display
+TOP_FETCH_LIMIT = 100
 MAX_RETRIES, RETRY_DELAY = 5, 1
 CONNECTION_TIMEOUT, REQUEST_TIMEOUT = 10, 30
 HEALTH_CHECK_TIMEOUT = 5
@@ -185,11 +187,10 @@ name = selected_view
 st.header(f"📈 {name}")
 params = {}
 if name != "Macro Data Visualization" and submitted:
-    params = {"min_mktcap": int(min_mktcap_val), "top_n": int(top_n_val)}
+    # Always fetch the top TOP_FETCH_LIMIT for consistent ranking; UI will slice
+    params = {"min_mktcap": int(min_mktcap_val), "top_n": TOP_FETCH_LIMIT}
     if company_filter_val:
         params["company"] = company_filter_val
-        # Ensure company search does not get excluded by a small top_n
-        params["top_n"] = 100
     if sector_val != "All":
         params["sector"] = sector_val
 
@@ -213,7 +214,8 @@ if should_query:
     query_duration = time.time() - start_time
 
 if not df.empty:
-    df_display = format_df(df.copy())
+    # Slice for display only
+    df_display = format_df(df.head(int(top_n_val)).copy())
     if name == "Macro Data Visualization":
         df_display['Date'] = pd.to_datetime(df_display['Date'])
         c1, c2 = st.columns(2)
@@ -222,7 +224,7 @@ if not df.empty:
     st.dataframe(df_display, use_container_width=True)
     st.download_button(
         "Download CSV",
-        df.to_csv(index=False),
+        df_display.to_csv(index=False),
         f"{name.replace(' ', '_').lower()}.csv",
         "text/csv",
     )
