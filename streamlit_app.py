@@ -106,16 +106,13 @@ def format_df(df):
 # Dashboard
 st.set_page_config(page_title="Equity Alpha Engine", layout="wide")
 st.title("📊 Equity Alpha Engine Dashboard")
+st.caption("Screeners powered by an optimized API with caching, retries, and in-app caching.")
 
-# Initialize session state for filters
-if "min_mktcap" not in st.session_state:
-    st.session_state.min_mktcap = 0
-if "top_n" not in st.session_state:
-    st.session_state.top_n = 10
-if "sector_filter" not in st.session_state:
-    st.session_state.sector_filter = "All"
-if "company_filter" not in st.session_state:
-    st.session_state.company_filter = ""
+# Default (non-sticky) filter values
+DEFAULT_MIN_MKTCAP = 0
+DEFAULT_TOP_N = 10
+DEFAULT_SECTOR = "All"
+DEFAULT_COMPANY = ""
 
 # API health indicator
 health_ok = check_api_health()
@@ -134,7 +131,7 @@ with st.sidebar.expander("🔍 Filter Options", expanded=True):
         min_mktcap = col1.number_input(
             "Min Market Cap (£)",
             min_value=0,
-            value=int(st.session_state.min_mktcap),
+            value=int(DEFAULT_MIN_MKTCAP),
             step=1_000_000,
             help="Filter out companies below this market cap"
         )
@@ -142,34 +139,24 @@ with st.sidebar.expander("🔍 Filter Options", expanded=True):
             "Number of Top Stocks",
             min_value=1,
             max_value=100,
-            value=int(st.session_state.top_n)
+            value=int(DEFAULT_TOP_N)
         )
         col3,col4 = st.columns(2)
-        company_input = col3.text_input("Company Name", st.session_state.company_filter)
+        company_input = col3.text_input("Company Name", DEFAULT_COMPANY)
         sector_filter = col4.selectbox(
             "Sector",
             sectors,
-            index=sectors.index(st.session_state.sector_filter) if st.session_state.sector_filter in sectors else 0
+            index=sectors.index(DEFAULT_SECTOR) if DEFAULT_SECTOR in sectors else 0
         )
         submitted = st.form_submit_button("🚀 Apply Filters")
 
     if st.button("🗑️ Clear Filters"):
-        st.session_state.min_mktcap = 0
-        st.session_state.top_n = 10
-        st.session_state.sector_filter = "All"
-        st.session_state.company_filter = ""
         st.rerun()
 
-if submitted:
-    st.session_state.min_mktcap = min_mktcap
-    st.session_state.top_n = top_n
-    st.session_state.sector_filter = sector_filter
-    st.session_state.company_filter = company_input.strip()
-
-min_mktcap_val = st.session_state.min_mktcap
-top_n_val = st.session_state.top_n
-sector_val = st.session_state.sector_filter
-company_filter_val = st.session_state.company_filter
+min_mktcap_val = int(min_mktcap) if submitted else DEFAULT_MIN_MKTCAP
+top_n_val = int(top_n) if submitted else DEFAULT_TOP_N
+sector_val = sector_filter if submitted else DEFAULT_SECTOR
+company_filter_val = company_input.strip() if submitted else DEFAULT_COMPANY
 
 endpoints = {
     "Undervalued Stocks": "get_undervalued_stocks",
@@ -197,7 +184,7 @@ selected_view = st.radio("Screener", view_names, index=0, horizontal=True)
 name = selected_view
 st.header(f"📈 {name}")
 params = {}
-if name != "Macro Data Visualization":
+if name != "Macro Data Visualization" and submitted:
     params = {"min_mktcap": int(min_mktcap_val), "top_n": int(top_n_val)}
     if company_filter_val:
         params["company"] = company_filter_val
@@ -216,8 +203,14 @@ if name != "Macro Data Visualization":
 if not health_ok:
     st.info("API is unavailable. Showing cached results if available.")
 
-with st.spinner("Loading data..."):
-    df = get_data(endpoints[name], params=params)
+df = pd.DataFrame()
+query_duration = None
+should_query = (name == "Macro Data Visualization") or submitted
+if should_query:
+    start_time = time.time()
+    with st.spinner("Loading data..."):
+        df = get_data(endpoints[name], params=params)
+    query_duration = time.time() - start_time
 
 if not df.empty:
     df_display = format_df(df.copy())
@@ -233,5 +226,20 @@ if not df.empty:
         f"{name.replace(' ', '_').lower()}.csv",
         "text/csv",
     )
+    # Metrics panel
+    cols = st.columns(3)
+    cols[0].metric("Rows", f"{len(df):,}")
+    if "Date" in df.columns:
+        try:
+            last_dt = pd.to_datetime(df["Date"]).max()
+            cols[1].metric("Last Date", str(last_dt.date()))
+        except Exception:
+            cols[1].metric("Last Date", "-")
+    else:
+        cols[1].metric("Last Date", "-")
+    cols[2].metric("Query Time", f"{query_duration:.2f}s" if query_duration is not None else "cached")
 else:
-    st.info(f"No {name.lower()} found for this filter/search.")
+    if should_query:
+        st.info(f"No {name.lower()} found for this filter/search.")
+    else:
+        st.info("Adjust filters and click Apply Filters to run the screener.")
