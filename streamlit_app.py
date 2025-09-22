@@ -188,13 +188,13 @@ if name != "Macro Data Visualization" and submitted:
     params = {"min_mktcap": int(min_mktcap_val), "top_n": int(top_n_val)}
     if company_filter_val:
         params["company"] = company_filter_val
+        # Ensure company search does not get excluded by a small top_n
+        params["top_n"] = 100
     if sector_val != "All":
         params["sector"] = sector_val
 
     # OHLCV toggle for endpoints that support it
-    ohlcv_supported = name not in {
-        "Undervalued Stocks", "Overvalued Stocks", "Top Combined Screener", "Macro Data Visualization"
-    }
+    ohlcv_supported = name != "Macro Data Visualization"
     if ohlcv_supported:
         require_ohlcv = st.checkbox("Only stocks with valid OHLCV", value=False)
         if require_ohlcv:
