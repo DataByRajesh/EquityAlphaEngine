@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 CLI to populate or refresh the financial data table.
 
@@ -15,8 +17,6 @@ database.
 
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file if present
-
-from __future__ import annotations
 
 # Standard library imports
 import argparse
