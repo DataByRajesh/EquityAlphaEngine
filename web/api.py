@@ -36,6 +36,79 @@ DB_RETRY_DELAY = 1  # seconds
 QUERY_TIMEOUT = 30  # seconds
 CONNECTION_POOL_SIZE = 10
 MAX_OVERFLOW = 20
+# Fetch amplification for category filtering to avoid cross-category leaks
+BASE_FETCH_MULTIPLIER = 3
+MIN_FETCH_LIMIT = 100
+
+
+def _filter_undervalued(row: Dict[str, Any]) -> bool:
+    fc = row.get("factor_composite")
+    ey = row.get("earnings_yield")
+    return (fc is not None and isinstance(fc, (int, float)) and fc <= -0.1) or (
+        ey is not None and isinstance(ey, (int, float)) and ey > 0.0
+    )
+
+
+def _filter_overvalued(row: Dict[str, Any]) -> bool:
+    fc = row.get("factor_composite")
+    ey = row.get("earnings_yield")
+    return (fc is not None and isinstance(fc, (int, float)) and fc >= 0.1) or (
+        ey is not None and isinstance(ey, (int, float)) and ey < 0.0
+    )
+
+
+def _filter_high_quality(row: Dict[str, Any]) -> bool:
+    q = row.get("norm_quality_score")
+    return q is not None and isinstance(q, (int, float)) and q >= 0.1
+
+
+def _filter_high_earnings_yield(row: Dict[str, Any]) -> bool:
+    ey = row.get("earnings_yield")
+    return ey is not None and isinstance(ey, (int, float)) and ey >= 0.02
+
+
+def _filter_low_beta(row: Dict[str, Any]) -> bool:
+    b = row.get("beta")
+    return b is not None and isinstance(b, (int, float)) and b <= 0.9
+
+
+def _filter_high_dividend(row: Dict[str, Any]) -> bool:
+    dy = row.get("dividendYield")
+    return dy is not None and isinstance(dy, (int, float)) and dy >= 0.02
+
+
+def _filter_high_momentum(row: Dict[str, Any]) -> bool:
+    r12 = row.get("return_12m")
+    return r12 is not None and isinstance(r12, (int, float)) and r12 >= 0.1
+
+
+def _filter_low_volatility(row: Dict[str, Any]) -> bool:
+    v21 = row.get("vol_21d")
+    return v21 is not None and isinstance(v21, (int, float)) and v21 <= 0.02
+
+
+def _filter_short_term_mom(row: Dict[str, Any]) -> bool:
+    r3 = row.get("return_3m")
+    return r3 is not None and isinstance(r3, (int, float)) and r3 >= 0.05
+
+
+def _filter_high_risk(row: Dict[str, Any]) -> bool:
+    v252 = row.get("vol_252d")
+    return v252 is not None and isinstance(v252, (int, float)) and v252 >= 0.3
+
+
+def _filter_high_factor_composite(row: Dict[str, Any]) -> bool:
+    fc = row.get("factor_composite")
+    return fc is not None and isinstance(fc, (int, float)) and fc >= 0.1
+
+
+def _apply_category_filter(result: list[Dict[str, Any]], predicate, top_n: int) -> list[Dict[str, Any]]:
+    try:
+        filtered = [r for r in result if predicate(r)]
+        return filtered[: top_n]
+    except Exception:
+        return result[: top_n]
+
 
 
 def get_cached_or_compute(key: str, compute_func):
@@ -143,7 +216,7 @@ async def root():
     return "<h2>Welcome to Equity Alpha Engine API!</h2><p>Visit <a href='/docs'>/docs</a> for the interactive API documentation.</p>"
 
 
-def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = None, sector: str = None, require_ohlcv: bool = False):
+def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = None, sector: str = None, require_ohlcv: bool = False, fetch_limit: int | None = None):
     """Query stocks with improved error handling and connection management.
     Selects only the latest data per ticker.
 
@@ -268,9 +341,11 @@ def _query_stocks(order_by: str, min_mktcap: int, top_n: int, company: str = Non
             if direction not in allowed_directions:
                 raise HTTPException(status_code=400, detail=f"Invalid sort direction: {direction}")
 
-    base_query += f" ORDER BY {order_by} LIMIT :top_n"
+    # Compute fetch limit for category gating (fetch more than displayed top_n)
+    effective_limit = fetch_limit if fetch_limit is not None else top_n
+    base_query += f" ORDER BY {order_by} LIMIT :limit"
 
-    params = {"min_mktcap": min_mktcap, "top_n": top_n}
+    params = {"min_mktcap": min_mktcap, "limit": effective_limit}
     if company:
         params["company"] = f"%{company_clean}%"
     if sector:
@@ -421,80 +496,134 @@ def _query_combined_stocks(min_mktcap: int, top_n: int, company: str = None, sec
 
 @app.get("/get_undervalued_stocks")
 def get_undervalued_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"undervalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" ASC', min_mktcap, top_n, company, sector, require_ohlcv=True))
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
+    key = f"undervalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_True"
+    def compute():
+        raw = _query_stocks('"factor_composite" ASC', min_mktcap, top_n, company, sector, require_ohlcv=True, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_undervalued, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_overvalued_stocks")
 def get_overvalued_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None):
-    key = f"overvalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector, require_ohlcv=True))
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
+    key = f"overvalued_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_True"
+    def compute():
+        raw = _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector, require_ohlcv=True, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_overvalued, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_high_quality_stocks")
 def get_high_quality_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"high_quality_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"norm_quality_score" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"norm_quality_score" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_high_quality, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_high_earnings_yield_stocks")
 def get_high_earnings_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"high_earnings_yield_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"earnings_yield" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"earnings_yield" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_high_earnings_yield, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_top_market_cap_stocks")
 def get_top_market_cap_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"top_market_cap_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"marketCap" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"marketCap" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_low_beta_stocks")
 def get_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"beta" ASC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"beta" ASC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_low_beta, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_high_dividend_yield_stocks")
 def get_high_dividend_yield_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"high_dividend_yield_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"dividendYield" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_high_dividend, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_high_momentum_stocks")
 def get_high_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"high_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"return_12m" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"return_12m" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_high_momentum, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_low_volatility_stocks")
 def get_low_volatility_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"low_volatility_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"vol_21d" ASC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"vol_21d" ASC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_low_volatility, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_top_short_term_momentum_stocks")
 def get_top_short_term_momentum_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"top_short_term_momentum_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"return_3m" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"return_3m" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_short_term_mom, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_high_dividend_low_beta_stocks")
 def get_high_dividend_low_beta_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"high_dividend_low_beta_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"dividendYield" DESC, "beta" ASC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"dividendYield" DESC, "beta" ASC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        def predicate(row):
+            return _filter_high_dividend(row) and _filter_low_beta(row)
+        return _apply_category_filter(raw, predicate, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_top_factor_composite_stocks")
 def get_top_factor_composite_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"top_factor_composite_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"factor_composite" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_high_factor_composite, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_high_risk_stocks")
 def get_high_risk_stocks(min_mktcap: int = 0, top_n: int = 10, company: str = None, sector: str = None, require_ohlcv: bool = False):
+    fetch_n = max(MIN_FETCH_LIMIT, BASE_FETCH_MULTIPLIER * top_n)
     key = f"high_risk_{min_mktcap}_{top_n}_{company or ''}_{sector or ''}_{require_ohlcv}"
-    return get_cached_or_compute(key, lambda: _query_stocks('"vol_252d" DESC', min_mktcap, top_n, company, sector, require_ohlcv))
+    def compute():
+        raw = _query_stocks('"vol_252d" DESC', min_mktcap, top_n, company, sector, require_ohlcv, fetch_limit=fetch_n)
+        return _apply_category_filter(raw, _filter_high_risk, top_n) if company else raw[: top_n]
+    return get_cached_or_compute(key, compute)
 
 
 @app.get("/get_top_combined_screen_limited")
