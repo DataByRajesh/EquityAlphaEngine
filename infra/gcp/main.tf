@@ -18,27 +18,20 @@ provider "google" {
 # -----------------------------
 # VPC Network & Subnet
 # -----------------------------
-resource "google_compute_network" "vpc_network" {
-  name                    = "equity-alpha-engine-vpc"
-  auto_create_subnetworks = false
+data "google_compute_network" "vpc_network" {
+  name = "equity-alpha-engine-vpc"
 }
 
-resource "google_compute_subnetwork" "subnet" {
-  name          = "equity-alpha-engine-subnet"
-  ip_cidr_range = "10.0.0.0/24"
-  region        = var.region
-  network       = google_compute_network.vpc_network.id
+data "google_compute_subnetwork" "subnet" {
+  name   = "equity-alpha-engine-subnet"
+  region = var.region
 }
 
 # -----------------------------
 # Reserve IP range for private Cloud SQL
 # -----------------------------
-resource "google_compute_global_address" "private_ip_range" {
-  name          = "cloudsql-private-ip-range"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = google_compute_network.vpc_network.id
+data "google_compute_global_address" "private_ip_range" {
+  name = "cloudsql-private-ip-range"
 }
 
 # -----------------------------
@@ -47,8 +40,9 @@ resource "google_compute_global_address" "private_ip_range" {
 resource "google_vpc_access_connector" "connector" {
   name          = var.vpc_connector_name
   region        = var.region
-  ip_cidr_range = "10.8.0.0/28"
-  network       = google_compute_network.vpc_network.name
+  ip_cidr_range = "10.8.1.0/28"
+  network       = data.google_compute_network.vpc_network.name
+  subnet        = data.google_compute_subnetwork.subnet.name
   min_instances = 2
   max_instances = 10
 }
@@ -57,42 +51,20 @@ resource "google_vpc_access_connector" "connector" {
 # Private service connection for Cloud SQL
 # -----------------------------
 resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.vpc_network.id
+  network                 = data.google_compute_network.vpc_network.id
   service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_range.name]
+  reserved_peering_ranges = [data.google_compute_global_address.private_ip_range.name]
 }
+
+
+
+
 
 # -----------------------------
 # Cloud SQL instance (Postgres)
 # -----------------------------
-resource "google_sql_database_instance" "postgres_instance" {
-  name             = var.cloud_sql_instance_name
-  database_version = var.database_version
-  region           = var.region
-
-  settings {
-    tier = "db-f1-micro"
-    disk_autoresize = true
-    disk_size       = 10
-    disk_type       = "PD_SSD"
-
-    backup_configuration {
-      enabled    = true
-      start_time = "02:00"
-    }
-
-    maintenance_window {
-      day  = 7
-      hour = 3
-    }
-
-    ip_configuration {
-      ipv4_enabled    = false
-      private_network = google_compute_network.vpc_network.id
-    }
-  }
-
-  deletion_protection = false
+data "google_sql_database_instance" "postgres_instance" {
+  name = var.cloud_sql_instance_name
 }
 
 # -----------------------------
@@ -100,31 +72,14 @@ resource "google_sql_database_instance" "postgres_instance" {
 # -----------------------------
 resource "google_sql_database" "database" {
   name     = "equity_alpha_engine"
-  instance = google_sql_database_instance.postgres_instance.name
+  instance = data.google_sql_database_instance.postgres_instance.name
 }
 
 # -----------------------------
 # Cloud Storage bucket
 # -----------------------------
-resource "google_storage_bucket" "cache_bucket" {
-  name          = var.bucket_name
-  location      = var.region
-  storage_class = "STANDARD"
-  versioning {
-    enabled = false
-  }
-  lifecycle_rule {
-    condition {
-      age = 30
-    }
-    action {
-      type = "Delete"
-    }
-  }
-  labels = {
-    environment = "production"
-    project     = "equity-alpha-engine"
-  }
+data "google_storage_bucket" "cache_bucket" {
+  name = var.bucket_name
 }
 
 # -----------------------------
@@ -139,22 +94,6 @@ resource "google_service_account" "service_account" {
   count        = try(length([data.google_service_account.existing_sa.email]), 0) == 0 ? 1 : 0
   account_id   = "equity-alpha-engine-sa"
   display_name = "Equity Alpha Engine Service Account"
-}
-
-data "google_vpc_access_connector" "existing_connector" {
-  name    = "equity-vpc-connector-uk"
-  region  = var.region
-  project = var.project_id
-}
-
-resource "google_vpc_access_connector" "connector" {
-  count         = data.google_vpc_access_connector.existing_connector.name != "" ? 0 : 1
-  name          = var.vpc_connector_name
-  region        = var.region
-  ip_cidr_range = "10.8.0.0/28"
-  network       = google_compute_network.vpc_network.name
-  min_instances = 2
-  max_instances = 10
 }
 
 # -----------------------------
@@ -180,8 +119,11 @@ resource "google_service_account_key" "sa_key" {
 locals {
   iam_roles = [
     "roles/secretmanager.secretAccessor",
+    "roles/secretmanager.admin",
+    "roles/artifactregistry.admin",
     "roles/storage.objectAdmin",
-    "roles/cloudsql.client"
+    "roles/cloudsql.client",
+    "roles/run.admin"
   ]
 }
 
@@ -210,15 +152,15 @@ output "service_account_key_id" {
 }
 
 output "bucket_name" {
-  value = google_storage_bucket.cache_bucket.name
+  value = data.google_storage_bucket.cache_bucket.name
 }
 
 output "vpc_connector_name" {
-  value = data.google_vpc_access_connector.existing_connector.name != "" ? data.google_vpc_access_connector.existing_connector.name : google_vpc_access_connector.connector[0].name
+  value = google_vpc_access_connector.connector.name
 }
 
 output "cloud_sql_connection_name" {
-  value = google_sql_database_instance.postgres_instance.connection_name
+  value = data.google_sql_database_instance.postgres_instance.connection_name
 }
 
 # -----------------------------

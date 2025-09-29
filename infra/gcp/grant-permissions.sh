@@ -24,6 +24,7 @@ IAM_ROLES=(
     "roles/cloudsql.admin"
     "roles/secretmanager.admin"
     "roles/run.admin"
+    "roles/iam.serviceAccountUser"
 )
 
 # Required APIs

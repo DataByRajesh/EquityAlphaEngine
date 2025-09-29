@@ -107,7 +107,7 @@ jobs:
             --memory=256Mi \
             --min-instances=0 \
             --max-instances=1 \
-            --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector-uk" \
+            --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-alpha-engine-vpc" \
             --set-secrets="DATABASE_URL=DATABASE_URL:latest" \
             --set-env-vars "CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},GCP_REGION=${GCP_REGION},REPO=${REPO},GCP_PROJECT_ID=${GCP_PROJECT_ID},GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET" \
             --timeout=600 \
