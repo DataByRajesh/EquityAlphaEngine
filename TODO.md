@@ -7,3 +7,18 @@
 - [x] Fix company filter persistence
 - [x] Add clear filters button
 - [x] Ensure filters apply to all tabs
+
+## Migration to GCP Project equity-alpha-engine-uk
+- [x] Create pre-migration tag v1.0.0-pre-migration
+- [x] Set up new GCP project equity-alpha-engine-uk
+- [x] Run terraform apply to create infrastructure
+- [x] Update data_pipeline/config.py with new project settings
+- [x] Update GitHub Actions workflow for new VPC connector
+- [x] Move service account key to GCP Secret Manager
+- [x] Update infra/gcp/README.md with migration instructions
+- [x] Update .gitignore to exclude large Terraform files and credentials
+- [x] Commit migration changes with detailed message
+- [ ] Update GitHub repository secrets with new SA credentials
+- [ ] Deploy application to new project
+- [ ] Test deployment and functionality
+- [ ] Clean up old project resources if needed

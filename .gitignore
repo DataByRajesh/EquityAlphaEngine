@@ -168,3 +168,12 @@ flake8_report.txt
 data_pipeline/data/
 data_pipeline/cache/
 data_pipeline/logs/
+
+# Terraform
+infra/gcp/.terraform/
+infra/gcp/terraform.exe
+infra/gcp/terraform.tfstate*
+infra/gcp/tfplan.out
+
+# GCP credentials
+*.json

@@ -1,7 +1,47 @@
-# GCP Deployment
+# GCP Infrastructure and Deployment
 
-This directory contains configuration and scripts for deploying the EquityAlphaEngine to [Cloud Run](https://cloud.google.com/run).
+This directory contains configuration and scripts for setting up GCP infrastructure and deploying the EquityAlphaEngine to [Cloud Run](https://cloud.google.com/run).
 Container images are stored in an [Artifact Registry](https://cloud.google.com/artifact-registry) repository.
+
+## Project Setup and Migration
+
+### Initial Project Setup
+If setting up a new GCP project for EquityAlphaEngine:
+
+1. Create a new GCP project in the [Google Cloud Console](https://console.cloud.google.com/)
+2. Authenticate with gcloud:
+   ```bash
+   gcloud auth login
+   gcloud config set project <PROJECT_ID>
+   ```
+3. Grant necessary permissions to your account:
+   ```bash
+   cd infra/gcp
+   bash grant-permissions.sh
+   ```
+   This script grants all required IAM roles to enable API management and resource creation.
+
+4. Create GCP resources (VPC, Cloud SQL, Cloud Storage, service accounts):
+   ```bash
+   bash create-gcp-resources.sh
+   ```
+   This script enables APIs and creates all necessary infrastructure.
+
+Alternatively, use Terraform for infrastructure as code (run from infra/gcp directory):
+```bash
+cd infra/gcp
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+### Migrating from Existing Project
+To migrate EquityAlphaEngine to a new GCP project:
+
+1. Follow steps 1-4 above for the new project
+2. Update `../../data_pipeline/config.py` with the new project ID and bucket name
+3. Update GitHub repository secrets with new service account credentials
+4. Deploy the application (see below)
 
 ## Deploying
 
