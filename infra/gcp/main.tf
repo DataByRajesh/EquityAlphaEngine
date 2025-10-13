@@ -16,6 +16,27 @@ provider "google" {
 }
 
 # -----------------------------
+# Enable required APIs (idempotent)
+# -----------------------------
+resource "google_project_service" "compute" {
+  project            = var.project_id
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "vpcaccess" {
+  project            = var.project_id
+  service            = "vpcaccess.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "servicenetworking" {
+  project            = var.project_id
+  service            = "servicenetworking.googleapis.com"
+  disable_on_destroy = false
+}
+
+# -----------------------------
 # VPC Network & Subnet
 # -----------------------------
 data "google_compute_network" "vpc_network" {
@@ -42,9 +63,17 @@ resource "google_vpc_access_connector" "connector" {
   region        = var.region
   ip_cidr_range = "10.8.1.0/28"
   network       = data.google_compute_network.vpc_network.name
-  subnet        = data.google_compute_subnetwork.subnet.name
+  subnet {
+    name    = data.google_compute_subnetwork.subnet.name
+    project = var.project_id
+  }
   min_instances = 2
   max_instances = 10
+
+  depends_on = [
+    google_project_service.vpcaccess,
+    google_project_service.compute
+  ]
 }
 
 # -----------------------------
