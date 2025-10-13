@@ -25,6 +25,7 @@ IAM_ROLES=(
     "roles/secretmanager.admin"
     "roles/run.admin"
     "roles/iam.serviceAccountUser"
+    "roles/vpcaccess.admin"
 )
 
 # Required APIs

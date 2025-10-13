@@ -1,70 +1,106 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-# Step-by-step deployment script for EquityAlphaEngine on GCP Cloud Run
-# Usage: bash infra/gcp/deploy-cloud-run.sh
+#
+# Deploy EquityAlphaEngine API to GCP Cloud Run (local-friendly)
+# --------------------------------------------------------------
+# Usage:
+#   export GCP_PROJECT_ID="your-project" \
+#          GCP_REGION="europe-west2" \
+#          REPO="containers" \
+#          CLOUD_RUN_SERVICE="equity-api"
+#   # optional:
+#   export IMAGE_TAG="$(git rev-parse --short HEAD)"  # or any tag
+#   export VPC_CONNECTOR_NAME="equity-vpc-connector"  # if you have one
+#   export SERVICE_ACCOUNT_EMAIL="svc@your-project.iam.gserviceaccount.com"  # optional
+#
+#   bash infra/gcp/deploy-cloud-run.sh
+#
+# This script:
+#   - Ensures the Artifact Registry repo exists
+#   - Builds and pushes the container (Cloud Build)
+#   - Deploys to Cloud Run with free-tier friendly flags
 
 ###############################################
-# 1. Set essential and mandatory variables
+# 1) Validate/prepare variables
 ###############################################
-GCP_PROJECT_ID=${secrets.GCP_PROJECT_ID}
-GCP_REGION=${vars.GCP_REGION:-}
-CLOUD_RUN_SERVICE=${vars.CLOUD_RUN_SERVICE:-}
-REPO=${vars.REPO:-}
-IMAGE_TAG=${{ github.sha }}
-IMAGE_URI=${secrets.IMAGE_URI:-$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/$REPO/$CLOUD_RUN_SERVICE}
-DATABASE_URL=${secrets.DATABASE_URL:-}
-GCP_SA_KEY=${secrets.GCP_SA_KEY:-}
-GMAIL_CREDENTIALS_FILE=${secrets.GMAIL_CREDENTIALS_FILE:-}
-QUANDL_API_KEY=${secrets.QUANDL_API_KEY:-}
-BUILD_SHA=${secrets.BUILD_SHA:-$IMAGE_TAG}
+GCP_PROJECT_ID=${GCP_PROJECT_ID:?"GCP_PROJECT_ID is required"}
+GCP_REGION=${GCP_REGION:?"GCP_REGION is required (e.g. europe-west2)"}
+REPO=${REPO:-containers}
+CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE:-equity-api}
+IMAGE_TAG=${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)}
+IMAGE_URI="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO}/${CLOUD_RUN_SERVICE}"
+VPC_CONNECTOR_NAME=${VPC_CONNECTOR_NAME:-}
+SERVICE_ACCOUNT_EMAIL=${SERVICE_ACCOUNT_EMAIL:-}
 
-# Warn if any required variable is missing
-for var in GCP_PROJECT_ID GCP_REGION CLOUD_RUN_SERVICE REPO DATABASE_URL GCP_SA_KEY GMAIL_CREDENTIALS_FILE QUANDL_API_KEY; do
-  if [ -z "${!var}" ]; then
-    echo "ERROR: $var is not set. Please set it as an environment variable or in a .env file."
-    exit 1
-  fi
-done
+# App env configuration
+USE_GCP_SECRET_MANAGER=${USE_GCP_SECRET_MANAGER:-true}
 
-IMAGE_NAME="$IMAGE_URI:$IMAGE_TAG"
+echo "Project:        $GCP_PROJECT_ID"
+echo "Region:         $GCP_REGION"
+echo "Repo:           $REPO"
+echo "Service:        $CLOUD_RUN_SERVICE"
+echo "Image tag:      $IMAGE_TAG"
+echo "Image URI:      $IMAGE_URI:$IMAGE_TAG"
+echo "VPC connector:  ${VPC_CONNECTOR_NAME:-<none>}"
+echo "Service account:${SERVICE_ACCOUNT_EMAIL:-<default>}"
 
-# 2. Authenticate with GCP
-gcloud auth login
-gcloud config set project $PROJECT_ID
+###############################################
+# 2) gcloud auth and project
+###############################################
+if ! gcloud config get-value account >/dev/null 2>&1; then
+  echo "Logging in to gcloud..."
+  gcloud auth login
+fi
+gcloud config set project "$GCP_PROJECT_ID"
 
-# 3. Build Docker image
+###############################################
+# 3) Ensure Artifact Registry repo exists
+###############################################
+if ! gcloud artifacts repositories describe "$REPO" --location="$GCP_REGION" >/dev/null 2>&1; then
+  echo "Creating Artifact Registry repo '$REPO' in $GCP_REGION..."
+  gcloud artifacts repositories create "$REPO" \
+    --repository-format=docker \
+    --location="$GCP_REGION" \
+    --immutable-tags
+fi
 
-docker build -t $IMAGE_NAME .
+###############################################
+# 4) Build and push image using Cloud Build
+###############################################
+echo "Building and pushing image via Cloud Build..."
+gcloud builds submit --tag "$IMAGE_URI:$IMAGE_TAG" .
 
-echo "Docker image built: $IMAGE_NAME"
+###############################################
+# 5) Deploy to Cloud Run (no-cost tier settings)
+###############################################
+echo "Deploying to Cloud Run..."
 
-# 4. Push image to Artifact Registry
+DEPLOY_ARGS=(
+  "--image=$IMAGE_URI:$IMAGE_TAG"
+  "--region=$GCP_REGION"
+  "--platform=managed"
+  "--cpu=1"
+  "--memory=256Mi"
+  "--min-instances=0"
+  "--max-instances=1"
+  "--timeout=600"
+  "--allow-unauthenticated"
+  "--set-env-vars=GCP_PROJECT_ID=$GCP_PROJECT_ID,GCP_REGION=$GCP_REGION,GMAIL_CREDENTIALS_SECRET_NAME=GMAIL_CLIENT_SECRET,USE_GCP_SECRET_MANAGER=$USE_GCP_SECRET_MANAGER"
+  "--set-secrets=DATABASE_URL=DATABASE_URL:latest"
+)
 
-gcloud auth configure-docker $REGION-docker.pkg.dev
+if [[ -n "$VPC_CONNECTOR_NAME" ]]; then
+  DEPLOY_ARGS+=("--vpc-connector=projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/${VPC_CONNECTOR_NAME}")
+fi
 
-docker push $IMAGE_NAME
+if [[ -n "$SERVICE_ACCOUNT_EMAIL" ]]; then
+  DEPLOY_ARGS+=("--service-account=$SERVICE_ACCOUNT_EMAIL")
+fi
 
-echo "Docker image pushed to Artifact Registry"
+gcloud run deploy "$CLOUD_RUN_SERVICE" "${DEPLOY_ARGS[@]}"
 
-# 5. Deploy to Cloud Run
-
-gcloud run deploy "$CLOUD_RUN_SERVICE" \
-  --image "$IMAGE_NAME" \
-  --region "$GCP_REGION" \
-  --platform managed \
-  --cpu=1 \
-  --memory=256Mi \
-  --min-instances=0 \
-  --max-instances=1 \
-  --vpc-connector "projects/${GCP_PROJECT_ID}/locations/${GCP_REGION}/connectors/equity-vpc-connector" \
-  --set-env-vars "GCP_PROJECT_ID=${GCP_PROJECT_ID},GCP_REGION=${GCP_REGION},CLOUD_RUN_SERVICE=${CLOUD_RUN_SERVICE},REPO=${REPO},IMAGE_TAG=${IMAGE_TAG},IMAGE_URI=${IMAGE_URI},DATABASE_URL=${DATABASE_URL},GCP_SA_KEY=${GCP_SA_KEY},GMAIL_CREDENTIALS_FILE=${GMAIL_CREDENTIALS_FILE},QUANDL_API_KEY=${QUANDL_API_KEY},BUILD_SHA=${BUILD_SHA}" \
-  --allow-unauthenticated \
-  --quiet
-
-echo "Cloud Run service deployed: $SERVICE_NAME"
-
-# 6. (Optional) Replace with YAML config
-# gcloud run services replace infra/gcp/cloudrun-service.yaml --region $REGION
-
-echo "Deployment complete."
+URL=$(gcloud run services describe "$CLOUD_RUN_SERVICE" --region "$GCP_REGION" --format='value(status.url)')
+echo ""
+echo "Deployed: $URL"
+echo "Done."
